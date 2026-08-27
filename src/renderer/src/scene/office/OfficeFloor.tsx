@@ -9,7 +9,8 @@ import { Camera } from './Camera';
 import { Character, paintCup } from './Character';
 import { DeskScreen } from './DeskScreen';
 import { MessageEnvelope, type MessageAct } from './MessageEnvelope';
-import { hexToNumber, DEFAULT_CHARACTER } from './cast';
+import { hexToNumber } from './cast';
+import { CARA_POR_OMISSAO } from './themeRegistry';
 import { pickSoloLine, pickExchange, type BreakSpot } from './cafeteriaLines';
 import { colors } from '@/design/tokens';
 import { loadTheme, resolveThemeMap, themeTilesetUrls } from './themeLoader';
@@ -178,9 +179,6 @@ export function OfficeFloor() {
   // A ref, not state: the budget has to survive the rebuilds it schedules, which
   // re-run the effect below and would reset anything scoped to it.
   const initRetriesRef = useRef(0);
-  // The active office theme (store mirror of config.officeTheme). Changing it
-  // tears down and rebuilds the whole scene on the new map/cast (see deps below).
-  const officeTheme = useStore((s) => s.officeTheme);
 
   // Is the floor actually on screen? A fullscreen terminal or file editor covers
   // it completely, and a hidden window shows nothing at all — but the Pixi ticker
@@ -243,7 +241,7 @@ export function OfficeFloor() {
 
     const init = async () => {
       // Load the active theme bundle (falls back to 'office' on a bad/absent bundle).
-      const theme = await loadTheme(officeTheme);
+      const theme = await loadTheme();
       await app.init({
         background: hexNum(theme.palette.background),
         antialias: false,
@@ -610,7 +608,7 @@ export function OfficeFloor() {
 
       const emitQuip = (id: string, rt: Runtime, spotIdx: number): void => {
         const spot = cafeSpots[spotIdx];
-        const character = agentById(id)?.character ?? DEFAULT_CHARACTER;
+        const character = agentById(id)?.character ?? CARA_POR_OMISSAO;
         const seed = Math.floor(Math.random() * 1e6);
         // Out of the boss's earshot, café talk turns to… the boss. In his
         // presence it's the usual harmless quips (the sucking up happens via
@@ -635,7 +633,7 @@ export function OfficeFloor() {
         const prt = runtimes.get(partnerId);
         if (!prt?.brk || prt.brk.phase !== 'lingering') return false;
         if (rt.brk.chat || rt.brk.chattingWith || prt.brk.chat || prt.brk.chattingWith) return false;
-        const character = agentById(id)?.character ?? DEFAULT_CHARACTER;
+        const character = agentById(id)?.character ?? CARA_POR_OMISSAO;
         const lines = pickExchange(character, Math.floor(Math.random() * 1e6));
         rt.brk.chat = { lines, partnerId, idx: 0, beat: 0 };
         prt.brk.chattingWith = id;
@@ -1772,7 +1770,7 @@ export function OfficeFloor() {
       appRef.current = null;
       while (host.firstChild) host.removeChild(host.firstChild);
     };
-  }, [officeTheme, glGeneration, i18n.language]);
+  }, [glGeneration, i18n.language]);
 
   return (
     <div

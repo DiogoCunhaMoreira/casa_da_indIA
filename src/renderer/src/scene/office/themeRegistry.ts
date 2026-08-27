@@ -1,56 +1,32 @@
-// Theme registry — the pluggable "office theme" contract.
+// O contrato do chão — e o único tema que o cumpre.
 //
-// Phase 0 of the TV-show-offices feature (card tvshow-phase0-abstraction):
-// extract the ~40% of constants that were hard-coded inside OfficeFloor.tsx
-// (errand spots, coffee-economy tile coords, prop anchors, seat names, tileset
-// URLs, palette, monitor gids) into a ThemeConfig so the scene becomes
-// swappable per show. This phase ships the EXISTING office unchanged as
-// `theme: 'office'`: every value below is copied byte-for-byte from the old
-// in-file literals, so the office renders and behaves identically.
+// Isto começou como um registo de temas: o escritório da Dunder Mifflin mais
+// cinco séries por fazer, com um selector nas definições. Já não. A casa tem um
+// chão só, a Ribeira das Naus, e é este ficheiro que diz de que é feito.
 //
-// The engine (TiledMapRenderer / BFS pathfinding / Camera / sprite animation)
-// is already fully generic and needs no change. cast.ts is read-only here
-// (uncommitted human WIP) — the office theme references its existing exports.
+// O `ThemeConfig` fica, apesar de haver um só tema, porque é ele que mantém as
+// ~40% de constantes que estavam cravadas dentro do `OfficeFloor.tsx` fora do
+// `OfficeFloor.tsx`: lugares, recados, adereços clicáveis, atlas, paleta. O
+// motor — `TiledMapRenderer`, o BFS, a câmara, a animação — não sabe nada disto
+// e não precisa de saber.
 
 import type { Texture } from 'pixi.js';
-import { colors } from '@/design/tokens';
-import {
-  CAST_BY_NAME,
-  getCastFrames,
-  DEFAULT_CHARACTER,
-  type CastMember,
-  type OfficeCharacterName,
-} from './cast';
+import { TEMA_CASA_DA_INDIA } from './casadaindia/tema';
+import type { CastMember } from './cast';
 
-import officeTilesetUrl from '@/assets/tilesets/office-tileset.png?url';
-import a5FloorsWallsUrl from '@/assets/tilesets/a5-office-floors-walls.png?url';
-import interiorsUrl from '@/assets/tilesets/interiors.png?url';
-// .tmj is Tiled JSON; imported as raw text and parsed by the loader.
-import officeMapRaw from '@/assets/maps/office.tmj?raw';
-import brooklyn99MapRaw from '@/assets/maps/brooklyn99.tmj?raw';
-import { criarTemaCasaDaIndia } from './casadaindia/tema';
-
-/** Theme identifiers. Only `office` exists in Phase 0; the five TV-show themes
- *  (friends, brooklyn99, siliconvalley, got, hogwarts) land in later phases. */
-export type ThemeId =
-  | 'office'
-  | 'friends'
-  | 'brooklyn99'
-  | 'siliconvalley'
-  | 'got'
-  | 'hogwarts'
-  | 'casadaindia';
+/** Só existe um. O tipo fica por legibilidade nas assinaturas. */
+export type ThemeId = 'casadaindia';
 
 export interface Tile { x: number; y: number; }
 export type Facing = 'up' | 'down' | 'left' | 'right';
 
-/** Kinds of small idle errands around the office (incl. plant watering).
- *  'smoke' is the boss special: cigar at the open window, god only. */
+/** Os recadinhos de ócio pelo chão. O 'smoke' é o especial do patrão: o Feitor
+ *  à janela do gabinete dele, e mais ninguém. */
 export type ErrandKind =
   | 'water' | 'window' | 'dispenser' | 'fridge' | 'shelf' | 'bin' | 'smoke';
 
-/** One idle-errand anchor: a stand tile + facing, an `fx` tile for the ambient
- *  animation, a duration, and an optional god-only restriction. */
+/** Uma âncora de recado: o tile onde se fica de pé e para onde se olha, o tile
+ *  `fx` onde corre a animação de ambiente, a duração, e se é só de deus. */
 export interface ErrandSpot {
   kind: ErrandKind;
   stand: Tile;
@@ -60,13 +36,12 @@ export interface ErrandSpot {
   godOnly?: boolean;
 }
 
-/** One tileset atlas + its placement in the global gid space. `embedded` marks
- *  the atlas whose metadata already lives inline in the map's own `tilesets[0]`
- *  (the loader keeps the map's copy and only patches the appended atlases). */
+/** Um atlas e o sítio dele no espaço global de gids. A ordem desta lista tem de
+ *  bater certo com a ordem dos `tilesets` do mapa — o carregador casa
+ *  `textures[i]` com `tilesets[i]` pelo índice, não pelo nome. */
 export interface TilesetEntry {
   url: string;
-  embedded?: boolean;
-  firstgid?: number;
+  firstgid: number;
   image?: string;
   imagewidth?: number;
   imageheight?: number;
@@ -76,17 +51,19 @@ export interface TilesetEntry {
   tilecount?: number;
 }
 
-/** Desk-monitor overlay gids. The map paints an OFF monitor block; DeskScreen
- *  overlays the matching ON tiles while the desk's agent is seated. */
+/** Sobreposição de ecrã de secretária. Herdado do escritório, onde o mapa
+ *  pintava um monitor apagado e a cena acendia o aceso por cima enquanto o
+ *  agente lá estava sentado. Em 1500 não há ecrãs — a Casa da Índia passa um
+ *  gid que não existe e nenhuma escrivaninha acende. */
 export interface MonitorConfig {
-  /** gid of the OFF monitor block's top-left tile, as painted in the map. */
+  /** gid do canto superior esquerdo do bloco apagado, como o mapa o pinta. */
   offTopLeftGid: number;
-  /** Matching ON tiles as [gid, dx, dy] relative to the block's top-left. */
+  /** Os tiles acesos correspondentes, em [gid, dx, dy] a partir desse canto. */
   onGids: ReadonlyArray<readonly [number, number, number]>;
 }
 
-/** The coffee economy's fixed tiles: sideboard (mug rack) → counter machine →
- *  sink → back to the sideboard. `maxCups` caps the clean-mug stock. */
+/** Os tiles fixos da adega: o barril das canecas → os barris de espicha → o
+ *  barril de lavar → e volta ao princípio. `maxCups` limita as canecas lavadas. */
 export interface CoffeeConfig {
   trayTile: Tile;
   trayStand: Tile;
@@ -96,50 +73,47 @@ export interface CoffeeConfig {
   maxCups: number;
 }
 
-/** Clickable prop anchors (tile coords). calendar → TRIGGERS, boards → TASKS,
- *  clock → CLOSING TIME. */
+/** Adereços clicáveis (coordenadas de tile). calendar → GATILHOS,
+ *  boards → TAREFAS, clock → HORA DE FECHAR. */
 export interface AnchorConfig {
   calendar: Tile;
   boards: Tile;
   clock: Tile;
 }
 
-/** Theme palette. `background` is the canvas clear color; `noteColors` are the
- *  kanban note colors keyed by task status. */
+/** Paleta do chão. `background` é a cor com que se limpa a tela; `noteColors`
+ *  são as cores das notas do quadro, por estado da tarefa. */
 export interface PaletteConfig {
   background: number;
   noteColors: Record<string, number>;
 }
 
-/** Per-theme cast loader — the indirection point so a future show can swap its
- *  own roster + sprite frames. The office theme points at cast.ts's exports. */
+/** O elenco do chão. `roster` é a lista ordenada que a interface oferece a quem
+ *  contrata — é ela, e não uma lista à parte, que garante que ninguém pode
+ *  escolher uma cara que não existe neste chão. */
 export interface ThemeCast {
+  roster: CastMember[];
   byName: Record<string, CastMember>;
   getFrames: (name: string) => Promise<Texture[][]>;
   defaultCharacter: string;
-  /** Who the ORCHESTRATOR looks like on this floor. Separate from
-   *  `defaultCharacter` because god is not "whoever we fall back to" — it is a
-   *  specific officer. Without it, god's persisted `character` ('michael', from
-   *  the upstream spawn) misses a non-office roster and god silently renders as
-   *  that theme's default worker: on the Casa da Índia floor the Feitor showed
-   *  up drawn as Caminha, the scrivener. Optional — a theme that omits it keeps
-   *  the old fall-through. */
-  godCharacter?: string;
+  /** Com que cara é que o ORQUESTRADOR aparece. Separado do
+   *  `defaultCharacter` porque deus não é "aquele para quem cairmos por
+   *  omissão" — é um oficial em concreto. */
+  godCharacter: string;
 }
 
-/** The full contract a theme must supply. See report §A (theme contract). */
+/** Tudo o que o chão precisa de declarar. */
 export interface ThemeConfig {
   id: ThemeId;
-  /** Raw Tiled JSON text; parsed + tileset-patched by themeLoader. */
+  /** O Tiled JSON em bruto; parseado e remendado pelo `themeLoader`. */
   mapRaw: string;
-  /** Ordered atlases — order matches both the texture load order and the map's
-   *  tileset array (texture[i] ↔ tilesets[i]). */
+  /** Atlas por ordem — a mesma ordem da carga de texturas e a mesma do mapa. */
   tilesets: TilesetEntry[];
-  /** Desk-claim order, by spawn-point name (seat 0 = god / desk-ceo). */
+  /** Ordem de ocupação dos lugares, por nome de spawn point. O 0 é de deus. */
   primarySeatNames: string[];
-  /** Paired café table seats, in order. */
+  /** Os lugares emparelhados das mesas do refeitório, por ordem. */
   cafeSeatNames: string[];
-  /** Café standing spots: [spawn-point name, kind]. */
+  /** Onde se fica de pé no refeitório: [nome do spawn point, a que serve]. */
   cafeStands: ReadonlyArray<readonly [string, 'coffee' | 'vending']>;
   coffee: CoffeeConfig;
   anchors: AnchorConfig;
@@ -149,181 +123,25 @@ export interface ThemeConfig {
   cast: ThemeCast;
 }
 
-/** The existing office, expressed as a theme. Values are copied verbatim from
- *  the former in-file constants in OfficeFloor.tsx / DeskScreen.ts. */
-export const OFFICE_THEME: ThemeConfig = {
-  id: 'office',
-  mapRaw: officeMapRaw,
-  tilesets: [
-    // office-tileset.png — embedded in the map (firstgid 1); keep the map's copy.
-    { url: officeTilesetUrl, embedded: true },
-    { url: a5FloorsWallsUrl, firstgid: 513, image: 'a5', imagewidth: 256, imageheight: 512, tilewidth: 16, tileheight: 16, columns: 16, tilecount: 512 },
-    { url: interiorsUrl, firstgid: 1025, image: 'interiors', imagewidth: 256, imageheight: 1424, tilewidth: 16, tileheight: 16, columns: 16, tilecount: 1424 },
-  ],
-  primarySeatNames: [
-    'desk-ceo',
-    'pc-1', 'pc-2', 'pc-3', 'pc-4', 'pc-5', 'pc-6',
-    'desk-chief-architect', 'desk-product-manager', 'desk-team-lead',
-    'desk-backend-engineer', 'desk-ui-ux-expert', 'desk-data-engineer',
-    'desk-project-manager', 'desk-market-researcher', 'desk-agent-organizer',
-  ],
-  cafeSeatNames: ['cafe-seat-1', 'cafe-seat-2', 'cafe-seat-3', 'cafe-seat-4'],
-  cafeStands: [
-    ['cafe-stand-coffee', 'coffee'],
-    ['cafe-stand-vending', 'vending'],
-  ],
-  coffee: {
-    trayTile: { x: 29, y: 15 },     // the sideboard (counter piece)
-    trayStand: { x: 29, y: 16 },
-    machineStand: { x: 26, y: 20 }, // below the counter machine
-    sinkTile: { x: 28, y: 18 },     // free counter top, right end
-    sinkStand: { x: 28, y: 20 },
-    maxCups: 4,
-  },
-  anchors: {
-    calendar: { x: 4, y: 1 },
-    boards: { x: 6, y: 10 },
-    clock: { x: 1, y: 1 },
-  },
-  errandSpots: [
-    // plants (droplets ride on the character via startWatering)
-    { kind: 'water', stand: { x: 2, y: 20 }, facing: 'left', fx: { x: 1, y: 20 }, duration: 4.5 },
-    { kind: 'water', stand: { x: 22, y: 20 }, facing: 'right', fx: { x: 23, y: 20 }, duration: 4.5 },
-    { kind: 'water', stand: { x: 30, y: 20 }, facing: 'right', fx: { x: 31, y: 20 }, duration: 4.5 },
-    // the CEO office is the god's domain: its plant, window, cigar. Workers
-    // never set foot in there for errands.
-    { kind: 'water', stand: { x: 6, y: 4 }, facing: 'up', fx: { x: 6, y: 3 }, duration: 4.5, godOnly: true },
-    { kind: 'smoke', stand: { x: 2, y: 3 }, facing: 'up', fx: { x: 2, y: 1 }, duration: 18, godOnly: true },
-    { kind: 'water', stand: { x: 17, y: 4 }, facing: 'up', fx: { x: 17, y: 3 }, duration: 4.5 },
-    // the two public wall windows — wind streaks drift into the room
-    { kind: 'window', stand: { x: 10, y: 3 }, facing: 'up', fx: { x: 10, y: 1 }, duration: 5 },
-    { kind: 'window', stand: { x: 15, y: 3 }, facing: 'up', fx: { x: 14, y: 1 }, duration: 5 },
-    // water dispensers (hallway + the top-right corner one)
-    { kind: 'dispenser', stand: { x: 16, y: 3 }, facing: 'down', fx: { x: 16, y: 4 }, duration: 3.5 },
-    { kind: 'dispenser', stand: { x: 32, y: 4 }, facing: 'up', fx: { x: 32, y: 3 }, duration: 3.5 },
-    // the café fridge (door light spills out) + the shelf beside it
-    { kind: 'fridge', stand: { x: 29, y: 20 }, facing: 'up', fx: { x: 29, y: 19 }, duration: 3.2 },
-    { kind: 'shelf', stand: { x: 30, y: 20 }, facing: 'up', fx: { x: 30, y: 18 }, duration: 4 },
-    // garbage bins (entrance + café) — a paper ball arcs in
-    { kind: 'bin', stand: { x: 18, y: 20 }, facing: 'left', fx: { x: 17, y: 20 }, duration: 2.6 },
-    { kind: 'bin', stand: { x: 31, y: 16 }, facing: 'right', fx: { x: 32, y: 16 }, duration: 2.6 },
-  ],
-  monitor: {
-    offTopLeftGid: 365,
-    onGids: [
-      [367, 0, 0], [368, 1, 0],
-      [383, 0, 1], [384, 1, 1],
-    ],
-  },
-  palette: {
-    background: colors.ink[900],
-    noteColors: { todo: 0xf2df8a, doing: 0x9ecbf0, blocked: 0xf0a3a3, done: 0xa8e0b0 },
-  },
-  cast: {
-    byName: CAST_BY_NAME as Record<string, CastMember>,
-    getFrames: (name: string) => getCastFrames(name as OfficeCharacterName),
-    defaultCharacter: DEFAULT_CHARACTER,
-    godCharacter: 'michael',
-  },
-};
+/** A Casa da Índia — Lisboa, c. 1500–1516. Quinze oficiais documentados na
+ *  Ribeira das Naus. É este o chão. */
+export const TEMA: ThemeConfig = TEMA_CASA_DA_INDIA;
 
-/** Brooklyn Nine-Nine — the 99th precinct (TV-show offices Phase 2, structure).
- *  The map (brooklyn99.tmj) is a precinct bullpen: Captain Holt's glass office
- *  in the back corner (`desk-ceo`), an 8-desk detective bullpen (`pc-1..8`), a
- *  briefing room (boardroom zone) + break room (cafeteria zone) with the coffee
- *  economy. PLACEHOLDER ART: the map reuses the office tileset gids, so the
- *  tilesets / monitor / palette / cast below reuse the office theme verbatim —
- *  Pam's license-clean B99 tileset + cast likenesses (§C/§D) drop into those
- *  same seams later. Only the layout-bound anchors (seats, café, coffee, props,
- *  errands) are authored to brooklyn99.tmj's own coordinates. */
-export const BROOKLYN99_THEME: ThemeConfig = {
-  id: 'brooklyn99',
-  mapRaw: brooklyn99MapRaw,
-  // PLACEHOLDER: brooklyn99.tmj uses the office gid space, so the same atlases
-  // (office-tileset embedded @1, a5 @513, interiors @1025) resolve every tile.
-  tilesets: OFFICE_THEME.tilesets,
-  primarySeatNames: [
-    'desk-ceo',                                            // Captain Holt's glass office
-    'pc-1', 'pc-2', 'pc-3', 'pc-4',                        // bullpen — front row
-    'pc-5', 'pc-6', 'pc-7', 'pc-8',                        // bullpen — back row
-  ],
-  cafeSeatNames: ['cafe-seat-1', 'cafe-seat-2', 'cafe-seat-3', 'cafe-seat-4'],
-  cafeStands: [
-    ['cafe-stand-coffee', 'coffee'],
-    ['cafe-stand-vending', 'vending'],
-  ],
-  coffee: {
-    trayTile: { x: 33, y: 18 },
-    trayStand: { x: 33, y: 19 },
-    machineStand: { x: 30, y: 21 },
-    sinkTile: { x: 31, y: 18 },
-    sinkStand: { x: 31, y: 19 },
-    maxCups: 4,
-  },
-  anchors: {
-    calendar: { x: 4, y: 1 },   // briefing-room top wall → TRIGGERS
-    boards: { x: 14, y: 1 },    // over the bullpen → TASKS
-    clock: { x: 1, y: 1 },      // top-left corner → CLOSING TIME
-  },
-  // Placeholder errand anchors authored to brooklyn99.tmj's open floor (verified
-  // walkable against the map's collision layer + desk stamps). The godOnly spots
-  // sit inside Holt's glass office.
-  errandSpots: [
-    // public plants around the bullpen
-    { kind: 'water', stand: { x: 2, y: 13 }, facing: 'left', fx: { x: 1, y: 13 }, duration: 4.5 },
-    { kind: 'water', stand: { x: 24, y: 15 }, facing: 'right', fx: { x: 25, y: 15 }, duration: 4.5 },
-    { kind: 'water', stand: { x: 13, y: 15 }, facing: 'down', fx: { x: 13, y: 16 }, duration: 4.5 },
-    // Captain Holt's glass office — god's domain (plant + cigar at the window)
-    { kind: 'water', stand: { x: 28, y: 6 }, facing: 'up', fx: { x: 28, y: 5 }, duration: 4.5, godOnly: true },
-    { kind: 'smoke', stand: { x: 34, y: 2 }, facing: 'up', fx: { x: 34, y: 0 }, duration: 18, godOnly: true },
-    // public windows on the north wall — wind streaks drift in
-    { kind: 'window', stand: { x: 14, y: 1 }, facing: 'up', fx: { x: 14, y: 0 }, duration: 5 },
-    { kind: 'window', stand: { x: 22, y: 1 }, facing: 'up', fx: { x: 22, y: 0 }, duration: 5 },
-    // water dispensers (bullpen + entrance corridor)
-    { kind: 'dispenser', stand: { x: 8, y: 15 }, facing: 'down', fx: { x: 8, y: 16 }, duration: 3.5 },
-    { kind: 'dispenser', stand: { x: 17, y: 20 }, facing: 'down', fx: { x: 17, y: 21 }, duration: 3.5 },
-    // break-room fridge + shelf (by the coffee economy)
-    { kind: 'fridge', stand: { x: 29, y: 21 }, facing: 'up', fx: { x: 29, y: 20 }, duration: 3.2 },
-    { kind: 'shelf', stand: { x: 34, y: 18 }, facing: 'up', fx: { x: 34, y: 17 }, duration: 4 },
-    // garbage bins (entrance + break room)
-    { kind: 'bin', stand: { x: 19, y: 20 }, facing: 'left', fx: { x: 18, y: 20 }, duration: 2.6 },
-    { kind: 'bin', stand: { x: 34, y: 15 }, facing: 'up', fx: { x: 34, y: 14 }, duration: 2.6 },
-  ],
-  // PLACEHOLDER: brooklyn99.tmj paints the office desk stamp (monitor gid 365).
-  monitor: OFFICE_THEME.monitor,
-  // PLACEHOLDER: office palette + cast until Pam's B99 art (§C/§D) lands.
-  palette: OFFICE_THEME.palette,
-  cast: OFFICE_THEME.cast,
-};
-
-/** Casa da Índia — Lisboa, c. 1500–1516. A themed cast of fifteen documented
- *  officers of the Casa da Índia, built on the office floor for now; its own
- *  map (Ribeira das Naus) lands later through this same seam. Constructed from
- *  a factory so the theme module needs no value import from this file. */
-export const CASA_DA_INDIA_THEME: ThemeConfig = criarTemaCasaDaIndia(OFFICE_THEME);
-
-/** All registered themes. Phase 0 ships only the office; show themes register
- *  here as their content lands (Phase 2). */
-export const THEMES: Partial<Record<ThemeId, ThemeConfig>> = {
-  office: OFFICE_THEME,
-  brooklyn99: BROOKLYN99_THEME,
-  casadaindia: CASA_DA_INDIA_THEME,
-};
-
-/** Look up a theme by id, falling back to the office theme if unknown/missing
- *  (a bad/absent show bundle must never break the floor — see report §E). */
-export function getTheme(id: ThemeId): ThemeConfig {
-  return THEMES[id] ?? OFFICE_THEME;
-}
-
-/** Who the orchestrator looks like on a given floor.
+/** O elenco que a interface oferece a quem contrata, por ordem.
  *
- *  Every surface that draws god — the scene, the onboarding wizard, the spawn
- *  that persists god's agent record — must ask THIS, never name a character
- *  literally. Hardcoding 'michael' at a call site is exactly how the Feitor
- *  ended up wearing the wrong face on a floor that has no Michael in its
- *  roster at all. */
-export function godCharacterFor(id: ThemeId): string {
-  const theme = getTheme(id);
-  return theme.cast.godCharacter ?? theme.cast.defaultCharacter;
+ *  Sai do tema de propósito, e não de uma lista à parte: enquanto havia uma
+ *  lista à parte, dava para escolher uma cara que o chão não tinha. */
+export const ELENCO: CastMember[] = TEMA.cast.roster;
+
+/** A cara de quem chega sem cara escolhida. */
+export const CARA_POR_OMISSAO: string = TEMA.cast.defaultCharacter;
+
+/** Com que cara é que o orquestrador aparece.
+ *
+ *  Toda a superfície que desenha deus — a cena, o assistente de arranque, o
+ *  registo do agente que fica gravado — tem de perguntar AQUI, e nunca nomear
+ *  uma personagem à mão. Foi exactamente assim que o Feitor apareceu um dia com
+ *  a cara do Caminha, o escrivão. */
+export function godCharacter(): string {
+  return TEMA.cast.godCharacter;
 }

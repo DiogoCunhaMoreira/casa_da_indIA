@@ -1,13 +1,14 @@
-// Procedural portraits for The Office cast.
+// O motor de desenho das caras — retratos e sprites, por receita.
 //
-// These are fully custom-drawn busts (NOT recolored LimeZu sprites): each
-// character is an explicit recipe layering skin → clothing → face → facial hair
-// → hairstyle → glasses on an 18×28 canvas. This gives real control over each
-// person's hairstyle shape, garment cut/color, and facial hair so they read as
-// the specific show character. The in-scene walking sprites still use the LimeZu
-// recolor in cast.ts; this module only powers the static portraits in the UI.
-
-import type { OfficeCharacterName } from './cast';
+// São bustos desenhados de raiz (NÃO são sprites do LimeZu recolorados): cada
+// personagem é uma receita explícita que empilha pele → roupa → cara → barba →
+// cabelo → chapéu numa tela de 18×28. É isso que dá controlo real sobre o corte
+// do cabelo, o talhe da roupa e a barba de cada um. O mesmo desenho serve o
+// retrato estático dos cartões e o sprite que anda pelo chão, que lhe acrescenta
+// pernas — para o agente no chão ser igual ao cartão dele.
+//
+// Este ficheiro não conhece ninguém pelo nome. A tabela de receitas nasce vazia
+// e é o tema que a enche, com `registerRecipes`.
 
 export const PORTRAIT_W = 18;
 export const PORTRAIT_H = 28;
@@ -685,26 +686,27 @@ function drawHeavyFace(buf: Buf, skin: string): void {
   set(buf, 7, 17, s.sh); set(buf, 10, 17, s.sh); // crease shadow between chin + roll
 }
 
-// Keyed by plain string, not OfficeCharacterName, so a theme can register its
-// own roster (see registerRecipes) without this table having to list every name
-// in the union. The Office entries below are unchanged.
-const RECIPES: Record<string, Recipe> = {
-  michael:  { skin: 'light', hairc: [58, 42, 28],   hair: 'styleShort',  hairargs: { part: 'L' }, cloth: 'suit', c1: [58, 63, 74], tie: [170, 58, 58], brow: 'flat', mouth: 'smile' },
-  jim:      { skin: 'light', hairc: [92, 60, 34],   hair: 'styleFloppy', cloth: 'dressshirt', c1: [172, 196, 224], tie: [120, 130, 150], brow: 'flat', mouth: 'smile' },
-  pam:      { skin: 'light', hairc: [120, 76, 42],  hair: 'styleFrame',  hairargs: { length: 18, vol: 2 }, cloth: 'cardigan', c1: [236, 174, 192], c2: [244, 242, 238], brow: 'soft', mouth: 'smile', blush: true, lashes: true },
-  dwight:   { skin: 'light', hairc: [64, 48, 28],   hair: 'styleShort',  hairargs: { part: 'L', recede: 1 }, cloth: 'dressshirt', c1: [184, 155, 62], tie: [120, 82, 46], glasses: true, brow: 'angry', mouth: 'neutral' },
-  kevin:    { skin: 'light', hairc: [58, 44, 30],   hair: 'styleBald',   cloth: 'polo', c1: [110, 140, 180], c2: [90, 120, 160], brow: 'flat', mouth: 'neutral', heavy: true },
-  angela:   { skin: 'light', hairc: [186, 154, 90], hair: 'styleBun',    cloth: 'cardigan', c1: [150, 146, 170], c2: [235, 233, 226], brow: 'angry', mouth: 'frown', lashes: true },
-  oscar:    { skin: 'tan',   hairc: [28, 22, 18],   hair: 'styleShort',  hairargs: { part: 'L' }, cloth: 'sweater', c1: [122, 60, 74], brow: 'flat', mouth: 'smile' },
-  stanley:  { skin: 'dark',  hairc: [60, 54, 48],   hair: 'styleRecede', cloth: 'dressshirt', c1: [150, 120, 86], tie: [120, 78, 52], glasses: true, facial: 'mustache', brow: 'flat', mouth: 'neutral', heavy: true },
-  phyllis:  { skin: 'light', hairc: [196, 162, 110], hair: 'styleCurly', cloth: 'blouse', c1: [202, 160, 192], glasses: true, brow: 'soft', mouth: 'smile', lashes: true, heavy: true },
-  andy:     { skin: 'light', hairc: [74, 51, 32],   hair: 'styleShort',  hairargs: { part: 'R' }, cloth: 'polo', c1: [176, 65, 58], c2: [150, 50, 46], brow: 'raised', mouth: 'smile' },
-  kelly:    { skin: 'tan',   hairc: [24, 18, 22],   hair: 'styleFrame',  hairargs: { length: 20, vol: 1 }, cloth: 'blouse', c1: [212, 90, 158], brow: 'soft', mouth: 'smile', blush: true, lashes: true },
-  ryan:     { skin: 'light', hairc: [42, 32, 24],   hair: 'styleSpiky',  cloth: 'suit', c1: [58, 58, 68], tie: [40, 40, 50], brow: 'flat', mouth: 'neutral' },
-  toby:     { skin: 'light', hairc: [106, 90, 66],  hair: 'styleShort',  hairargs: { part: 'L', recede: 1 }, cloth: 'dressshirt', c1: [150, 150, 120], facial: 'mustacheSm', brow: 'soft', mouth: 'frown' },
-  creed:    { skin: 'light', hairc: [170, 166, 156], hair: 'styleBald',   cloth: 'dressshirt', c1: [126, 130, 96], facial: 'stubble', brow: 'flat', mouth: 'neutral' },
-  meredith: { skin: 'light', hairc: [154, 82, 46],  hair: 'styleMessy',  hairargs: { length: 15 }, cloth: 'blouse', c1: [176, 86, 74], brow: 'raised', mouth: 'smile', lashes: true },
+// Vazia à nascença. Quem a enche é o tema, com `registerRecipes` — ver
+// `casadaindia/retratos.ts`. Assim o motor de desenho não sabe nem tem de saber
+// quem é o elenco.
+const RECIPES: Record<string, Recipe> = {};
+
+/** Um oficial sem nome, para quando pedirem uma cara que não está registada.
+ *  Existe para que um nome desconhecido dê uma figura anónima em vez de rebentar
+ *  — o que acontecia antes se o roster mudasse debaixo dos pés. */
+const ANONIMO: Recipe = {
+  skin: 'tan',
+  hairc: [58, 44, 30],
+  hair: 'styleShort',
+  cloth: 'dressshirt',
+  c1: [242, 230, 206],
+  brow: 'flat',
+  mouth: 'neutral',
 };
+
+function recipeFor(name: string): Recipe {
+  return RECIPES[name] ?? ANONIMO;
+}
 
 /** The face/hair group (head → face → facial hair → hair → hat → glasses/patch),
  *  no clothing. The hat lands after the hair because this canvas writes pixels
@@ -782,7 +784,7 @@ const sceneCache = new Map<string, SceneFrames>();
 function getBuf(name: string): Buf {
   let buf = bufCache.get(name);
   if (!buf) {
-    buf = compose(RECIPES[name] ?? RECIPES.jim);
+    buf = compose(recipeFor(name));
     bufCache.set(name, buf);
   }
   return buf;
@@ -800,7 +802,7 @@ export interface SceneFrames { front: Buf[]; back: Buf[]; }
 export function sceneFrameBufs(name: string): SceneFrames {
   let frames = sceneCache.get(name);
   if (!frames) {
-    const r = RECIPES[name] ?? RECIPES.jim;
+    const r = recipeFor(name);
     frames = {
       front: [composeScene(r, 0, false), composeScene(r, 1, false), composeScene(r, 2, false)],
       back: [composeScene(r, 0, true), composeScene(r, 1, true), composeScene(r, 2, true)],

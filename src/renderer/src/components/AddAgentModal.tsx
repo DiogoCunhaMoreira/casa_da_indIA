@@ -6,7 +6,8 @@ import { SpritePortrait } from './SpritePortrait';
 import { Icon } from './Icon';
 import { ProviderLogo } from './ProviderLogo';
 import { useStore, type Agent } from '@/store/store';
-import { OFFICE_CAST, DEFAULT_CHARACTER, type CharacterName } from '@/scene/office/cast';
+import type { CharacterName } from '@/scene/office/cast';
+import { CARA_POR_OMISSAO, ELENCO } from '@/scene/office/themeRegistry';
 import { type AccentColorName } from '@/design/tokens';
 import type { HireManifest } from '@shared/hire';
 import { hireQueueProgress } from '@shared/hireQueue';
@@ -91,7 +92,7 @@ Return EXACTLY this shape (omit optional fields you don't need; keep the spec st
 
 {
   "spec": "munder-difflin/hire@1",
-  "name": "Jim",
+  "name": "Caminha",
   "description": "one-line role — what this agent is for",
   "goal": "standing directive injected on every prompt — specific and outcome-oriented",
   "provider": "claude",
@@ -155,7 +156,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
   const reviewProgress = hireQueueProgress(hireQueue);
 
   const knownCharacter = (c?: string): CharacterName =>
-    (OFFICE_CAST.some(m => m.name === c) ? (c as CharacterName) : DEFAULT_CHARACTER);
+    (ELENCO.some(m => m.name === c) ? (c as CharacterName) : CARA_POR_OMISSAO);
   const knownAccent = (a?: string): AccentColorName =>
     (ACCENTS.includes(a as AccentColorName) ? (a as AccentColorName) : 'sky');
   /** The cast member a typed name refers to, if any.
@@ -171,7 +172,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
   const characterForName = (n: string): CharacterName | null => {
     const q = n.trim().toLowerCase();
     if (!q) return null;
-    const hit = OFFICE_CAST.find(c => c.displayName.toLowerCase() === q || c.name === q);
+    const hit = ELENCO.find(c => c.displayName.toLowerCase() === q || c.name === q);
     return hit ? hit.name : null;
   };
   /** The locally-built spawn command for a manifest: provider preset + model
@@ -188,7 +189,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
   const initialProvider = inferAgentProvider(config.defaultCommand);
   const initialModel = isClaudeProvider(initialProvider) ? config.defaultModel : undefined;
 
-  const [name, setName] = useState(pendingHire?.name ?? 'Jim');
+  const [name, setName] = useState(pendingHire?.name ?? 'Caminha');
   const [character, setCharacter] = useState<CharacterName>(knownCharacter(pendingHire?.character));
   const [accent, setAccent] = useState<AccentColorName>(knownAccent(pendingHire?.accent));
   const [cwd, setCwd] = useState<string>(config.registeredRepos[0] ?? '');
@@ -685,7 +686,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
 
                     <Row label={tr('addAgent.character')}>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {OFFICE_CAST.map(c => (
+                        {ELENCO.map(c => (
                           <button
                             key={c.name}
                             onClick={() => { setCharacter(c.name); setName(c.displayName); }}

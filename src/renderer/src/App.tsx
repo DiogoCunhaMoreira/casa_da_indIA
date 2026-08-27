@@ -13,7 +13,7 @@ import { MemoryPanel } from '@/components/MemoryPanel';
 import { AgentDetailPanel } from '@/components/AgentDetailPanel';
 import { AgentStrip } from '@/components/AgentStrip';
 import { AddAgentModal } from '@/components/AddAgentModal';
-import { MichaelBooting } from '@/components/MichaelBooting';
+import { FeitorAChegar } from '@/components/FeitorAChegar';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { HivePicker } from '@/components/HivePicker';
 import { QuitWarningModal, type ClosingTimeState } from '@/components/QuitWarningModal';
@@ -108,9 +108,6 @@ export function App() {
       // show the voice button disabled-with-tooltip when Free Flow is on but no
       // Groq key is set (Settings keeps this in sync on save).
       useStore.getState().setHasGroqKey(!!c.groqApiKey);
-      // Mirror the active office theme so OfficeFloor renders it (gated on the
-      // tvShowOffices flag; off = always the office). Settings keeps this synced.
-      useStore.getState().setOfficeTheme(c.tvShowOffices ? (c.officeTheme ?? 'office') : 'office');
       // Mirror the triggers so Settings → Connections and the Command Center's
       // Triggers tab read one list, not two copies that drift — whichever surface
       // saves calls these same setters and the other repaints. No extra IPC: main
@@ -401,7 +398,7 @@ export function App() {
         <div style={{ flex: 1, minHeight: 0, minWidth: 0, position: 'relative' }}>
           <OfficeFloor />
           <MemoryPanel />
-          {agentCount === 0 && godStatus === 'booting' && <MichaelBooting />}
+          {agentCount === 0 && godStatus === 'booting' && <FeitorAChegar />}
           {agentCount === 0 && godStatus !== 'booting' && (
             <div style={{
               position: 'absolute', inset: 0,

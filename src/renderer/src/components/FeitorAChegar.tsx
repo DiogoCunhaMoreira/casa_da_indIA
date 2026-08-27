@@ -1,17 +1,19 @@
+import { useTranslation } from 'react-i18next';
 import { PixelPanel } from '@/components/PixelPanel';
 import { useResolvedGodName } from '@/hooks/useResolvedGodName';
 
 /**
- * Loader shown on the empty floor while the god agent is clocking in on
- * launch. Replaces the "add agent" prompt so a returning user doesn't see the
- * empty-floor call-to-action before god has booted.
+ * O que se vê no chão vazio enquanto o Feitor está a chegar ao arranque.
+ * Substitui o convite a "adicionar agente", para quem volta não apanhar o chão
+ * às moscas antes de deus ter arrancado.
  *
- * Rendered while `agentCount === 0` — before the store has god's live agent
- * object (and so before `agent.name` exists anywhere to read) — so this reads
- * the persisted name directly, the same way useHive.ts's spawn effect does,
- * rather than assuming the default.
+ * Aparece enquanto `agentCount === 0` — antes de a store ter o agente vivo de
+ * deus, e portanto antes de existir um `agent.name` para ler seja onde for —
+ * por isso lê o nome persistido directamente, como faz o efeito de spawn no
+ * useHive.ts, em vez de assumir o nome por omissão.
  */
-export function MichaelBooting() {
+export function FeitorAChegar() {
+  const { t } = useTranslation();
   const godName = useResolvedGodName();
   return (
     <div style={{
@@ -20,12 +22,12 @@ export function MichaelBooting() {
       pointerEvents: 'none'
     }}>
       <div style={{ pointerEvents: 'auto', width: 360 }}>
-        <PixelPanel variant="dialog" title="CLOCKING IN" noPadding>
+        <PixelPanel variant="dialog" title={t('office.booting.title')} noPadding>
           <div style={{
             padding: 20,
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14
           }}>
-            {/* Stepped pixel blocks — staggered blink, no easing (matches aesthetic) */}
+            {/* Blocos em degrau — pisca desencontrado, sem suavização (é o aspecto da casa) */}
             <div style={{ display: 'flex', gap: 6 }}>
               {[0, 1, 2, 3].map((i) => (
                 <span
@@ -44,8 +46,7 @@ export function MichaelBooting() {
               margin: 0, fontSize: 13, lineHeight: '20px', textAlign: 'center',
               color: 'var(--cth-ink-700)'
             }}>
-              {godName} is settling into the corner office and getting the floor
-              ready. Hang tight…
+              {t('office.booting.body', { godName })}
             </p>
           </div>
         </PixelPanel>

@@ -1,59 +1,30 @@
-// The Office cast — roster metadata + sprite frames.
+// Elenco — o tipo de uma personagem, e as texturas com que ela anda na cena.
 //
-// Both the static portraits (cards / picker) and the in-scene walking sprites are
-// now fully custom-drawn from the same per-character recipes in portraitArt.ts:
-// the scene sprite reuses the portrait's exact head/face/clothing and adds legs,
-// so an agent on the office floor looks identical to its card. The LimeZu base
-// sheets are no longer used for the cast. See assets/ATTRIBUTION.md.
+// Este ficheiro já não sabe QUEM é o elenco: quem o diz é o tema, em
+// `casadaindia/elenco.ts`, e quem o serve à interface é `TEMA.cast.roster`. Aqui
+// fica só a maquinaria, que é a mesma para qualquer roster.
+//
+// Tanto os retratos estáticos (cartões, escolha de cara) como os sprites que
+// andam pelo chão saem das mesmas receitas por personagem, no `portraitArt.ts`:
+// o sprite reaproveita a cabeça, a cara e a roupa do retrato e acrescenta-lhe
+// pernas, para que um agente no chão seja igual ao cartão dele. As folhas base
+// do LimeZu não são usadas para o elenco. Ver assets/ATTRIBUTION.md.
 
 import { Texture } from 'pixi.js';
 import { paintPortrait, sceneFrameBufs, SCENE_W, SCENE_H } from './portraitArt';
 
-export type OfficeCharacterName =
-  | 'michael' | 'jim' | 'pam' | 'dwight' | 'kevin' | 'angela'
-  | 'oscar' | 'stanley' | 'phyllis' | 'andy' | 'kelly' | 'ryan'
-  | 'toby' | 'creed' | 'meredith';
-
-/**
- * Any character name. A theme may register a roster outside the Office cast
- * (see portraitArt's registerRecipes), so a CastMember is not restricted to
- * OfficeCharacterName — but the union is kept in the type so editors still
- * autocomplete the Office names.
- */
-export type CharacterName = OfficeCharacterName | (string & {});
+/** O nome de uma personagem. É só uma string: quem manda são as receitas
+ *  registadas no `portraitArt` e o roster do tema. */
+export type CharacterName = string;
 
 export interface CastMember {
   name: CharacterName;
   displayName: string;
-  /** Signature accent color (hex) — used for the in-scene selection glow. */
+  /** Cor de assinatura (hex) — usada no brilho de selecção na cena. */
   shirt: string;
-  /** Blurb shown when this character is picked / has no description yet. */
+  /** A linha que aparece quando esta cara é escolhida ou ainda não tem descrição. */
   blurb: string;
 }
-
-/** Selectable roster, in display order. */
-export const OFFICE_CAST: CastMember[] = [
-  { name: 'michael',  displayName: 'Michael',  shirt: '#5a6b8c', blurb: "World's best boss" },
-  { name: 'jim',      displayName: 'Jim',      shirt: '#6fa8dc', blurb: 'Salesman, prankster' },
-  { name: 'pam',      displayName: 'Pam',      shirt: '#9caf88', blurb: 'Receptionist, artist' },
-  { name: 'dwight',   displayName: 'Dwight',   shirt: '#b89b3e', blurb: 'Assistant (to the) RM' },
-  { name: 'kevin',    displayName: 'Kevin',    shirt: '#4a7ab5', blurb: 'Accounting' },
-  { name: 'angela',   displayName: 'Angela',   shirt: '#8a86a6', blurb: 'Head of accounting' },
-  { name: 'oscar',    displayName: 'Oscar',    shirt: '#7a4b6b', blurb: 'Accountant' },
-  { name: 'stanley',  displayName: 'Stanley',  shirt: '#8c5a4b', blurb: 'Sales, crossword' },
-  { name: 'phyllis',  displayName: 'Phyllis',  shirt: '#b08bbf', blurb: 'Sales' },
-  { name: 'andy',     displayName: 'Andy',     shirt: '#6fae6f', blurb: 'Cornell, a cappella' },
-  { name: 'kelly',    displayName: 'Kelly',    shirt: '#d16ba5', blurb: 'Customer service' },
-  { name: 'ryan',     displayName: 'Ryan',     shirt: '#3a3a44', blurb: 'The temp' },
-  { name: 'toby',     displayName: 'Toby',     shirt: '#9a8c5a', blurb: 'Human resources' },
-  { name: 'creed',    displayName: 'Creed',    shirt: '#6b7a4b', blurb: 'Quality assurance' },
-  { name: 'meredith', displayName: 'Meredith', shirt: '#b5544a', blurb: 'Supplier relations' },
-];
-
-export const CAST_BY_NAME: Record<OfficeCharacterName, CastMember> =
-  Object.fromEntries(OFFICE_CAST.map((c) => [c.name, c])) as Record<OfficeCharacterName, CastMember>;
-
-export const DEFAULT_CHARACTER: OfficeCharacterName = 'jim';
 
 export function hexToNumber(hex: string): number {
   return parseInt(hex.replace('#', ''), 16);

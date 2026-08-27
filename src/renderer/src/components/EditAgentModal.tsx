@@ -4,7 +4,8 @@ import { PixelButton } from './PixelButton';
 import { SpritePortrait } from './SpritePortrait';
 import { ProviderLogo } from './ProviderLogo';
 import { useStore, type Agent } from '@/store/store';
-import { OFFICE_CAST, type CharacterName } from '@/scene/office/cast';
+import type { CharacterName } from '@/scene/office/cast';
+import { ELENCO } from '@/scene/office/themeRegistry';
 import { type AccentColorName } from '@/design/tokens';
 import {
   type AgentProvider,
@@ -132,7 +133,7 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
 
               <Row label="Character">
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {OFFICE_CAST.map((c) => {
+                  {ELENCO.map((c) => {
                     const active = character === c.name;
                     return (
                       <button

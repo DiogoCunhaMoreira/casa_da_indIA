@@ -3,6 +3,15 @@
 O que desenhar para o chão da Ribeira das Naus deixar de ser o *open space* da
 Dunder Mifflin. Escrito para quem desenha, não para quem programa.
 
+> **A arte chegou, o atlas está montado e a planta está de pé.** Este ficheiro é
+> o pedido, não o resultado — a planta do `casadaindia.png` construído está em
+> [`ATLAS.md`](./ATLAS.md), e diverge daqui em alguns sítios. Para mexer no
+> mapa, lê o `ATLAS.md`. Este fica como registo do que foi encomendado e do que
+> ainda falta desenhar.
+>
+> O escritório da Dunder Mifflin saiu do repositório: já não há selector de
+> temas nem `office.tmj`. A Ribeira das Naus é o único chão.
+
 ---
 
 ## O ficheiro
@@ -150,16 +159,19 @@ células vazias ficam com os tiles de madeira do `interiors.png`, que já servem
 
 ---
 
-## O que eu faço quando o receber
+## O que eu fiz quando o recebi
 
-Nada disto é trabalho teu — fica aqui só para saberes que o encaixe já está pensado.
+Fica aqui só para saberes que o encaixe estava pensado — está tudo feito.
 
-- Registo o atlas em `themeRegistry.ts` com **`firstgid: 2449`** (a seguir ao
-  `interiors.png`, que ocupa 1025–2448)
-- Escrevo `assets/maps/ribeira.tmj` — a planta nova, 34 × 22 tiles
-- Reancoro `primarySeatNames`, `cafeSeatNames`, `coffee`, `anchors` e os 15
-  `errandSpots` às coordenadas novas (regar plantas passa a ser outra coisa)
-- Aponto `criarTemaCasaDaIndia` ao mapa novo, e o `office.tmj` sai do repositório
+- ✅ O atlas registado em `casadaindia/tema.ts` com **`firstgid: 2449`** (a seguir
+  ao `interiors.png`, que ocupa 1025–2448)
+- ✅ `assets/maps/ribeira.tmj` — a planta nova, 34 × 22 tiles, gerada por
+  `tools/mapgen/build_ribeira.py`
+- ✅ Os lugares, a adega, os adereços clicáveis e os catorze recados reancorados
+  às coordenadas novas — e gerados para `casadaindia/planta.ts` pelo mesmo
+  script que desenha o mapa, para não haver deriva
+- ✅ O `office.tmj` fora do repositório, com o `brooklyn99.tmj`, os dois atlas do
+  escritório e o selector de temas todo
 
 ## O que NÃO precisas de desenhar
 
