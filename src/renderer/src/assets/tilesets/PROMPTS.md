@@ -171,6 +171,68 @@ Igual ao anterior, mas troca o parágrafo do padrão por:
 
 ---
 
+# Segunda ronda — o que ficou desenhado em código
+
+O atlas está montado e a planta feita, mas cinco peças não vieram nas artes e
+tive de as desenhar por código, com a paleta. Funcionam e nota-se. Estão por
+ordem de quanto se vê no chão.
+
+## 8 · ESCRIVANINHA E BANCO — repetem-se trinta vezes
+
+São a peça mais vista do mapa inteiro: quinze mesas e quinze bancos. Quero as
+duas no mesmo pedido, para ficarem à mesma escala e com a mesma luz.
+
+> Pixel art furniture pair, 16-bit SNES style, for a tile-based game. Two
+> SEPARATE objects side by side with a clear gap between them:
+>
+> 1. a plain **oak writing desk** from a 16th-century Portuguese counting house
+>    — a heavy rectangular table on four square legs, seen wide (twice as wide
+>    as it is deep). Bare top, no objects on it.
+> 2. a simple **wooden stool** — round or square seat, three or four splayed
+>    legs, no back. Small: it should look about a third the width of the desk.
+>
+> Seen from a **high three-quarter top-down game angle**, both at the same angle
+> and the same scale, lit from the top-left. This is furniture an agent sits at
+> from below, so I need to see the top of the desk and the front of its legs.
+>
+> Palette: #8B5E34 / #6B4423 / #4A2F18 wood, #B08050 the lit top surface,
+> #21201C outlines.
+>
+> Hard style rules: crisp hard-edged pixels, NO anti-aliasing, NO gradients, NO
+> blur, NO text, NO drop shadows on the background. Transparent background.
+
+## 9 · PEDRA LIOZ E SOALHO — dois chãos que repetem
+
+Mesmas regras do azulejo: **têm de repetir sem costura**, e é aí que os modelos
+falham. Pede um de cada vez.
+
+> Pixel art tile, 16-bit SNES style, top-down orthogonal floor tile. An
+> irregular **lioz limestone flagstone floor** — the warm cream-grey stone of
+> Lisbon — laid as slabs of slightly different sizes with thin joints between
+> them.
+>
+> The tile MUST be **seamlessly tileable**: the paving continues perfectly when
+> the square is repeated edge-to-edge in an infinite grid, in all four
+> directions. Design it as a repeating unit, not as a framed picture. No border,
+> no vignette, no drop shadow.
+>
+> Palette, strictly: #D8D2C4 and #B8B0A0 for the slabs, #8E877A for the joints
+> and the worn edges. Three colours, no more. Flat colour with light stippling
+> for the stone grain — no smooth shading.
+>
+> Hard style rules: crisp hard-edged pixels, NO anti-aliasing, NO gradients, NO
+> blur, NO text. Perfectly square. Viewed straight from above, zero perspective.
+
+E o soalho, no mesmo molde:
+
+> Pattern: **wide oak floorboards** running horizontally, laid in staggered
+> lengths so the board ends do not line up, with visible grain and dark joints.
+>
+> Palette, strictly: #B08050, #8B5E34, #6B4423 for the boards, #4A2F18 for the
+> joints between them.
+
+---
+
 ## Uma nota sobre o ângulo
 
 Repara que os prompts pedem **duas** perspectivas diferentes, e isso é de
