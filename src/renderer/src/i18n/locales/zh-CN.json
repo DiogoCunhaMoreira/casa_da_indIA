@@ -241,7 +241,7 @@
       "telemetry": "匿名使用统计",
       "telemetryDesc": "少量匿名事件（打开应用、生成智能体、使用功能）——绝不包含提示词、代码、路径或智能体输出。完整清单见 TELEMETRY.md。",
       "language": "语言",
-      "languageDesc": "选择应用界面的语言。默认英文。",
+      "languageDesc": "选择应用界面的语言。默认葡萄牙语。",
       "dangerZone": "危险区",
       "dangerDesc": "重置会抹掉 {{godName}} 的记忆、整个 hive（每个智能体、消息、任务和看板）、语义记忆宫殿以及所有设置——然后带你回到新手引导。",
       "resetStartOver": "重置并重新开始",
