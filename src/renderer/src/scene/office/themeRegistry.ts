@@ -28,6 +28,7 @@ import interiorsUrl from '@/assets/tilesets/interiors.png?url';
 // .tmj is Tiled JSON; imported as raw text and parsed by the loader.
 import officeMapRaw from '@/assets/maps/office.tmj?raw';
 import brooklyn99MapRaw from '@/assets/maps/brooklyn99.tmj?raw';
+import { criarTemaCasaDaIndia } from './casadaindia/tema';
 
 /** Theme identifiers. Only `office` exists in Phase 0; the five TV-show themes
  *  (friends, brooklyn99, siliconvalley, got, hogwarts) land in later phases. */
@@ -37,7 +38,8 @@ export type ThemeId =
   | 'brooklyn99'
   | 'siliconvalley'
   | 'got'
-  | 'hogwarts';
+  | 'hogwarts'
+  | 'casadaindia';
 
 export interface Tile { x: number; y: number; }
 export type Facing = 'up' | 'down' | 'left' | 'right';
@@ -285,11 +287,18 @@ export const BROOKLYN99_THEME: ThemeConfig = {
   cast: OFFICE_THEME.cast,
 };
 
+/** Casa da Índia — Lisboa, c. 1500–1516. A themed cast of fifteen documented
+ *  officers of the Casa da Índia, built on the office floor for now; its own
+ *  map (Ribeira das Naus) lands later through this same seam. Constructed from
+ *  a factory so the theme module needs no value import from this file. */
+export const CASA_DA_INDIA_THEME: ThemeConfig = criarTemaCasaDaIndia(OFFICE_THEME);
+
 /** All registered themes. Phase 0 ships only the office; show themes register
  *  here as their content lands (Phase 2). */
 export const THEMES: Partial<Record<ThemeId, ThemeConfig>> = {
   office: OFFICE_THEME,
   brooklyn99: BROOKLYN99_THEME,
+  casadaindia: CASA_DA_INDIA_THEME,
 };
 
 /** Look up a theme by id, falling back to the office theme if unknown/missing

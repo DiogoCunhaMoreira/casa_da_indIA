@@ -15,6 +15,7 @@ import type { ThemeId } from '@/scene/office/themeRegistry';
 // whole pipeline (modal → delete cast → persist → re-seat) is exercisable now.
 interface ThemeMeta { id: ThemeId; label: string; blurb: string; built: boolean; swatch: string; }
 const THEME_META: ThemeMeta[] = [
+  { id: 'casadaindia',   label: 'Casa da Índia',      blurb: 'Lisboa, c.1500 — a casa que armava as naus', built: true, swatch: '#1F4E9C' },
   { id: 'office',        label: 'The Office',         blurb: 'Dunder Mifflin — the original floor', built: true,  swatch: '#6b5a4a' },
   { id: 'friends',       label: 'Friends',            blurb: 'Central Perk coffee house',           built: false, swatch: '#9a5a32' },
   { id: 'brooklyn99',    label: 'Brooklyn Nine-Nine', blurb: 'The 99th precinct bullpen',           built: true,  swatch: '#3a5a7a' },

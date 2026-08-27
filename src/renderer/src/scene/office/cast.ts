@@ -14,8 +14,16 @@ export type OfficeCharacterName =
   | 'oscar' | 'stanley' | 'phyllis' | 'andy' | 'kelly' | 'ryan'
   | 'toby' | 'creed' | 'meredith';
 
+/**
+ * Any character name. A theme may register a roster outside the Office cast
+ * (see portraitArt's registerRecipes), so a CastMember is not restricted to
+ * OfficeCharacterName — but the union is kept in the type so editors still
+ * autocomplete the Office names.
+ */
+export type CharacterName = OfficeCharacterName | (string & {});
+
 export interface CastMember {
-  name: OfficeCharacterName;
+  name: CharacterName;
   displayName: string;
   /** Signature accent color (hex) — used for the in-scene selection glow. */
   shirt: string;
@@ -52,7 +60,7 @@ export function hexToNumber(hex: string): number {
 }
 
 // ─── scene frames ────────────────────────────────────────────────────────────
-const frameCache = new Map<OfficeCharacterName, Texture[][]>();
+const frameCache = new Map<string, Texture[][]>();
 
 function bufToTexture(buf: Uint8ClampedArray): Texture {
   const canvas = document.createElement('canvas');
@@ -73,7 +81,7 @@ function bufToTexture(buf: Uint8ClampedArray): Texture {
  * and a back view (up — agents seated facing their desk show their back). The
  * three walk frames are stand / step-left / step-right.
  */
-export async function getCastFrames(name: OfficeCharacterName): Promise<Texture[][]> {
+export async function getCastFrames(name: string): Promise<Texture[][]> {
   const cached = frameCache.get(name);
   if (cached) return cached;
   const { front, back } = sceneFrameBufs(name);
@@ -93,7 +101,7 @@ export async function getCastFrames(name: OfficeCharacterName): Promise<Texture[
  */
 export async function paintCastPortrait(
   ctx: CanvasRenderingContext2D,
-  name: OfficeCharacterName,
+  name: string,
   scale = 2,
 ): Promise<void> {
   paintPortrait(ctx, name, scale);
