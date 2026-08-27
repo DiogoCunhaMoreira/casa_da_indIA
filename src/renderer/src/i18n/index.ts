@@ -69,6 +69,11 @@ const STORAGE_KEY = 'cth.language';
 
 const SUPPORTED: readonly string[] = LANGUAGES.map((l) => l.code);
 
+/** The language a fresh install starts in. This is a Portuguese app for a
+ *  Portuguese audience, so PT-PT is the front door, not an opt-in buried in
+ *  Settings. English stays the FALLBACK for any key pt-PT is missing. */
+export const DEFAULT_LANGUAGE = 'pt-PT';
+
 /**
  * The orchestrator's display name, for every string that talks about it.
  *
@@ -91,13 +96,13 @@ export function setGodName(name: string | undefined | null): void {
   i18n.emit('languageChanged', i18n.language);
 }
 
-/** The saved choice, or English. Never the OS locale — see the note above. */
+/** The saved choice, or Portuguese. Never the OS locale — see the note above. */
 function detectLanguage(): string {
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     if (saved && SUPPORTED.includes(saved as LanguageCode)) return saved;
-  } catch { /* localStorage unavailable — English it is */ }
-  return 'en';
+  } catch { /* localStorage unavailable — Portuguese it is */ }
+  return DEFAULT_LANGUAGE;
 }
 
 /** Switch language now and persist the choice for next launch. */

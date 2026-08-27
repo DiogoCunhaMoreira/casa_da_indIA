@@ -117,6 +117,14 @@ export interface ThemeCast {
   byName: Record<string, CastMember>;
   getFrames: (name: string) => Promise<Texture[][]>;
   defaultCharacter: string;
+  /** Who the ORCHESTRATOR looks like on this floor. Separate from
+   *  `defaultCharacter` because god is not "whoever we fall back to" — it is a
+   *  specific officer. Without it, god's persisted `character` ('michael', from
+   *  the upstream spawn) misses a non-office roster and god silently renders as
+   *  that theme's default worker: on the Casa da Índia floor the Feitor showed
+   *  up drawn as Caminha, the scrivener. Optional — a theme that omits it keeps
+   *  the old fall-through. */
+  godCharacter?: string;
 }
 
 /** The full contract a theme must supply. See report §A (theme contract). */
@@ -215,6 +223,7 @@ export const OFFICE_THEME: ThemeConfig = {
     byName: CAST_BY_NAME as Record<string, CastMember>,
     getFrames: (name: string) => getCastFrames(name as OfficeCharacterName),
     defaultCharacter: DEFAULT_CHARACTER,
+    godCharacter: 'michael',
   },
 };
 
@@ -305,4 +314,16 @@ export const THEMES: Partial<Record<ThemeId, ThemeConfig>> = {
  *  (a bad/absent show bundle must never break the floor — see report §E). */
 export function getTheme(id: ThemeId): ThemeConfig {
   return THEMES[id] ?? OFFICE_THEME;
+}
+
+/** Who the orchestrator looks like on a given floor.
+ *
+ *  Every surface that draws god — the scene, the onboarding wizard, the spawn
+ *  that persists god's agent record — must ask THIS, never name a character
+ *  literally. Hardcoding 'michael' at a call site is exactly how the Feitor
+ *  ended up wearing the wrong face on a floor that has no Michael in its
+ *  roster at all. */
+export function godCharacterFor(id: ThemeId): string {
+  const theme = getTheme(id);
+  return theme.cast.godCharacter ?? theme.cast.defaultCharacter;
 }

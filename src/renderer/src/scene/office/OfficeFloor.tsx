@@ -1378,7 +1378,12 @@ export function OfficeFloor() {
       (app as any).__taskBoardPoll = taskBoardPoll;
 
       const addCharacter = async (agent: Agent) => {
-        const charName = theme.cast.byName[agent.character] ? agent.character : theme.cast.defaultCharacter;
+        // God's persisted `character` is the upstream 'michael', which no
+        // non-office roster has — so falling through to defaultCharacter drew
+        // the orchestrator as a rank-and-file worker. Fall back to the theme's
+        // own orchestrator instead when this is god.
+        const fallbackChar = (agent.isGod && theme.cast.godCharacter) || theme.cast.defaultCharacter;
+        const charName = theme.cast.byName[agent.character] ? agent.character : fallbackChar;
         const member = theme.cast.byName[charName];
         const seatIndex = claimSeat(agent);
         const seatTile: Tile = (seatIndex != null ? seatTiles[seatIndex] : undefined)

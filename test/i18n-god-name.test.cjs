@@ -92,12 +92,13 @@ test('every {{placeholder}} in en has the same placeholders in zh-CN', () => {
 
 // --- the language default ---------------------------------------------------
 
-test('with nothing saved the app starts in English, never the OS locale', () => {
+test('with nothing saved the app starts in PT-PT, never the OS locale', () => {
   const src = read('src/renderer/src/i18n/index.ts');
+  assert.match(src, /DEFAULT_LANGUAGE = 'pt-PT'/, 'this is a Portuguese app — PT-PT is the front door');
   const fn = src.slice(src.indexOf('function detectLanguage'));
   const body = fn.slice(0, fn.indexOf('\n}'));
   assert.doesNotMatch(body, /navigator/, 'detectLanguage reads the OS locale again');
-  assert.match(body, /return 'en';/, 'detectLanguage does not fall back to English');
+  assert.match(body, /return DEFAULT_LANGUAGE;/, 'detectLanguage does not fall back to the default');
 });
 
 test('godName reaches i18next as a default variable, so no call site must pass it', () => {

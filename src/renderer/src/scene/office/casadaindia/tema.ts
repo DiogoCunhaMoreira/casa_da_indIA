@@ -79,6 +79,9 @@ export function criarTemaCasaDaIndia(base: ThemeConfig): ThemeConfig {
       byName: CASA_BY_NAME,
       getFrames: (name: string) => getCastFrames(name),
       defaultCharacter: CASA_DEFAULT_CHARACTER,
+      // O Feitor. Fernão Lourenço despachava as armadas sem embarcar em
+      // nenhuma — é o orquestrador, e tem de ser ele a ocupar o gabinete.
+      godCharacter: 'lourenco',
     },
   };
 }
