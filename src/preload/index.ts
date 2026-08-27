@@ -322,6 +322,8 @@ export interface HarnessConfig {
   /** TV-show office themes feature flag (Settings picker + switch flow). Default OFF. */
   tvShowOffices?: boolean;
   /** Active office map/cast theme (honored only when tvShowOffices is on). */
+  /** Language agents are instructed to write prose in. */
+  agentLanguage?: string;
   officeTheme?: 'office' | 'friends' | 'brooklyn99' | 'siliconvalley' | 'got' | 'hogwarts' | 'casadaindia';
   /** Per-CLI-provider local/self-hosted base URL (Ollama/LM Studio/vLLM, …) for the
    *  OpenCode/Crush/pi/qwen engines; applied at spawn. API KEYS are NOT stored here —

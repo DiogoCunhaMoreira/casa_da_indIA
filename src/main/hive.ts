@@ -43,6 +43,7 @@ import { preferredAgentRole } from '../shared/agentRole';
 import { mergeTaskLedger } from '../shared/taskLedger';
 import { expandTilde } from './fs';
 import { resolveGodName } from '../shared/godIdentity';
+import { regimentoLine } from '../shared/regimento';
 
 /** The subset of HarnessConfig the hive consumes for the default-MCP merge.
  *  Kept as a local shape so hive.ts never imports the foundation-owned config
@@ -614,6 +615,8 @@ export class HiveManager {
   async ensureAgent(
     meta: AgentMeta,
     opts: {
+      /** Language to instruct agents to write prose in (see shared/regimento.ts). */
+      agentLanguage?: string;
       semanticMemory?: boolean;
       knowledgeGraph?: boolean;
       /** ABSOLUTE path to the Knowledge-Graph CLI (`knowledge.env().KG_CLI`), baked
@@ -748,7 +751,7 @@ export class HiveManager {
     if (!isHiveAwareProvider(meta.provider)) {
       const preset = providerPreset(meta.provider ?? 'claude');
       const flag = preset.initialPromptFlag;
-      const prompt = this.injectedPrompt(meta, dir, root, opts.semanticMemory ?? false, opts.knowledgeGraph ?? false, opts.kgCliPath);
+      const prompt = this.injectedPrompt(meta, dir, root, opts.semanticMemory ?? false, opts.knowledgeGraph ?? false, opts.kgCliPath, opts.agentLanguage);
       // agy, codex, and grok expose a Claude-style lifecycle-hook surface, so each
       // gets the SAME live status + Stop→inbox-drain Claude does — selected by the
       // preset's `hookBridge`. agy needs a translating shim (its hook stdin/stdout
@@ -892,7 +895,7 @@ export class HiveManager {
     const args: string[] = [];
     if (!claudeProvider) return { args, env };
 
-    args.push('--append-system-prompt', this.injectedPrompt(meta, dir, root, opts.semanticMemory ?? false, opts.knowledgeGraph ?? false, opts.kgCliPath));
+    args.push('--append-system-prompt', this.injectedPrompt(meta, dir, root, opts.semanticMemory ?? false, opts.knowledgeGraph ?? false, opts.kgCliPath, opts.agentLanguage));
 
     // Phase 1 — autonomy: attach lifecycle hooks via --settings (no edits to the
     // user's repo) so the agent reports activity and drains its inbox on Stop.
@@ -1373,7 +1376,8 @@ export class HiveManager {
     root: string,
     semanticMemory: boolean,
     knowledgeGraph: boolean,
-    kgCliPath?: string
+    kgCliPath?: string,
+    agentLanguage?: string
   ): string {
     // Native-separator path helpers — see the 🪟 note above.
     const inDir = (...parts: string[]): string => join(dir, ...parts);
@@ -1449,7 +1453,8 @@ export class HiveManager {
       runtimeLine,
       slackLine,
       ctxLine,
-      `Env vars available to you: AGENT_ID, AGENT_NAME, HIVE_ROOT, AGENT_DIR.`
+      `Env vars available to you: AGENT_ID, AGENT_NAME, HIVE_ROOT, AGENT_DIR.`,
+      regimentoLine(agentLanguage)
     ].filter(Boolean).join('\n');
   }
 

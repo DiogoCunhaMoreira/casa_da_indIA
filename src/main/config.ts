@@ -216,6 +216,9 @@ export interface HarnessConfig {
    *  these in Settings. A server is wired into an agent only when enabled here. */
   mcpDefaults?: { [id: string]: { enabled: boolean } };
   /** Enable semantic memory (MemPalace CLI). No-op if mempalace isn't installed. */
+  /** Language agents are instructed to write prose in (shared/regimento.ts).
+   *  Undefined = no instruction, i.e. the model's own default (English). */
+  agentLanguage?: string;
   semanticMemory: boolean;
   /** Embedding model for the palace: lightweight 'minilm' or multilingual 'embeddinggemma'. */
   embeddingModel: 'minilm' | 'embeddinggemma';
@@ -438,6 +441,7 @@ const DEFAULTS: HarnessConfig = {
   workerIdleTimeoutMinutes: 20,
   integrations: [],
   defaultWorkerTokenCap: 0, // 0 = unlimited (human directive: NO per-worker cap)
+  agentLanguage: 'pt-PT',
   semanticMemory: true,
   embeddingModel: 'minilm',
   missions: [OPS_STANDUP_MISSION],
