@@ -58,6 +58,9 @@ const SKIN: Record<string, SkinPal> = {
   tan:   { hi: [232, 182, 136], base: [214, 162, 116], sh: [176, 126, 86],  line: [138, 92, 60] },
   brown: { hi: [180, 130, 94],  base: [158, 112, 78],  sh: [124, 86, 58],   line: [90, 60, 40] },
   dark:  { hi: [142, 98, 70],   base: [120, 80, 56],   sh: [94, 62, 42],    line: [64, 42, 28] },
+  // Sun-and-salt weathered — a ruddier, less yellow mid tone than `tan`, for
+  // characters who are meant to read as having spent years at sea.
+  weathered: { hi: [214, 163, 116], base: [192, 139, 92], sh: [154, 106, 68], line: [116, 76, 48] },
 };
 
 // ─── head + face ─────────────────────────────────────────────────────────────
@@ -247,9 +250,12 @@ const HAIR_FNS = { styleShort, styleFloppy, styleFrame, styleBun, styleCurly, st
 type HairStyle = keyof typeof HAIR_FNS;
 
 // ─── facial hair ─────────────────────────────────────────────────────────────
-type Facial = 'mustache' | 'mustacheSm' | 'stubble' | 'goatee';
+// `beard`, `forked` and `long` are full beards that extend BELOW the jaw (y16+),
+// past the chin the four original styles stop at. They are drawn before the hair
+// (drawHeadGroup's order) so a hairstyle's side locks still overlap the cheeks.
+type Facial = 'mustache' | 'mustacheSm' | 'stubble' | 'goatee' | 'beard' | 'forked' | 'long';
 function drawFacial(buf: Buf, kind: Facial, color: RGB): void {
-  const [, base, sh] = shades(color);
+  const [hi, base, sh] = shades(color);
   if (kind === 'mustache') {
     for (const x of [6, 7, 8, 9, 10]) set(buf, x, 13, base);
     set(buf, 6, 12, base); set(buf, 10, 12, base);
@@ -262,6 +268,36 @@ function drawFacial(buf: Buf, kind: Facial, color: RGB): void {
     for (const x of [8, 9]) set(buf, x, 15, base);
     set(buf, 8, 14, base); set(buf, 9, 14, base);
     for (const x of [7, 8, 9, 10]) set(buf, x, 13, base);
+  } else {
+    // Shared full-beard mass. The mouth (centre of y13–14) is deliberately left
+    // uncovered: filling the whole lower face reads as a black mask at 18px, not
+    // as hair. Moustache sits above it, chin and jaw below, cheeks to the sides.
+    for (const y of [11, 12, 13]) for (const x of [4, 5, 11, 12]) set(buf, x, y, base);
+    for (const x of [6, 7, 8, 9, 10]) set(buf, x, 12, base);   // moustache
+    for (const x of [5, 6, 10, 11]) set(buf, x, 14, base);     // corners of the mouth
+    rect(buf, 5, 15, 11, 16, base);                            // chin + jaw
+    // Outer cheek edge falls into shadow; the moustache catches the light.
+    for (const y of [11, 12, 13]) { set(buf, 4, y, sh); set(buf, 12, y, sh); }
+    for (const x of [5, 6, 10, 11]) set(buf, x, 16, sh);
+    for (const x of [7, 8, 9]) set(buf, x, 12, hi);
+    if (kind === 'beard') {
+      // Squared-off full beard, one row below the jaw.
+      rect(buf, 6, 17, 10, 17, base);
+      for (const x of [6, 10]) set(buf, x, 17, sh);
+    } else if (kind === 'forked') {
+      // Two points with a notch between them — the silhouette cue at 32px.
+      rect(buf, 5, 17, 7, 18, base);
+      rect(buf, 9, 17, 11, 18, base);
+      set(buf, 5, 19, base); set(buf, 11, 19, base);
+      for (const x of [5, 11]) set(buf, x, 18, sh);
+    } else if (kind === 'long') {
+      // Tapering column down the chest — reads as an unbroken vertical.
+      rect(buf, 6, 17, 10, 19, base);
+      rect(buf, 7, 20, 9, 22, base);
+      set(buf, 8, 23, base);
+      for (let y = 17; y <= 22; y++) set(buf, 6 + (y > 19 ? 1 : 0), y, sh);
+      for (let y = 18; y <= 21; y++) set(buf, 8, y, hi);
+    }
   }
 }
 
@@ -287,8 +323,130 @@ function drawGlasses(buf: Buf): void {
   set(buf, 4, 8, glint); set(buf, 9, 8, glint);
 }
 
+// ─── headwear ────────────────────────────────────────────────────────────────
+// Drawn AFTER the hairstyle (see drawHeadGroup) — this canvas has no z-buffer,
+// so a hat drawn before the hair would simply be painted over by it.
+type Hat = 'none' | 'chaperon' | 'flatcap' | 'coif' | 'helmet' | 'scholarcap'
+         | 'headdress' | 'turban' | 'widebrim';
+
+/**
+ * Shades for garment fabric, with contrast that survives dark dyes.
+ *
+ * The default deltas (+22% / -32%) are tuned for mid-tone shirts. On a near-black
+ * cloth like `--brand-tinta` #21201C they move a channel by two or three levels,
+ * which is invisible — a black chaperon over a black gown over a black cloak
+ * collapses into one flat blob with no readable silhouette. So the darker the
+ * base, the harder the highlight is lifted. Only the hat/cloak paths use this;
+ * the original clothing code keeps the deltas it was drawn against.
+ */
+function fabricShades(rgb: RGB): [RGB, RGB, RGB] {
+  // Keyed on the BRIGHTEST channel, not average luminance. A saturated green
+  // like #046A38 averages dark but has a channel at 106 — treating it as
+  // near-black lifts it to neon. The top channel is what says how much headroom
+  // the color actually has before it clips.
+  const head = Math.max(rgb[0], rgb[1], rgb[2]);
+  if (head < 60) return shades(rgb, 2.9, 0.5);
+  if (head < 120) return shades(rgb, 1.7, 0.6);
+  return shades(rgb);
+}
+
+function drawHat(buf: Buf, kind: Hat, col: RGB): void {
+  if (kind === 'none') return;
+  const [hi, base, sh] = fabricShades(col);
+  if (kind === 'chaperon') {
+    // The bourrelet: a fat padded roll as wide as the whole canvas — wider than
+    // the shoulders — with a liripipe falling down one side. Deliberately the
+    // loudest silhouette in the cast; it has to carry the orchestrator alone.
+    rect(buf, 2, 0, 15, 1, base);
+    rect(buf, 1, 1, 16, 4, base);
+    rect(buf, 0, 2, 17, 3, base);
+    for (let x = 3; x <= 14; x++) set(buf, x, 0, hi);
+    for (let x = 2; x <= 15; x++) set(buf, x, 2, hi);  // sheen across the roll
+    for (let x = 1; x <= 16; x++) set(buf, x, 4, sh);
+    set(buf, 0, 3, sh); set(buf, 17, 3, sh);
+    rect(buf, 14, 5, 16, 10, base);  // liripipe tail down the right
+    for (let y = 5; y <= 10; y++) set(buf, 16, y, sh);
+  } else if (kind === 'flatcap') {
+    rect(buf, 3, 1, 14, 3, base);
+    for (let x = 3; x <= 14; x++) set(buf, x, 1, hi);
+    rect(buf, 2, 3, 15, 3, sh);
+  } else if (kind === 'coif') {
+    // Close linen cap tied under the chin — follows the skull, covers the ears.
+    rect(buf, 3, 1, 14, 4, base);
+    for (let y = 5; y <= 12; y++) { set(buf, 3, y, base); set(buf, 14, y, base); }
+    for (let x = 4; x <= 13; x++) set(buf, x, 1, hi);
+    for (let y = 5; y <= 12; y++) { set(buf, 3, y, sh); set(buf, 14, y, sh); }
+  } else if (kind === 'helmet') {
+    rect(buf, 3, 1, 14, 6, base);
+    rect(buf, 2, 4, 15, 6, base);
+    for (let x = 4; x <= 13; x++) set(buf, x, 1, hi);
+    set(buf, 8, 1, hi); set(buf, 9, 1, hi);
+    for (let y = 2; y <= 6; y++) { set(buf, 3, y, sh); set(buf, 14, y, sh); }
+    rect(buf, 2, 6, 15, 6, sh);      // brow band
+    for (let y = 7; y <= 9; y++) set(buf, 8, y, sh); // nasal bar
+  } else if (kind === 'scholarcap') {
+    rect(buf, 4, 1, 13, 4, base);
+    for (let x = 5; x <= 12; x++) set(buf, x, 1, hi);
+    rect(buf, 3, 4, 14, 4, sh);
+  } else if (kind === 'headdress') {
+    // Gabled headdress + veil: the second-loudest silhouette, and the only one
+    // that falls past the shoulders on both sides.
+    rect(buf, 3, 1, 14, 5, base);
+    for (let x = 4; x <= 13; x++) set(buf, x, 1, hi);
+    for (let x = 3; x <= 14; x++) set(buf, x, 5, sh);
+    for (let y = 6; y <= 15; y++) { rect(buf, 1, y, 3, y, base); rect(buf, 14, y, 16, y, base); }
+    for (let y = 6; y <= 15; y++) { set(buf, 1, y, sh); set(buf, 16, y, sh); }
+  } else if (kind === 'turban') {
+    rect(buf, 3, 1, 14, 5, base);
+    for (const y of [2, 4]) for (let x = 3; x <= 14; x++) set(buf, x, y, hi); // wrap bands
+    for (let x = 3; x <= 14; x++) set(buf, x, 5, sh);
+  } else if (kind === 'widebrim') {
+    rect(buf, 0, 4, 17, 5, base);    // brim, past the shoulders
+    rect(buf, 4, 1, 13, 4, base);    // crown
+    for (let x = 5; x <= 12; x++) set(buf, x, 1, hi);
+    for (let x = 0; x <= 17; x++) set(buf, x, 5, sh);
+  }
+}
+
+/** Eye patch over the right eye — a 2px pad plus the strap back into the hair. */
+function drawPatch(buf: Buf): void {
+  const strap: RGB = [42, 38, 44], pad: RGB = [28, 25, 30];
+  rect(buf, 9, 8, 12, 10, pad);
+  for (const x of [3, 4, 5, 6, 7, 8]) set(buf, x, 7, strap);
+  set(buf, 13, 8, strap);
+}
+
 // ─── clothing ────────────────────────────────────────────────────────────────
-type Cloth = 'suit' | 'dressshirt' | 'polo' | 'blouse' | 'cardigan' | 'sweater';
+type Cloth = 'suit' | 'dressshirt' | 'polo' | 'blouse' | 'cardigan' | 'sweater'
+           | 'gown' | 'breastplate' | 'robe';
+/** Cloak worn UNDER the body: drawn first so the torso paints over it, leaving
+ *  only the spill past the shoulders visible. `flowing` sweeps to one side. */
+type Cloak = 'none' | 'short' | 'long' | 'flowing';
+function drawCloak(buf: Buf, kind: Cloak, col: RGB, heavy: boolean, scene: boolean): void {
+  if (kind === 'none') return;
+  const [, base, sh] = fabricShades(col);
+  const top = scene ? 18 : 19;
+  const bottom = scene ? 27 : CUR_H - 1;
+  // Outer edges: how far past the torso the cloak spills on each side.
+  const [lx, rx] = heavy ? [0, 17] : [1, 16];
+  const end = kind === 'short' ? Math.min(top + 4, bottom) : bottom;
+  for (let y = top; y <= end; y++) {
+    if (kind === 'flowing') {
+      // Blown to the left: the right edge hugs the body, the left flares wide.
+      const flare = Math.min(3, Math.max(0, y - top - 1));
+      rect(buf, Math.max(0, lx - flare), y, lx + 1, y, base);
+      set(buf, Math.max(0, lx - flare), y, sh);
+      rect(buf, rx - 1, y, rx, y, base);
+    } else {
+      rect(buf, lx, y, lx + 1, y, base);
+      rect(buf, rx - 1, y, rx, y, base);
+      set(buf, lx, y, sh); set(buf, rx, y, sh);
+    }
+  }
+  // Shoulder yoke across the top so it reads as one garment, not two strips.
+  rect(buf, lx, top, rx, top, base);
+  for (let x = lx; x <= rx; x++) set(buf, x, top, sh);
+}
 function bodyShape(buf: Buf, col: RGB, heavy = false): void {
   const [, base, sh] = shades(col);
   const rows: [number, number, number][] = heavy
@@ -326,6 +484,25 @@ function drawClothing(buf: Buf, kind: Cloth, c1: RGB, c2: RGB | undefined, tie: 
     for (const [x, y] of [[6, 19], [7, 19], [10, 19], [11, 19]] as const) set(buf, x, y, sh);
   } else if (kind === 'sweater') {
     for (const [x, y] of [[6, 19], [7, 19], [8, 19], [9, 19], [10, 19], [11, 19]] as const) set(buf, x, y, sh);
+  } else if (kind === 'gown') {
+    // Scholar's/official's gown: a wide flat collar over a plain front, with the
+    // collar in `c2` so a white collar can be the brightest point of the sprite.
+    const collar: RGB = c2 ? shades(c2)[0] : [238, 236, 230];
+    for (const [x, y] of [[6, 19], [7, 19], [8, 19], [9, 19], [10, 19], [11, 19]] as const) set(buf, x, y, collar);
+    for (const x of [7, 8, 9, 10]) set(buf, x, 20, collar);
+    for (let y = 21; y < 27; y++) set(buf, 8, y, sh); // center opening
+    for (const [x, y] of [[6, 20], [11, 20]] as const) set(buf, x, y, sh);
+  } else if (kind === 'breastplate') {
+    // Steel plate: a bright horizontal highlight band is what makes it read as
+    // metal rather than just another dark tunic.
+    for (const [x, y] of [[6, 19], [7, 19], [10, 19], [11, 19]] as const) set(buf, x, y, sh);
+    for (let x = 4; x <= 13; x++) set(buf, x, 21, hi);
+    for (let y = 22; y < 27; y++) set(buf, 8, y, sh); // medial ridge
+    for (const [x, y] of [[5, 23], [12, 23], [5, 24], [12, 24]] as const) set(buf, x, y, hi);
+  } else if (kind === 'robe') {
+    // Crossed-over robe: a diagonal lapel line, no collar.
+    for (const [x, y] of [[6, 19], [7, 20], [8, 21], [9, 22], [10, 21], [11, 20]] as const) set(buf, x, y, sh);
+    if (c2) for (const [x, y] of [[7, 19], [8, 20], [9, 21], [10, 20], [11, 19]] as const) set(buf, x, y, shades(c2)[1]);
   }
 }
 function collarNeck(buf: Buf, skin: string): void {
@@ -392,6 +569,18 @@ function drawSceneTorso(buf: Buf, r: Recipe, back: boolean): void {
     for (const [x, y] of [[6, 18], [7, 18], [10, 18], [11, 18]] as const) set(buf, x, y, sh);
   } else if (r.cloth === 'sweater') {
     for (const [x, y] of [[6, 18], [7, 18], [8, 18], [9, 18], [10, 18], [11, 18]] as const) set(buf, x, y, sh);
+  } else if (r.cloth === 'gown') {
+    const collar: RGB = r.c2 ? shades(r.c2)[0] : [238, 236, 230];
+    for (const [x, y] of [[6, 18], [7, 18], [8, 18], [9, 18], [10, 18], [11, 18]] as const) set(buf, x, y, collar);
+    for (const x of [7, 8, 9, 10]) set(buf, x, 19, collar);
+    for (let y = 20; y <= 24; y++) set(buf, 8, y, sh);
+  } else if (r.cloth === 'breastplate') {
+    for (const [x, y] of [[6, 18], [7, 18], [10, 18], [11, 18]] as const) set(buf, x, y, sh);
+    for (let x = 4; x <= 13; x++) set(buf, x, 20, hi);
+    for (let y = 21; y <= 24; y++) set(buf, 8, y, sh);
+  } else if (r.cloth === 'robe') {
+    for (const [x, y] of [[6, 18], [7, 19], [8, 20], [9, 21], [10, 20], [11, 19]] as const) set(buf, x, y, sh);
+    if (r.c2) for (const [x, y] of [[7, 18], [8, 19], [9, 20], [10, 19], [11, 18]] as const) set(buf, x, y, shades(r.c2)[1]);
   }
 }
 
@@ -472,6 +661,12 @@ interface Recipe {
   lashes?: boolean;
   /** Heavier build: chubby cheeks, a double chin, and a wider torso. */
   heavy?: boolean;
+  /** Headwear, drawn over the hairstyle. `hatc` defaults to the garment color. */
+  hat?: Hat; hatc?: RGB;
+  /** Cloak, drawn under the torso so only the spill past the shoulders shows. */
+  cloak?: Cloak; cloakc?: RGB;
+  /** Eye patch over the right eye. */
+  patch?: boolean;
 }
 
 // Puff the lower face into round cheeks + a double chin so a character reads as
@@ -490,7 +685,10 @@ function drawHeavyFace(buf: Buf, skin: string): void {
   set(buf, 7, 17, s.sh); set(buf, 10, 17, s.sh); // crease shadow between chin + roll
 }
 
-const RECIPES: Record<OfficeCharacterName, Recipe> = {
+// Keyed by plain string, not OfficeCharacterName, so a theme can register its
+// own roster (see registerRecipes) without this table having to list every name
+// in the union. The Office entries below are unchanged.
+const RECIPES: Record<string, Recipe> = {
   michael:  { skin: 'light', hairc: [58, 42, 28],   hair: 'styleShort',  hairargs: { part: 'L' }, cloth: 'suit', c1: [58, 63, 74], tie: [170, 58, 58], brow: 'flat', mouth: 'smile' },
   jim:      { skin: 'light', hairc: [92, 60, 34],   hair: 'styleFloppy', cloth: 'dressshirt', c1: [172, 196, 224], tie: [120, 130, 150], brow: 'flat', mouth: 'smile' },
   pam:      { skin: 'light', hairc: [120, 76, 42],  hair: 'styleFrame',  hairargs: { length: 18, vol: 2 }, cloth: 'cardigan', c1: [236, 174, 192], c2: [244, 242, 238], brow: 'soft', mouth: 'smile', blush: true, lashes: true },
@@ -508,7 +706,9 @@ const RECIPES: Record<OfficeCharacterName, Recipe> = {
   meredith: { skin: 'light', hairc: [154, 82, 46],  hair: 'styleMessy',  hairargs: { length: 15 }, cloth: 'blouse', c1: [176, 86, 74], brow: 'raised', mouth: 'smile', lashes: true },
 };
 
-/** The face/hair group (head → face → facial hair → hair → glasses), no clothing. */
+/** The face/hair group (head → face → facial hair → hair → hat → glasses/patch),
+ *  no clothing. The hat lands after the hair because this canvas writes pixels
+ *  directly with no depth test — drawing it earlier would let hair cover it. */
 function drawHeadGroup(buf: Buf, r: Recipe): void {
   const skinBase = SKIN[r.skin].base;
   drawHead(buf, r.skin);
@@ -516,18 +716,24 @@ function drawHeadGroup(buf: Buf, r: Recipe): void {
   drawFace(buf, r.skin, r.brow ?? 'flat', r.mouth ?? 'neutral', r.blush ?? false, r.lashes ?? false);
   if (r.facial) drawFacial(buf, r.facial, r.hairc);
   HAIR_FNS[r.hair](buf, r.hairc, skinBase, r.hairargs ?? {});
+  if (r.hat) drawHat(buf, r.hat, r.hatc ?? r.c1);
   if (r.glasses) drawGlasses(buf);
+  if (r.patch) drawPatch(buf);
 }
 
 function defaultPants(r: Recipe): RGB {
   if (r.pants) return r.pants;
+  // Floor-length garments carry their own color down over the legs, so the
+  // silhouette stays one unbroken column instead of splitting at the waist.
+  if (r.cloth === 'gown' || r.cloth === 'robe') return shades(r.c1)[2];
   return r.cloth === 'suit' ? shades(r.c1)[2] : [54, 56, 70];
 }
 
-/** Portrait bust: shoulders-height clothing + front head group. */
+/** Portrait bust: cloak → shoulders-height clothing → front head group. */
 function compose(r: Recipe): Buf {
   CUR_W = PORTRAIT_W; CUR_H = PORTRAIT_H;
   const buf = new Uint8ClampedArray(PORTRAIT_W * PORTRAIT_H * 4);
+  if (r.cloak) drawCloak(buf, r.cloak, r.cloakc ?? r.c1, r.heavy ?? false, false);
   drawClothing(buf, r.cloth, r.c1, r.c2, r.tie, r.skin, r.heavy ?? false);
   collarNeck(buf, r.skin);
   drawHeadGroup(buf, r);
@@ -535,22 +741,45 @@ function compose(r: Recipe): Buf {
   return buf;
 }
 
-/** Full-body 18×32 scene sprite. `back=false` reuses the portrait's exact face. */
+/** Full-body 18×32 scene sprite. `back=false` reuses the portrait's exact face.
+ *  The cloak and hat render here too, so a walker matches its own card. */
 function composeScene(r: Recipe, phase: number, back: boolean): Buf {
   CUR_W = SCENE_W; CUR_H = SCENE_H;
   const buf = new Uint8ClampedArray(SCENE_W * SCENE_H * 4);
+  if (r.cloak) drawCloak(buf, r.cloak, r.cloakc ?? r.c1, r.heavy ?? false, true);
   drawSceneBody(buf, r, phase, back);
-  if (back) drawHeadBack(buf, r);
-  else drawHeadGroup(buf, r);
+  if (back) {
+    drawHeadBack(buf, r);
+    // Seen from behind the hat still reads, but the face details must not.
+    if (r.hat) drawHat(buf, r.hat, r.hatc ?? r.c1);
+  } else {
+    drawHeadGroup(buf, r);
+  }
   outlinePass(buf);
   return buf;
 }
 
-// ─── public render ───────────────────────────────────────────────────────────
-const bufCache = new Map<OfficeCharacterName, Buf>();
-const sceneCache = new Map<OfficeCharacterName, SceneFrames>();
+// ─── theme extension ─────────────────────────────────────────────────────────
+// A theme supplies its own cast by registering recipes under its own names,
+// instead of editing the table above. Keeps a themed roster in its own file.
+export type { Recipe };
+export type { Hat, Cloak, Cloth, Facial, HairStyle, RGB, HairArgs, Brow, Mouth };
 
-function getBuf(name: OfficeCharacterName): Buf {
+/** Add (or replace) portrait recipes by character name. Clears the render caches
+ *  for the affected names so a re-register takes effect immediately. */
+export function registerRecipes(extra: Record<string, Recipe>): void {
+  for (const [name, recipe] of Object.entries(extra)) {
+    RECIPES[name] = recipe;
+    bufCache.delete(name);
+    sceneCache.delete(name);
+  }
+}
+
+// ─── public render ───────────────────────────────────────────────────────────
+const bufCache = new Map<string, Buf>();
+const sceneCache = new Map<string, SceneFrames>();
+
+function getBuf(name: string): Buf {
   let buf = bufCache.get(name);
   if (!buf) {
     buf = compose(RECIPES[name] ?? RECIPES.jim);
@@ -559,10 +788,16 @@ function getBuf(name: OfficeCharacterName): Buf {
   return buf;
 }
 
+/** The raw 18×28 portrait pixels. Exposed for headless rendering/tests, which
+ *  cannot call paintPortrait (it needs a real canvas). */
+export function portraitBuf(name: string): Buf {
+  return getBuf(name);
+}
+
 export interface SceneFrames { front: Buf[]; back: Buf[]; }
 
 /** Walk-phase frames (stand, step-L, step-R) for the in-scene sprite, front + back. */
-export function sceneFrameBufs(name: OfficeCharacterName): SceneFrames {
+export function sceneFrameBufs(name: string): SceneFrames {
   let frames = sceneCache.get(name);
   if (!frames) {
     const r = RECIPES[name] ?? RECIPES.jim;
@@ -576,7 +811,7 @@ export function sceneFrameBufs(name: OfficeCharacterName): SceneFrames {
 }
 
 /** Paint a character's procedural portrait onto `ctx`, nearest-neighbor at `scale`. */
-export function paintPortrait(ctx: CanvasRenderingContext2D, name: OfficeCharacterName, scale = 2): void {
+export function paintPortrait(ctx: CanvasRenderingContext2D, name: string, scale = 2): void {
   const buf = getBuf(name);
   // Stage at 1× on an offscreen canvas, then blit scaled with smoothing off.
   const stage = document.createElement('canvas');
