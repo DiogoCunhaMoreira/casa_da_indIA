@@ -1,5 +1,18 @@
 /* Design tokens — mirrors tokens.ts. Update both together. */
 :root {
+  /* Brand — casa_da_indIA.
+     A separate layer from the --cth-* scale below on purpose: those carry UI
+     MEANING (--cth-status-blocked is "blocked", not "red") and retheming them
+     would break that. These are only for surfaces that are meant to say whose
+     app this is: the mark, the theme swatch, the kanban notes, chrome accents. */
+  --brand-azulejo:    #1F4E9C;  /* azul de azulejo — primária */
+  --brand-azulejo-2:  #7FA9D9;  /* azul claro de vidrado */
+  --brand-pergaminho: #F2E6CE;  /* papel de carta náutica */
+  --brand-ouro:       #C8961E;  /* ouro da Índia — acentos */
+  --brand-verde:      #046A38;  /* verde da bandeira */
+  --brand-vermelho:   #A4161A;  /* vermelho — estados críticos */
+  --brand-tinta:      #21201C;  /* tinta ferrogálica — texto */
+
   /* Base */
   --cth-cream-50:  #FFFDF5;
   --cth-cream-100: #FFF8E7;

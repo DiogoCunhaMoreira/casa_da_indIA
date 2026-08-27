@@ -1,14 +1,14 @@
 {
-  "name": "munder-difflin",
+  "name": "casa-da-india",
   "version": "0.4.6",
   "private": true,
-  "description": "Clones for you and your team, working 24/7 — a free, local-first multi-agent harness that turns the CLI coding agent you already run into a clone of you, coordinating an office of agents on your machine.",
+  "description": "casa_da_indIA — um enxame local de agentes de IA, à maneira da Casa da Índia: o Feitor despacha, as naus partem, e tudo se regista. Fork português de Munder Difflin.",
   "main": "out/main/index.js",
-  "author": "Chaitanya Giri",
-  "homepage": "https://munderdiffl.in/",
+  "author": "Diogo Cunha Moreira",
+  "homepage": "https://github.com/DiogoCunhaMoreira/casa_da_indIA",
   "repository": {
     "type": "git",
-    "url": "https://github.com/chaitanyagiri/munder-difflin.git"
+    "url": "https://github.com/DiogoCunhaMoreira/casa_da_indIA.git"
   },
   "scripts": {
     "dev": "electron-vite dev",

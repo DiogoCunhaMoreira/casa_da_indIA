@@ -10,6 +10,7 @@
  * O elenco é registado no `portraitArt` por `registarElenco()`, chamado uma vez
  * na carga do módulo, para que os retratos existam antes de a cena os pedir.
  */
+import { colors } from '@/design/tokens';
 import type { CastMember } from '../cast';
 import { getCastFrames } from '../cast';
 // IMPORT SÓ DE TIPO, de propósito: o `themeRegistry` é quem constrói este tema,
@@ -68,10 +69,10 @@ export function criarTemaCasaDaIndia(base: ThemeConfig): ThemeConfig {
       background: base.palette.background,
       // Notas do livro das armadas, nos tons de marca em vez dos do upstream.
       noteColors: {
-        todo: 0xf2e6ce,     // pergaminho
-        doing: 0x7fa9d9,    // azulejo claro
-        blocked: 0xa4161a,  // vermelho
-        done: 0x046a38,     // verde
+        todo: colors.brand.pergaminho,
+        doing: colors.brand.azulejo2,
+        blocked: colors.brand.vermelho,
+        done: colors.brand.verde,
       },
     },
     cast: {

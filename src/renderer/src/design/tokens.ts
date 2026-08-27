@@ -2,6 +2,23 @@
 // Any change here must also update tokens.css.
 
 export const colors = {
+  /**
+   * Brand — casa_da_indIA.
+   *
+   * Deliberately separate from the scales below: those carry UI MEANING
+   * (`status.blocked` means "blocked", not "red"), so retheming them would
+   * break the meaning. These are for surfaces that say whose app this is —
+   * the mark, the theme swatch, the kanban notes, chrome accents.
+   */
+  brand: {
+    azulejo: 0x1f4e9c,
+    azulejo2: 0x7fa9d9,
+    pergaminho: 0xf2e6ce,
+    ouro: 0xc8961e,
+    verde: 0x046a38,
+    vermelho: 0xa4161a,
+    tinta: 0x21201c
+  },
   cream: {
     50: 0xfffdf5,
     100: 0xfff8e7,
