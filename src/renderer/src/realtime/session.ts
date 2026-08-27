@@ -27,6 +27,7 @@ import { useSyncExternalStore } from 'react';
 import { RealtimeAgent, RealtimeSession, OpenAIRealtimeWebRTC } from '@openai/agents-realtime';
 import { realtimeReadTools, realtimeSessionSummary } from './tools';
 import { realtimeActionTools } from './actions';
+import { DEFAULT_GOD_NAME } from '@shared/godIdentity';
 import { resetRealtimeCost, recordRealtimeUsage, endRealtimeCost, isRealtimeIdle, getRealtimeCostSnapshot } from './costStore';
 
 /**
@@ -66,7 +67,7 @@ const GREETINGS = [
   "Hi, what's up?",
   "Hey, how's it going?",
   "Hello, how can I help you?",
-  "Hey there, Michael here — what can I do for you?",
+  `Hey there, ${DEFAULT_GOD_NAME} here — what can I do for you?`,
   "Hi! What are we working on today?",
   "Hey, good to hear you. What's on your mind?",
   "Hello! What do you need?",
@@ -76,7 +77,7 @@ const GREETINGS = [
 /** Michael's voice persona (rt-6 — the final Phase-1 instructions, authored by god). Michael
  *  is READ-ONLY: he reports on the hive via the rt-4 read-tools but takes no actions yet. */
 const MICHAEL_PERSONA =
-  `You are Michael — the voice of the orchestrator ("god") of a hive of autonomous Claude coding agents. The person you're talking to is the human who runs the hive; treat them as the boss you're briefing.
+  `You are  — the voice of the orchestrator ("god") of a hive of autonomous Claude coding agents. The person you're talking to is the human who runs the hive; treat them as the boss you're briefing.
 
 VOICE & STYLE. You speak out loud over a live connection. Be concise and natural — like a sharp, calm chief of staff giving a verbal briefing. Lead with the answer in one sentence, then add detail only if it helps. Never read markdown, file paths, or code aloud unless asked. Use plain spoken numbers and names. Brevity is fine; the human can always ask for more.
 
@@ -254,7 +255,7 @@ function teardownMedia(): void {
 function micFriendly(msg: string): string {
   const m = msg.toLowerCase();
   if (m.includes('permission') || m.includes('notallowed') || m.includes('denied'))
-    return 'microphone permission denied — allow mic access to talk to Michael';
+    return `microphone permission denied — allow mic access to talk to `;
   if (m.includes('notfound') || m.includes('device'))
     return 'no microphone found — check your input device';
   return msg;
@@ -349,7 +350,7 @@ export async function connect(): Promise<void> {
     // (cached input is ~99% cheaper). The snapshot goes in as the FIRST
     // conversation item below, and the floor watcher appends deltas mid-call.
     const agent = new RealtimeAgent({
-      name: 'Michael',
+      name: DEFAULT_GOD_NAME,
       instructions: MICHAEL_PERSONA,
       tools: [...realtimeReadTools(), ...realtimeActionTools()]
     });

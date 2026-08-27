@@ -52,7 +52,7 @@ export function realtimeActionTools(): ReturnType<typeof tool>[] {
     tool({
       name: 'ping_agent',
       description:
-        'Send a short message to one agent (a nudge or note). Soft action — runs immediately, no confirm. Use for "tell Oscar X" or "check in with Jim".',
+        'Send a short message to one agent (a nudge or note). Soft action — runs immediately, no confirm. Use for "tell Barbosa X" or "check in with Caminha".',
       parameters: {
         type: 'object',
         properties: {
@@ -67,7 +67,7 @@ export function realtimeActionTools(): ReturnType<typeof tool>[] {
     tool({
       name: 'dispatch_agent',
       description:
-        'Give an agent a task as a structured 4-part work order (objective, context, constraints, done-when) delivered to their inbox. Soft action — runs immediately. Use for "have Jim build X" or "ask Oscar to investigate Y".',
+        'Give an agent a task as a structured 4-part work order (objective, context, constraints, done-when) delivered to their inbox. Soft action — runs immediately. Use for "have Caminha build X" or "ask Barbosa to investigate Y".',
       parameters: {
         type: 'object',
         properties: {
@@ -85,7 +85,7 @@ export function realtimeActionTools(): ReturnType<typeof tool>[] {
     tool({
       name: 'steer_agent',
       description:
-        'Inject live guidance into a running agent to redirect it without stopping it. Soft action — runs immediately. This is the priority verb: "tell Jim to focus on the bug first", "steer Oscar away from that approach".',
+        'Inject live guidance into a running agent to redirect it without stopping it. Soft action — runs immediately. This is the priority verb: "tell Caminha to focus on the bug first", "steer Barbosa away from that approach".',
       parameters: {
         type: 'object',
         properties: {
@@ -280,7 +280,7 @@ export function realtimeActionTools(): ReturnType<typeof tool>[] {
     tool({
       name: 'gate_tool',
       description:
-        'Block (gate) or unblock one named tool for one agent — e.g. gate Bash for Jim. Soft action — runs immediately.',
+        'Block (gate) or unblock one named tool for one agent — e.g. gate Bash for Caminha. Soft action — runs immediately.',
       parameters: {
         type: 'object',
         properties: {
@@ -360,7 +360,7 @@ export function realtimeActionTools(): ReturnType<typeof tool>[] {
     tool({
       name: 'update_setting',
       description:
-        "Change one app setting from the voice-allowed list. Cosmetic/low-risk keys (notifications, officeTheme, terminalTheme, freeflowEnabled, strongKeepalive, autoUpdate, tvShowOffices, realtimeIdleDisconnectMs) apply immediately; behavior-changing keys (autoMode, defaultModel, godProvider, godModel, maxConcurrentWorkers, costCapTokens, maxTurns, slackEnabled, webhookEnabled, semanticMemory, multiWindow) return an echo-back with old→new and need verbal confirmation ('setting' or 'confirm') — then call confirm_action. Secrets, folders and anything not listed are refused.",
+        "Change one app setting from the voice-allowed list. Cosmetic/low-risk keys (notifications, terminalTheme, freeflowEnabled, strongKeepalive, autoUpdate, realtimeIdleDisconnectMs) apply immediately; behavior-changing keys (autoMode, defaultModel, godProvider, godModel, maxConcurrentWorkers, costCapTokens, maxTurns, slackEnabled, webhookEnabled, semanticMemory, multiWindow) return an echo-back with old→new and need verbal confirmation ('setting' or 'confirm') — then call confirm_action. Secrets, folders and anything not listed are refused.",
       parameters: {
         type: 'object',
         properties: {
