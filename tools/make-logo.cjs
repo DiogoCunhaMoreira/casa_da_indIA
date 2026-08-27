@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Munder Difflin brand mark — Michael's portrait on the brand yellow tile.
+ * casa_da_indIA brand mark — the Feitor's portrait on the azulejo tile.
  *
  * THE SVG IS THE SOURCE OF TRUTH. docs/logo.svg is authored here as pure
  * vector — every sprite pixel is a run-merged <rect>, no fonts, no gradients,
@@ -38,17 +38,24 @@ const { execFileSync } = require('node:child_process');
 const ROOT = path.resolve(__dirname, '..');
 const loadTs = require(path.join(ROOT, 'test/load-ts.cjs'));
 const art = loadTs('src/renderer/src/scene/office/portraitArt.ts');
+// The mark is the ORCHESTRATOR's sprite, and this theme's orchestrator is
+// registered by its own module — portraitArt.ts alone does not know 'lourenco',
+// and an unregistered name silently falls back to Jim, i.e. to the upstream's
+// cast. Register before composing.
+art.registerRecipes(loadTs('src/renderer/src/scene/office/casadaindia/retratos.ts').RECEITAS);
 
 const SW = art.SCENE_W;
 
 // ── palette ───────────────────────────────────────────────────────────────
-const GROUND = [241, 181, 61];    // #F1B53D — brand yellow, sampled from the shipping icon
+// #1F4E9C — --brand-azulejo. The upstream mark used its brand yellow; the tile
+// is the one surface that should say whose app this is at 16px.
+const GROUND = [31, 78, 156];
 const WHITE  = [250, 248, 244];
 const PUPIL  = [46, 38, 42];
 
 // Two border weights, matching the pair the site already ships: near-black for
 // dark surfaces, warm brown for the light theme (sampled from logo-light.png).
-const BORDERS = { ink: [26, 19, 32], warm: [110, 75, 12] };
+const BORDERS = { ink: [33, 32, 28], warm: [200, 150, 30] };  // tinta / ouro
 
 // Tile geometry, inherited from the old build/icon.svg so the new mark lands in
 // the same family. Ratios are of the TILE, so both framings stay proportional.
@@ -322,7 +329,7 @@ function buildIco(pngs) {
 }
 
 // ── run ───────────────────────────────────────────────────────────────────
-const grid = buildGrid(centreEyes(art.sceneFrameBufs('michael').front[0]));
+const grid = buildGrid(centreEyes(art.sceneFrameBufs('lourenco').front[0]));
 const D = (p) => path.join(ROOT, p);
 const wrote = [];
 const write = (rel, buf) => {
