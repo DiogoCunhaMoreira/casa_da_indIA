@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline rasterizer for office.tmj — mirrors TiledMapRenderer so we can
+"""Offline rasterizer for ribeira.tmj — mirrors TiledMapRenderer so we can
 visually verify the map without launching Electron. Usage:
     python3 render_map.py [map.tmj] [out.png] [--labels]
 """
@@ -16,9 +16,8 @@ GID_MASK = 0x1FFFFFFF
 
 # firstgid -> (image path, columns, tilew, tileh)
 TILESETS = [
-    (1,    'tilesets/office-tileset.png',        16, 16, 16),
-    (513,  'tilesets/a5-office-floors-walls.png',16, 16, 16),
-    (1025, 'tilesets/interiors.png',             16, 16, 16),
+    (1025, 'tilesets/interiors.png',   16, 16, 16),
+    (2449, 'tilesets/casadaindia.png', 16, 16, 16),
 ]
 TILE_LAYERS = ['floor', 'walls', 'furniture-below', 'furniture-above']
 SCALE = 3
@@ -100,6 +99,6 @@ def render(mappath, outpath, labels=False):
     print('wrote', outpath, canvas.size)
 
 if __name__ == '__main__':
-    mp = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ASSETS, 'maps/office.tmj')
+    mp = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ASSETS, 'maps/ribeira.tmj')
     out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(HERE, 'preview.png')
     render(mp, out, labels='--labels' in sys.argv)
