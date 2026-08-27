@@ -173,26 +173,6 @@
     "seeTheWall": "see the wall",
     "joinDiscord": "join Discord"
   },
-  "officeTheme": {
-    "title": "Office Theme",
-    "tvShow": "TV-show office themes",
-    "experimental": "experimental",
-    "desc": "Re-skin the pixel office as a TV show. Switching starts a fresh cast.",
-    "current": "current",
-    "soon": "soon",
-    "notBuiltYet": "{{label}} isn't built yet — showing the office for now.",
-    "switchAborted": "Switch aborted — a terminal wouldn't close: {{error}}",
-    "confirmTitle": "SWITCH OFFICE TO \"{{label}}\"?",
-    "startsFreshCast": "STARTS A FRESH CAST",
-    "deleteCount": "Your {{count}} current agent will be deleted — their terminals close and any in-progress work stops.",
-    "deleteCountPlural": "Your {{count}} current agents will be deleted — their terminals close and any in-progress work stops.",
-    "onlyCarries": "Only {{god}} carries over.",
-    "stillWorking": "⚠ {{count}} agent is still working.",
-    "stillWorkingPlural": "⚠ {{count}} agents are still working.",
-    "cantUndo": "This can't be undone.",
-    "switching": "switching…",
-    "deleteSwitch": "delete {{count}} & switch"
-  },
   "settings": {
     "title": "SETTINGS",
     "changeHomeTitle": "CHANGE HOME FOLDER",
@@ -702,76 +682,76 @@
     "errEngineNotInstalled": "{{label}} is not installed. Install it and press \"check again\", or pick another engine."
   },
   "office": {
-    "gpuError": "The office floor lost its GPU context.\n\nToo many terminals are using the GPU at once.\nClose a few agent terminals, or restart the app, to bring it back.",
+    "gpuError": "The floor lost its GPU context.\n\nToo many terminals are using the GPU at once.\nClose a few agent terminals, or restart the app, to bring it back.",
     "errand": {
       "water": [
-        "watering the plants 🌿",
-        "giving the plants a drink",
-        "they grow so fast"
+        "watering the palm 🌿",
+        "this one came from India",
+        "grows faster than the ledger"
       ],
       "window": [
-        "letting some air in 🍃",
-        "a bit of fresh air",
-        "nice breeze today"
+        "watching the Tagus 🍃",
+        "salt air coming in",
+        "there's a carrack out there"
       ],
       "dispenser": [
-        "getting some water 💧",
-        "hydration break",
-        "staying sharp"
+        "filling the cup 💧",
+        "water from the jar",
+        "thirsty work"
       ],
       "fridge": [
-        "anything good in the fridge?",
-        "who took my yogurt?",
-        "just looking…"
+        "lighting the candle 🕯",
+        "can't see a thing in here",
+        "more light on the ledger"
       ],
       "shelf": [
-        "checking out the shelf 📚",
-        "anything new in here?",
-        "so much good stuff"
+        "leafing through the register 📚",
+        "these sums don't add up",
+        "where's the one from May?"
       ],
       "bin": [
-        "out with the scrap paper 🗑️",
-        "desk cleanup day",
-        "tidying up a little"
+        "this draft goes in the basket 🗑️",
+        "tidying the desk",
+        "too much paper"
       ],
       "smoke": [
-        "the floor runs itself 🚬",
-        "boss break.",
-        "thinking big thoughts 🚬",
-        "I DECLARE… a break"
+        "the house runs itself",
+        "the Factor's break.",
+        "watching the river, thinking big",
+        "the tide can wait"
       ]
     },
     "suckUp": [
-      "already shipped {{done}} tasks, {{godName}}. raise? 🥺",
-      "{{done}} tasks done this week, boss!",
-      "great vision as always, boss!",
+      "already cleared {{done}} tasks, {{godName}}. a raise? 🥺",
+      "{{done}} done this week, sir!",
+      "sound judgement as always, sir!",
       "I was JUST about to do exactly that!",
-      "love the tie today, {{godName}}",
-      "working hard, boss! 💪",
-      "best boss ever. genuinely."
+      "fine chaperon today, {{godName}}",
+      "twice the work, sir! 💪",
+      "the best Factor this house has had. truly."
     ],
     "gossip": [
-      "has he ever actually written code?",
-      "another 'quick sync' that took an hour…",
-      "'world's best boss' — he bought that mug himself",
-      "he pinned MY task as his idea",
-      "the cigar smell, honestly…",
-      "he watered the plant. ONE plant. his own.",
-      "did you hear him? 'I DECLARE… a break'"
+      "has he ever set foot on a ship?",
+      "another 'quick audience' that took an hour…",
+      "'best Factor in the house' — he bought that cup himself",
+      "my task became his idea",
+      "the smoke at that window, honestly…",
+      "he watered the palm. one. his own.",
+      "did you hear? 'the house runs itself'"
     ],
     "cheer": [
       "done! ✔",
-      "nailed it",
-      "that's a wrap",
-      "ship it 🚀",
-      "another one done",
-      "crushed it",
-      "in the books"
+      "dispatched",
+      "that's that",
+      "off to sea 🚀",
+      "another one on the roll",
+      "squared away",
+      "entered in the book"
     ],
     "mugs": {
-      "empty": "no clean mugs left…",
-      "brewing": "brewing a fresh one ☕",
-      "washing": "washing the mug"
+      "empty": "no clean cups left…",
+      "brewing": "drawing a fresh one 🍷",
+      "washing": "washing the cup"
     },
     "activity": {
       "waiting": "waiting",
@@ -780,6 +760,10 @@
       "looping": "looping — breaker armed",
       "runningFloor": "running the floor",
       "idle": "idle"
+    },
+    "booting": {
+      "title": "CLOCKING IN",
+      "body": "{{godName}} is settling into the office and getting the house ready. Hang tight…"
     }
   },
   "setupPanel": {

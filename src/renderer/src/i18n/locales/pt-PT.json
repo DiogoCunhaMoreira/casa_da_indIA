@@ -2,73 +2,73 @@
   "office": {
     "errand": {
       "water": [
-        "watering the plants 🌿",
-        "giving the plants a drink",
-        "they grow so fast"
+        "a regar a palmeira 🌿",
+        "esta veio da Índia",
+        "cresce mais depressa que o rol"
       ],
       "window": [
-        "letting some air in 🍃",
-        "a bit of fresh air",
-        "nice breeze today"
+        "a ver o Tejo 🍃",
+        "entra um cheiro a maresia",
+        "há nau ao largo"
       ],
       "dispenser": [
-        "getting some water 💧",
-        "hydration break",
-        "staying sharp"
+        "a encher a caneca 💧",
+        "água da talha",
+        "sede que se veja"
       ],
       "fridge": [
-        "anything good in the fridge?",
-        "who took my yogurt?",
-        "just looking…"
+        "a acender o castiçal 🕯",
+        "já não se vê nada aqui",
+        "mais luz sobre o livro"
       ],
       "shelf": [
-        "checking out the shelf 📚",
-        "anything new in here?",
-        "so much good stuff"
+        "a folhear o registo 📚",
+        "isto está mal somado",
+        "onde é que ficou o de Maio?"
       ],
       "bin": [
-        "out with the scrap paper 🗑️",
-        "desk cleanup day",
-        "tidying up a little"
+        "ao cesto com este rascunho 🗑️",
+        "dia de arrumar a banca",
+        "papel a mais"
       ],
       "smoke": [
-        "the floor runs itself 🚬",
-        "boss break.",
-        "thinking big thoughts 🚬",
-        "I DECLARE… a break"
+        "a casa governa-se sozinha",
+        "pausa do Feitor.",
+        "a olhar o rio, a pensar grande",
+        "a maré que espere"
       ]
     },
     "suckUp": [
-      "already shipped {{done}} tasks, {{godName}}. raise? 🥺",
-      "{{done}} tasks done this week, boss!",
-      "great vision as always, boss!",
-      "I was JUST about to do exactly that!",
-      "love the tie today, {{godName}}",
-      "working hard, boss! 💪",
-      "best boss ever. genuinely."
+      "já despachei {{done}} tarefas, {{godName}}. e a soldada? 🥺",
+      "{{done}} feitas esta semana, senhor Feitor!",
+      "grande tino, como sempre, senhor!",
+      "eu ia AGORA mesmo fazer isso!",
+      "belo chaperon hoje, {{godName}}",
+      "trabalho a dobrar, senhor! 💪",
+      "o melhor Feitor que esta casa teve. a sério."
     ],
     "gossip": [
-      "has he ever actually written code?",
-      "another 'quick sync' that took an hour…",
-      "'world's best boss' — he bought that mug himself",
-      "he pinned MY task as his idea",
-      "the cigar smell, honestly…",
-      "he watered the plant. ONE plant. his own.",
-      "did you hear him? 'I DECLARE… a break'"
+      "alguma vez pôs o pé numa nau?",
+      "outra 'audiência rápida' que levou uma hora…",
+      "'o melhor Feitor da casa' — a caneca comprou-a ele",
+      "a minha tarefa passou a ideia dele",
+      "o fumo à janela, francamente…",
+      "regou a palmeira. uma. a dele.",
+      "ouviste? 'a casa governa-se sozinha'"
     ],
     "cheer": [
-      "done! ✔",
-      "nailed it",
-      "that's a wrap",
-      "ship it 🚀",
-      "another one done",
-      "crushed it",
-      "in the books"
+      "feito! ✔",
+      "está despachado",
+      "e pronto",
+      "vai para o mar 🚀",
+      "mais uma no rol",
+      "arrumado",
+      "assente no livro"
     ],
-    "gpuError": "O chão do escritório perdeu o contexto da GPU.\n\nHá demasiados terminais a usar a GPU ao mesmo tempo.\nFecha alguns terminais e volta a tentar.",
+    "gpuError": "O chão da casa perdeu o contexto da GPU.\n\nHá demasiados terminais a usar a GPU ao mesmo tempo.\nFecha alguns terminais e volta a tentar.",
     "mugs": {
-      "empty": "não restam canecas limpas…",
-      "brewing": "a preparar uma nova ☕",
+      "empty": "não há canecas lavadas…",
+      "brewing": "a tirar do barril 🍷",
       "washing": "a lavar a caneca"
     },
     "activity": {
@@ -78,6 +78,10 @@
       "looping": "a rodar — interruptor ativado",
       "runningFloor": "a executar o chão",
       "idle": "inativo"
+    },
+    "booting": {
+      "title": "A CHEGAR",
+      "body": "{{godName}} está a instalar-se no gabinete e a preparar a casa. Um momento…"
     }
   },
   "common": {
@@ -253,26 +257,6 @@
     "foundersWallBody": "Um mês de casa_da_indIA Pro gratuito, depois 50% de desconto no plano anual. Para as primeiras 100 pessoas na parede.",
     "seeTheWall": "ver a parede",
     "joinDiscord": "unir-se ao Discord"
-  },
-  "officeTheme": {
-    "title": "Tema de escritório",
-    "tvShow": "temas de escritório inspirados em séries de TV",
-    "experimental": "experimental",
-    "desc": "Redesenhar o escritório pixelizado como uma série de TV. A alteração inicia um novo elenco.",
-    "current": "atual",
-    "soon": "em breve",
-    "notBuiltYet": "{{label}} ainda não está construído — a mostrar o escritório por agora.",
-    "switchAborted": "Interrupção da mudança — um terminal não fecharia: {{error}}",
-    "confirmTitle": "Mudar de escritório para \"{{label}}\"?",
-    "startsFreshCast": "Iniciar nova versão",
-    "deleteCount": "O teu agente atual {{count}} será eliminado — o terminal dele fecha e qualquer trabalho em curso é interrompido.",
-    "deleteCountPlural": "Os teus {{count}} agentes atuais serão eliminados — os terminais deles fecham e qualquer trabalho em curso é interrompido.",
-    "onlyCarries": "Apenas {{god}} é mantido.",
-    "stillWorking": "⚠ O agente {{count}} ainda está a trabalhar.",
-    "stillWorkingPlural": "⚠ Os agentes {{count}} ainda estão a trabalhar.",
-    "cantUndo": "Isto não pode ser desfeito.",
-    "switching": "a mudar...",
-    "deleteSwitch": "eliminar {{count}} & mudar"
   },
   "settings": {
     "title": "DEFINIÇÕES",
