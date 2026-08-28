@@ -42,36 +42,35 @@ export const BANCAS_CAFE = [
 
 /** A adega: o barril das canecas, os barris de espicha, o barril de lavar. */
 export const CAFE: CoffeeConfig = {
-  trayTile: { x: 28, y: 13 },
-  trayStand: { x: 28, y: 14 },
-  machineStand: { x: 30, y: 14 },
-  sinkTile: { x: 32, y: 13 },
-  sinkStand: { x: 32, y: 14 },
+  trayTile: { x: 31, y: 16 },
+  trayStand: { x: 31, y: 17 },
+  machineStand: { x: 33, y: 17 },
+  sinkTile: { x: 36, y: 16 },
+  sinkStand: { x: 36, y: 17 },
   maxCups: 4,
 };
 
-/** Os três adereços clicáveis. */
+/** Os quatro adereços clicáveis — painéis de azulejo do silhar. */
 export const ANCORAS: AnchorConfig = {
-  calendar: { x: 2, y: 1 },
-  boards: { x: 4, y: 11 },
-  clock: { x: 8, y: 1 },
+  calendar: { x: 6, y: 2 },
+  boards: { x: 10, y: 13 },
+  clock: { x: 8, y: 2 },
+  askme: { x: 16, y: 13 },
 };
 
 /** Os recados de ócio. Cada `fx` é o adereço, cada `stand` é o tile ao lado
  *  — ambos verificados contra a camada de colisão pelo gerador. */
 export const RECADOS: ErrandSpot[] = [
-  { kind: 'water', stand: { x: 3, y: 6 }, facing: 'left', fx: { x: 2, y: 6 }, duration: 4.5, godOnly: true },
-  { kind: 'smoke', stand: { x: 5, y: 4 }, facing: 'up', fx: { x: 5, y: 2 }, duration: 18, godOnly: true },
-  { kind: 'water', stand: { x: 18, y: 8 }, facing: 'right', fx: { x: 19, y: 8 }, duration: 4.5 },
-  { kind: 'water', stand: { x: 23, y: 10 }, facing: 'right', fx: { x: 24, y: 10 }, duration: 4.5 },
-  { kind: 'water', stand: { x: 28, y: 20 }, facing: 'right', fx: { x: 29, y: 20 }, duration: 4.5 },
-  { kind: 'window', stand: { x: 12, y: 4 }, facing: 'up', fx: { x: 12, y: 2 }, duration: 5 },
-  { kind: 'window', stand: { x: 21, y: 4 }, facing: 'up', fx: { x: 21, y: 2 }, duration: 5 },
-  { kind: 'dispenser', stand: { x: 10, y: 7 }, facing: 'down', fx: { x: 10, y: 8 }, duration: 3.5 },
-  { kind: 'dispenser', stand: { x: 32, y: 6 }, facing: 'up', fx: { x: 32, y: 5 }, duration: 3.5 },
-  { kind: 'fridge', stand: { x: 21, y: 17 }, facing: 'up', fx: { x: 21, y: 16 }, duration: 3.2 },
-  { kind: 'shelf', stand: { x: 21, y: 13 }, facing: 'up', fx: { x: 21, y: 12 }, duration: 4 },
-  { kind: 'shelf', stand: { x: 22, y: 20 }, facing: 'up', fx: { x: 22, y: 19 }, duration: 4 },
-  { kind: 'bin', stand: { x: 24, y: 7 }, facing: 'right', fx: { x: 25, y: 7 }, duration: 2.6 },
-  { kind: 'bin', stand: { x: 31, y: 17 }, facing: 'right', fx: { x: 32, y: 17 }, duration: 2.6 },
+  { kind: 'smoke', stand: { x: 5, y: 3 }, facing: 'up', fx: { x: 5, y: 2 }, duration: 18, godOnly: true },
+  { kind: 'window', stand: { x: 14, y: 3 }, facing: 'up', fx: { x: 14, y: 2 }, duration: 5 },
+  { kind: 'window', stand: { x: 25, y: 3 }, facing: 'up', fx: { x: 25, y: 2 }, duration: 5 },
+  { kind: 'window', stand: { x: 33, y: 3 }, facing: 'up', fx: { x: 33, y: 2 }, duration: 5 },
+  { kind: 'dispenser', stand: { x: 34, y: 5 }, facing: 'up', fx: { x: 34, y: 4 }, duration: 3.5 },
+  { kind: 'dispenser', stand: { x: 37, y: 20 }, facing: 'up', fx: { x: 37, y: 19 }, duration: 3.5 },
+  { kind: 'fridge', stand: { x: 24, y: 16 }, facing: 'up', fx: { x: 24, y: 15 }, duration: 3.2 },
+  { kind: 'fridge', stand: { x: 30, y: 16 }, facing: 'up', fx: { x: 30, y: 15 }, duration: 3.2 },
+  { kind: 'shelf', stand: { x: 23, y: 18 }, facing: 'up', fx: { x: 23, y: 17 }, duration: 4 },
+  { kind: 'shelf', stand: { x: 30, y: 26 }, facing: 'up', fx: { x: 30, y: 25 }, duration: 4 },
+  { kind: 'bin', stand: { x: 23, y: 25 }, facing: 'up', fx: { x: 23, y: 24 }, duration: 2.6 },
+  { kind: 'bin', stand: { x: 12, y: 10 }, facing: 'up', fx: { x: 12, y: 9 }, duration: 2.6 },
 ];

@@ -18,10 +18,18 @@ const ANIM_FRAMES: Record<AnimState, number[]> = {
   idle: [0],
 };
 
-// Render characters a bit larger than their native 18×32 so heads/faces read
-// clearly on the floor. Applied to the container so the leg-crop mask (a child)
-// scales with the sprite and stays aligned.
-const CHAR_SCALE = 1.08;
+// Render characters larger than their native 18×32 so heads/faces read clearly
+// on the floor. Applied to the container so the leg-crop mask (a child) scales
+// with the sprite and stays aligned.
+//
+// The 2× in here is the floor's tile size, not a taste decision: the map moved
+// from 16 px tiles to 32 px when the painted art arrived, so a sprite drawn at
+// its native size would occupy half the tiles it used to and read as a doll.
+// At 2.16 a character covers the same fraction of the room — and the same
+// number of screen pixels — as it did before. The portraits themselves are
+// still the hand-placed 18×32 pixels of portraitArt.ts; they are magnified,
+// not redrawn, so they are visibly coarser than the floor they stand on.
+const CHAR_SCALE = 1.08 * 2;
 
 /** Ported from shahar061/the-office (office/characters/CharacterSprite.ts). */
 export class CharacterSprite {

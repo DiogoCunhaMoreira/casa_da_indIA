@@ -1,379 +1,302 @@
 #!/usr/bin/env python3
-"""Build src/renderer/src/assets/tilesets/casadaindia.png from the raw artwork.
+"""Build src/renderer/src/assets/tilesets/casadaindia.png from the painted sheet.
 
-The image model draws one piece at a time, big and anti-aliased. This does the
-post-production the artwork spec promises: downscale to 16 px per tile,
-posterise to the brand palette, snap to the grid, keep the floors seamless.
+    python3 tools/mapgen/build_atlas.py [SHEET.png]
 
-    python3 tools/mapgen/build_atlas.py [SRC_DIR]
+The source is one 1448×1086 painted sheet (tools/mapgen/art/casadaindia-sheet.png)
+holding 29 pieces at roughly 120 px per floor tile. This cuts it into the atlas
+the map draws with: 16 columns of 32 px cells, 512×512.
 
-SRC_DIR defaults to ~/Downloads/casa_de_contas_11_pngs. Layout of the output
-atlas is documented in src/renderer/src/assets/tilesets/ATLAS.md — keep the two
-in sync. Requires pillow + numpy.
+Why 32 and not the 16 this project used to run at: the sheet is painted, not
+pixelled. At 16 px a terracotta tile loses its joints, the azulejo turns to
+noise and the barrel loses its staves — i.e. the new art would arrive with
+exactly the detail of the art it replaced. 32 px is the smallest cell where
+every piece on the sheet still reads. The map, the camera and the character
+scale were moved to match; see build_ribeira.py and CharacterSprite.ts.
+
+**No palette quantisation.** The old 16 px atlas snapped every pixel to 27 brand
+colours to hold a hand-pixelled look together. This art is painted and its
+colour IS the detail — posterising it is the one edit that would undo the whole
+point of the exercise.
+
+**Two things this does do to the art, both measured, both explained where they
+happen:** floor cells are cut *inside* their painted mortar rim (`cell`'s
+`inset`, or every joint in the room doubles up into a visible 32 px cage), and
+props get a contact shadow derived from their own silhouette (`contact_shadow`,
+or they read as stickers laid on the floor rather than things standing on it).
+
+Layout of the output is documented in
+src/renderer/src/assets/tilesets/ATLAS.md — keep the two in sync.
+Requires pillow + numpy.
 """
 import os, sys
 import numpy as np
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageFilter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ASSETS = os.path.abspath(os.path.join(HERE, '..', '..', 'src', 'renderer', 'src', 'assets'))
-SRC = sys.argv[1] if len(sys.argv) > 1 else \
-    os.path.expanduser('~/Downloads/casa_de_contas_11_pngs')
+ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
+ASSETS = os.path.join(ROOT, 'src', 'renderer', 'src', 'assets')
+SHEET = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, 'art', 'casadaindia-sheet.png')
 OUT = os.path.join(ASSETS, 'tilesets', 'casadaindia.png')
-TILE = 16
+
+TILE = 32
 COLS = ROWS = 16
 
-# ── palette ───────────────────────────────────────────────────────────────────
-# The brand tokens from design/tokens.ts plus the ramps the artwork needs.
-# Every pixel in the atlas is snapped to one of these.
-PALETTE_HEX = [
-    '21201C', '3A3833', '4A4A50', '7A7A84',          # ink / iron
-    '123A73', '1F4E9C', '7FA9D9', 'B7CFE9',          # azulejo blues
-    'D9C9A8', 'F2E6CE', 'FFF8E8',                    # parchment / limewash
-    '8A6412', 'C8961E', 'E8C46A',                    # brass / gold
-    '046A38', '2E9C63',                              # green
-    'A4161A', 'D64045',                              # red
-    '4A2F18', '6B4423', '8B5E34', 'B08050',          # wood
-    '6E675C', '8E877A', 'B8B0A0', 'D8D2C4',          # lioz stone
-    'A0824A', 'C9A66B',                              # jute / rope
-    '7A4022', 'A05A32', 'C4703C',                    # terracotta
-    'CFE0F2',                                        # Tagus sky
-]
-PAL = np.array([[int(h[i:i + 2], 16) for i in (0, 2, 4)] for h in PALETTE_HEX], np.float32)
+# ── cutting the sheet ─────────────────────────────────────────────────────────
+# Every box below was measured off the sheet by alpha-island analysis. A box is
+# (x, y, w, h) of the whole run; `nx`/`ny` say how many equal cells it holds.
+# The art was laid out by hand, so a run's cells are only *approximately* even —
+# the residual error is a couple of source pixels, which is a third of a pixel
+# once a 120 px cell becomes 32.
+
+def grid(x, y, w, h, nx=1, ny=1):
+    """Split a run into nx×ny boxes, in reading order."""
+    return [(round(x + c * w / nx), round(y + r * h / ny),
+             round(w / nx), round(h / ny))
+            for r in range(ny) for c in range(nx)]
 
 
-def _srgb_to_lab(rgb):
-    """rgb in 0..255 -> CIELab. Accurate enough for nearest-colour matching."""
-    c = rgb.astype(np.float32) / 255.0
-    c = np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
-    m = np.array([[0.4124, 0.3576, 0.1805],
-                  [0.2126, 0.7152, 0.0722],
-                  [0.0193, 0.1192, 0.9505]], np.float32)
-    xyz = c @ m.T / np.array([0.95047, 1.0, 1.08883], np.float32)
-    f = np.where(xyz > 0.008856, np.cbrt(xyz), 7.787 * xyz + 16.0 / 116.0)
-    return np.stack([116 * f[..., 1] - 16,
-                     500 * (f[..., 0] - f[..., 1]),
-                     200 * (f[..., 1] - f[..., 2])], axis=-1)
+# floors — self-contained tiles, cut on their shared grout lines
+TERRACOTA = grid(19, 17, 244, 249, 2, 2) + grid(268, 17, 245, 249, 2, 2)
+LIOZ = [(521, 19, 113, 120), (639, 19, 110, 120),
+        (756, 19, 112, 120), (873, 18, 109, 121)]
+# walls — 3×2 run of limewashed plaster, some with stone showing at the base
+REBOCO = grid(995, 17, 440, 272, 3, 2)
+# the azulejo dado: five painted panels, three patterned and two with the
+# armillary sphere. They go ON THE WALL, never on the floor — putting azulejo
+# underfoot everywhere is what made the old floor read as noise.
+AZULEJO = grid(19, 281, 933, 174, 5, 1)
+FRISO = grid(966, 311, 238, 113, 2, 1) + grid(1210, 311, 224, 114, 2, 1)
+VIGA = grid(20, 475, 477, 142, 4, 1)
+
+# big pieces — (box, tiles wide, tiles tall)
+PORTA = ((515, 475, 285, 405), 2, 3)
+JANELA = ((823, 482, 230, 268), 2, 2)
+ARCA = ((1083, 473, 335, 144), 3, 2)
+MESA_COMERCIO = ((23, 645, 458, 248), 4, 2)
+ESCRIVANINHA = ((1064, 637, 247, 260), 2, 2)
+BALANCA = ((1327, 659, 107, 230), 1, 2)
+
+# loose props, one tile each unless noted
+SACA_VERMELHA = ((33, 921, 119, 127), 1, 1)
+SACA_AMARELA = ((169, 914, 121, 133), 1, 1)
+CAIXOTE = ((325, 917, 111, 128), 1, 1)
+FARDO = ((471, 917, 115, 126), 1, 1)
+BARRIL = ((619, 905, 110, 145), 1, 1)
+LIVRO = ((761, 932, 145, 108), 1, 1)
+PERGAMINHO = ((925, 919, 125, 119), 1, 1)
+CASTICAL = ((1070, 904, 69, 145), 1, 1)
+BANCO = ((1179, 937, 241, 115), 2, 1)
 
 
-PAL_LAB = _srgb_to_lab(PAL)
+# ── image helpers ─────────────────────────────────────────────────────────────
+def resize_rgba(im, w, h):
+    """Downscale on premultiplied alpha, so a prop's edge does not bleed the
+    black that sits under its transparent pixels. Un-premultiplies on the way
+    out. BOX when we are shrinking by 2× or more (it averages every source
+    pixel, which is what a 4× reduction wants), LANCZOS otherwise."""
+    arr = np.asarray(im, dtype=np.float32)
+    al = arr[..., 3:4] / 255.0
+    pre = np.concatenate([arr[..., :3] * al, arr[..., 3:4]], axis=-1)
+    small = Image.fromarray(pre.clip(0, 255).astype('uint8'), 'RGBA').resize(
+        (w, h), Image.BOX if im.width >= w * 2 else Image.LANCZOS)
+    out = np.asarray(small, dtype=np.float32)
+    rgb = (out[..., :3] / np.maximum(out[..., 3:4], 1e-6) * 255.0).clip(0, 255)
+    return Image.fromarray(
+        np.dstack([rgb, out[..., 3]]).astype('uint8'), 'RGBA')
 
 
-def quantize(rgb):
-    """Nearest palette colour in Lab. No dithering — at 16 px it reads as noise."""
-    flat = _srgb_to_lab(rgb).reshape(-1, 3)
-    d = ((flat[:, None, :] - PAL_LAB[None, :, :]) ** 2).sum(-1)
-    return PAL[d.argmin(1)].astype(np.uint8).reshape(rgb.shape)
+def harden(im, cut=110):
+    """Snap the alpha to on/off. A prop with a soft edge shimmers against the
+    floor once the camera moves; a hard edge does not."""
+    a = np.asarray(im).copy()
+    a[..., 3] = (a[..., 3] >= cut) * 255
+    a[a[..., 3] == 0] = 0
+    return Image.fromarray(a, 'RGBA')
 
 
-# ── helpers ───────────────────────────────────────────────────────────────────
-def load(name):
-    return np.asarray(Image.open(os.path.join(SRC, name)).convert('RGBA')).astype(np.float32)
+def opaque(im):
+    """Floors and walls are backdrops: force them fully opaque so a stray soft
+    pixel at a tile border cannot show the clear colour through the seam."""
+    a = np.asarray(im).copy()
+    a[..., 3] = 255
+    return Image.fromarray(a, 'RGBA')
 
 
-def bbox(a, thr=16):
-    ys, xs = np.nonzero(a[..., 3] > thr)
-    return int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
+def trim(im):
+    box = im.getbbox()
+    return im.crop(box) if box else im
 
 
-def trim(a):
-    x0, y0, x1, y1 = bbox(a)
-    return a[y0:y1, x0:x1]
+def drop_slate(im, until_row):
+    """Erase the dark slate panel the scales were painted against.
+
+    That panel is part of the picture, not part of the object — dropped onto a
+    terracotta floor it reads as a black hole. It is the one **neutral** thing
+    in the crop: the slate measures R≈G≈B around (48,48,50), while every other
+    dark pixel in the piece is warm brown or saturated gold. So a channel-spread
+    test keys it out exactly, with no tolerance to tune, and restricting it to
+    the rows above the table top keeps it away from the wood below."""
+    a = np.asarray(im).astype(np.int16).copy()
+    rgb = a[:until_row, :, :3]
+    neutral = (rgb.max(-1) - rgb.min(-1) < 14) & (rgb.mean(-1) < 100)
+    a[:until_row][neutral] = 0
+    return Image.fromarray(a.astype(np.uint8), 'RGBA')
 
 
-def resize_rgba(a, w, h):
-    """Area downscale with premultiplied alpha — no black halo around the edges."""
-    al = a[..., 3:4] / 255.0
-    pm = np.concatenate([a[..., :3] * al, a[..., 3:4]], axis=-1)
-    im = Image.fromarray(np.clip(pm, 0, 255).astype(np.uint8), 'RGBA')
-    im = im.resize((w, h), Image.BOX if a.shape[1] >= w * 2 else Image.LANCZOS)
-    out = np.asarray(im).astype(np.float32)
-    al2 = np.maximum(out[..., 3:4], 1e-6) / 255.0
-    return np.concatenate([np.clip(out[..., :3] / al2, 0, 255), out[..., 3:4]], axis=-1)
+# ── build ─────────────────────────────────────────────────────────────────────
+sheet = Image.open(SHEET).convert('RGBA')
+atlas = Image.new('RGBA', (COLS * TILE, ROWS * TILE), (0, 0, 0, 0))
+used = {}
 
 
-def finish(a, opaque=False):
-    """Posterise and harden the alpha. Returns uint8 RGBA."""
-    if not opaque:
-        a = a.copy()
-        a[..., 3] = np.where(a[..., 3] >= 110, 255, 0)
-    al = np.full(a.shape[:2], 255, np.uint8) if opaque else a[..., 3].astype(np.uint8)
-    out = np.dstack([quantize(a[..., :3]), al])
-    out[al == 0] = 0
+def place(col, row, im):
+    atlas.alpha_composite(im, (col * TILE, row * TILE))
+
+
+def cell(box, col, row, kind='prop', inset=0):
+    """One 32×32 atlas cell from one source box.
+
+    `inset` trims that many source pixels off all four sides, and on the floors
+    it is the difference between a room and a cage. Each floor cell on the sheet
+    is drawn with its own dark mortar rim — about five pixels down the left edge
+    and six down the right. Cut on the shared line and every joint in the room
+    carries BOTH rims: eleven source pixels of dark, which lands as a solid
+    three-pixel line every thirty-two, at a perfectly regular pitch, forty
+    columns wide. Measured against the finished floor that seam ran ~48 grey
+    levels below the tile interior while the variation *inside* a tile was ±5 —
+    ten times stronger than anything the eight painted variants could say. So
+    the eye stops seeing terracotta and starts seeing the grid.
+
+    Trimming half the rim off each side leaves one ordinary grout line where two
+    tiles meet, instead of two stacked."""
+    x, y, w, h = box
+    im = resize_rgba(sheet.crop((x + inset, y + inset,
+                                 x + w - inset, y + h - inset)), TILE, TILE)
+    place(col, row, opaque(im) if kind == 'flat' else harden(im))
+
+
+def contact_shadow(prop, feet_rows=5):
+    """A soft pool of shade under a prop, painted into its own cells.
+
+    Without one, every barrel and every chest reads as a sticker laid on the
+    floor rather than an object standing on it — the single loudest reason the
+    room looked flat. It is derived from the prop's own silhouette: take the
+    bottom few rows of its alpha, squash them into an ellipse-ish smear, blur
+    it, and put it *behind* the prop. Nothing to draw, and it follows the shape
+    of whatever it is under."""
+    a = np.asarray(prop)
+    al = a[..., 3] > 0
+    ys = np.flatnonzero(al.any(1))
+    if not len(ys):
+        return prop
+    bottom = ys[-1]
+    band = al[max(0, bottom - feet_rows):bottom + 1]
+    if not band.any():
+        return prop
+    xs = np.flatnonzero(band.any(0))
+    x0, x1 = xs[0], xs[-1]
+    cx, half = (x0 + x1) / 2, max(2.0, (x1 - x0) / 2 * 1.15)
+    ry = max(2.0, half * 0.34)
+    cy = bottom - ry * 0.35
+
+    yy, xx = np.mgrid[0:a.shape[0], 0:a.shape[1]]
+    d = ((xx - cx) / half) ** 2 + ((yy - cy) / ry) ** 2
+    mask = np.clip(1.0 - d, 0, 1) ** 0.7
+    sh = np.zeros_like(a)
+    sh[..., 3] = (mask * 118).astype(np.uint8)
+    shadow = Image.fromarray(sh, 'RGBA').filter(ImageFilter.GaussianBlur(1.1))
+    out = Image.new('RGBA', prop.size, (0, 0, 0, 0))
+    out.alpha_composite(shadow)
+    out.alpha_composite(prop)
     return out
 
 
-def fit_prop(a, tw, th, pad=1):
-    """Scale a prop to fit tw×th tiles, anchored bottom-centre so it sits on the floor."""
-    a = trim(a)
+def block(spec, col, row, name, slate=0, shadow=True):
+    """A prop that spans tw×th cells, scaled to fit and anchored bottom-centre
+    so it stands on the floor rather than floating in its bounding box."""
+    (x, y, w, h), tw, th = spec
+    src = sheet.crop((x, y, x + w, y + h))
+    if slate:
+        src = drop_slate(src, slate)
+    src = trim(src)
     W, H = tw * TILE, th * TILE
-    ih, iw = a.shape[:2]
-    s = min((W - 2 * pad) / iw, (H - 2 * pad) / ih)
-    nw, nh = max(1, round(iw * s)), max(1, round(ih * s))
-    canvas = np.zeros((H, W, 4), np.float32)
-    ox, oy = (W - nw) // 2, H - nh - pad
-    canvas[oy:oy + nh, ox:ox + nw] = resize_rgba(a, nw, nh)
-    return finish(canvas)
+    s = min(W / src.width, H / src.height)
+    nw, nh = max(1, round(src.width * s)), max(1, round(src.height * s))
+    small = harden(resize_rgba(src, nw, nh))
+    canvas = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    canvas.alpha_composite(small, ((W - nw) // 2, H - nh))
+    if shadow:
+        canvas = contact_shadow(canvas)
+    place(col, row, canvas)
+    used[name] = (col, row, tw, th)
 
 
-def symmetrise_x(t):
-    """Mirror the tile left/right so it butts against itself without a jump."""
-    out, w = t.copy(), t.shape[1]
-    out[:, w // 2:] = t[:, :w // 2][:, ::-1]
-    return out
+# row 0 — the eight terracotta floors, then the four limestone flags.
+# INSET_CHAO trims half the painted mortar rim off each side; see cell().
+INSET_CHAO = 4
+for i, b in enumerate(TERRACOTA):
+    cell(b, i, 0, 'flat', inset=INSET_CHAO)
+for i, b in enumerate(LIOZ):
+    cell(b, 8 + i, 0, 'flat', inset=INSET_CHAO)
+
+# row 1 — plaster (0-5), azulejo dado (6-10), stone frieze (11-14)
+for i, b in enumerate(REBOCO):
+    cell(b, i, 1, 'flat')
+for i, b in enumerate(AZULEJO):
+    cell(b, 6 + i, 1, 'flat')
+for i, b in enumerate(FRISO):
+    cell(b, 11 + i, 1, 'flat')
+
+# row 2 — ceiling beams (0-3), then the two tiles the sheet does not contain
+for i, b in enumerate(VIGA):
+    cell(b, i, 2, 'flat')
+
+# ESCURO: what lies outside the walls. Not on the sheet — a flat tile in the
+# shadow tone the beams are painted in, so the map has something honest to put
+# behind a wall instead of a hole.
+escuro = Image.new('RGBA', (TILE, TILE), (26, 20, 16, 255))
+place(4, 2, escuro)
+
+# PAREDE_V: a wall running north–south. The sheet has wall *faces*, which is all
+# a south-facing wall needs, but a partition seen edge-on is a different tile and
+# a plain plaster face used for one reads as a pale stripe of floor. So: a
+# plaster tile with a shadow gutter burnt down both edges, which is what gives it
+# the thickness that makes it read as a wall instead of a path.
+def parede_vertical(src_col):
+    im = resize_rgba(sheet.crop((REBOCO[src_col][0], REBOCO[src_col][1],
+                                 REBOCO[src_col][0] + REBOCO[src_col][2],
+                                 REBOCO[src_col][1] + REBOCO[src_col][3])), TILE, TILE)
+    a = np.asarray(im).astype(np.float32).copy()
+    x = np.arange(TILE)
+    edge = np.minimum(x, TILE - 1 - x) / 9.0          # 0 at the edges, 1 by 9 px in
+    shade = np.clip(0.22 + 0.78 * edge, 0, 1)[None, :, None]
+    a[..., :3] *= shade
+    a[..., 3] = 255
+    return Image.fromarray(a.clip(0, 255).astype('uint8'), 'RGBA')
 
 
-# ── block A · floors ──────────────────────────────────────────────────────────
-def resize_seamless(a, n, contrast=1.0):
-    """Downscale a repeating motif without breaking the seam.
+place(5, 2, parede_vertical(0))
+place(6, 2, parede_vertical(3))
 
-    Tiles 3×3 copies, resizes the lot and keeps the middle one, so the filter
-    always sees neighbours from across the join and the border comes out
-    identical to the interior. Lanczos + a contrast lift keeps the linework
-    crisp; a plain box average turns dense azulejo into blue mush.
-    """
-    big = np.tile(np.clip(a[..., :3], 0, 255).astype(np.uint8), (3, 3, 1))
-    im = Image.fromarray(big, 'RGB').resize((n * 3, n * 3), Image.LANCZOS)
-    if contrast != 1.0:
-        im = ImageEnhance.Contrast(im).enhance(contrast)
-    mid = np.asarray(im).astype(np.float32)[n:2 * n, n:2 * n]
-    return finish(np.dstack([mid, np.full((n, n, 1), 255.0)]), opaque=True)
+# rows 3-5 — the big pieces
+block(PORTA, 0, 3, 'porta')                 # 2×3, rows 3-5
+block(JANELA, 2, 3, 'janela')               # 2×2, rows 3-4
+block(ARCA, 4, 3, 'arca')                   # 3×2
+block(MESA_COMERCIO, 7, 3, 'mesa_comercio')  # 4×2
+block(ESCRIVANINHA, 11, 3, 'escrivaninha')  # 2×2
+# the slate panel behind the scales is painted in; key it out above the table top
+block(BALANCA, 13, 3, 'balanca', slate=80)
 
+# row 6 — the loose props
+for i, (spec, name) in enumerate([
+        (SACA_VERMELHA, 'saca_vermelha'), (SACA_AMARELA, 'saca_amarela'),
+        (CAIXOTE, 'caixote'), (FARDO, 'fardo'), (BARRIL, 'barril'),
+        (LIVRO, 'livro'), (PERGAMINHO, 'pergaminho'), (CASTICAL, 'castical')]):
+    block(spec, i, 6, name)
+block(BANCO, 8, 6, 'banco')                 # 2×1
 
-def floor_azulejo_principal():
-    """2×2 tiles. 1.png holds 2×2 copies of the motif; the period measures 627 px."""
-    return resize_seamless(load('1.png')[0:627, 0:627], 32, contrast=1.25)
-
-
-def floor_azulejo_variante():
-    """4×4 tiles, not 2×2 — the pattern is too dense to survive 32 px.
-
-    The whole image is one motif: it is mirror-symmetric and continuous across
-    its own borders (measured), so it repeats as delivered.
-    """
-    return resize_seamless(load('2.png'), 64, contrast=1.6)
-
-
-def floor_lioz():
-    """Lioz flagstone, 2×2 tiles. Drawn here — it was not in the delivered art."""
-    P = {k: np.array([int(v[i:i + 2], 16) for i in (0, 2, 4)], np.uint8)
-         for k, v in dict(clr='D8D2C4', med='B8B0A0', esc='8E877A', jun='8E877A').items()}
-    t = np.zeros((32, 32, 4), np.uint8)
-    t[..., 3] = 255
-    t[..., :3] = P['jun']              # the joints are the background showing through
-    lajes = [(0, 0, 19, 14, P['clr']), (19, 0, 32, 14, P['med']),
-             (0, 14, 12, 32, P['med']), (12, 14, 25, 32, P['clr']),
-             (25, 14, 32, 32, P['med'])]
-    for x0, y0, x1, y1, tom in lajes:
-        t[y0 + 1:y1, x0 + 1:x1, :3] = tom
-        t[y1 - 1, x0 + 1:x1, :3] = P['esc']            # shadow along the bottom edge
-    rng = np.random.default_rng(7)                     # stone speckle
-    t[..., :3][rng.random((32, 32)) < 0.05] = P['esc']
-    t[..., :3][rng.random((32, 32)) < 0.04] = P['clr']
-    return t
-
-
-def floor_madeira():
-    """Board flooring, 2×2 tiles. Drawn here — it was not in the delivered art."""
-    C = {k: np.array([int(v[i:i + 2], 16) for i in (0, 2, 4)], np.uint8)
-         for k, v in dict(clr='B08050', med='8B5E34', esc='6B4423', jun='4A2F18').items()}
-    t = np.zeros((32, 32, 4), np.uint8)
-    t[..., 3] = 255
-    rng = np.random.default_rng(3)
-    for i, tom in enumerate([C['med'], C['clr'], C['esc'], C['med']]):   # four 8 px boards
-        y0 = i * 8
-        t[y0:y0 + 8, :, :3] = tom
-        t[y0, :, :3] = C['jun']                        # joint between boards
-        for y in (y0 + 3, y0 + 5):                     # grain
-            t[y, rng.random(32) < 0.30, :3] = C['esc']
-    for i, x in enumerate((5, 21, 13, 29)):            # staggered board ends
-        t[i * 8:i * 8 + 8, x, :3] = C['jun']
-    return t
-
-
-# ── block B · walls ───────────────────────────────────────────────────────────
-def wall_column(name, bands, tiles_w=1, sym=True):
-    """Slice a wall drawing into 16 px bands. bands = [(fy0, fy1), ...] of the bbox.
-
-    The delivered walls are whole segments — cornice, plaster, azulejo dado,
-    stone skirting — so each becomes a 3-tile-tall column rather than the single
-    face tile the spec asked for.
-    """
-    a = load(name)
-    x0, y0, x1, y1 = bbox(a)
-    if tiles_w == 1:                    # middle panel only, so it repeats sideways
-        panel = (x1 - x0) / 3.0
-        cx = x0 + ((x1 - x0) - panel) / 2
-        a = a[y0:y1, int(cx):int(cx + panel)]
-    else:
-        a = a[y0:y1, x0:x1]
-    H = a.shape[0]
-    out = []
-    for fy0, fy1 in bands:
-        t = finish(resize_rgba(a[int(fy0 * H):int(fy1 * H)], tiles_w * TILE, TILE))
-        out.append(symmetrise_x(t) if (sym and tiles_w == 1) else t)
-    return out
-
-
-# ── row 15 · furniture drawn here ─────────────────────────────────────────────
-# The delivered art has no desk and no seat, and the floor needs fifteen of each.
-# These are drawn from the palette rather than shipped as art; the props that go
-# on top of the desk are composited from the real drawings. See ATLAS.md —
-# they are the first thing to replace if there is another round of artwork.
-def _rgb(h):
-    return np.array([int(h[i:i + 2], 16) for i in (0, 2, 4)], np.uint8)
-
-
-def _stand(a, canvas, cx, base_y, height):
-    """Scale a prop to `height` px and stand it on `base_y`, centred on `cx`."""
-    a = trim(a)
-    ih, iw = a.shape[:2]
-    nh = height
-    nw = max(1, round(iw * nh / ih))
-    small = resize_rgba(a, nw, nh)
-    x0, y0 = cx - nw // 2, base_y - nh
-    for y in range(nh):                      # alpha-composite, prop over table
-        for x in range(nw):
-            if small[y, x, 3] > 110 and 0 <= y0 + y < canvas.shape[0] and 0 <= x0 + x < canvas.shape[1]:
-                canvas[y0 + y, x0 + x] = small[y, x]
-
-
-def _tampo(w):
-    """A plain wooden table seen from the three-quarter game angle, w px wide."""
-    clr, med, esc, tinta = _rgb('B08050'), _rgb('8B5E34'), _rgb('4A2F18'), _rgb('21201C')
-    t = np.zeros((TILE, w, 4), np.float32)
-
-    def band(y0, y1, col, x0=0, x1=None):
-        t[y0:y1, x0:(w if x1 is None else x1), :3] = col
-        t[y0:y1, x0:(w if x1 is None else x1), 3] = 255
-
-    band(4, 5, tinta)                        # far edge, in shadow
-    band(5, 11, clr)                         # the top
-    band(11, 12, esc)                        # the lip
-    band(12, 14, med)                        # the apron below the top
-    t[5:11, 0, :3] = med                     # side edges
-    t[5:11, w - 1, :3] = med
-    for lx in (1, w - 3):                    # two legs, front corners
-        band(14, 16, esc, lx, lx + 2)
-    return t
-
-
-def escrivaninha():
-    """Writing desk, 2×1 tiles — the ledger and the inkwell are the real art."""
-    t = _tampo(2 * TILE)
-    _stand(load('7_4_livro_aberto_pena.png'), t, 11, 10, 7)     # open ledger
-    _stand(load('7_6_tinteiro_penas.png'), t, 24, 10, 9)        # inkwell and quills
-    return finish(t)
-
-
-def mesa_refeitorio():
-    """Plain table, 2×1 tiles — the refectory and the café tables."""
-    return finish(_tampo(2 * TILE))
-
-
-def banco():
-    """Stool, 1×1. Walkable: it is painted on furniture-below and is the seat."""
-    clr, med, esc = _rgb('B08050'), _rgb('8B5E34'), _rgb('4A2F18')
-    t = np.zeros((TILE, TILE, 4), np.float32)
-    t[6:11, 3:13, :3] = clr                  # the seat
-    t[6:11, 3:13, 3] = 255
-    t[10:11, 3:13, :3] = med                 # front lip
-    t[6:7, 4:12, :3] = med                   # far edge
-    for lx in (4, 10):                       # two visible legs
-        t[11:14, lx:lx + 2, :3] = esc
-        t[11:14, lx:lx + 2, 3] = 255
-    return finish(t)
-
-
-def strip_piece(name, fx0, fx1, sym=True):
-    """One 16×16 tile taken out of a horizontal strip."""
-    a = load(name)
-    x0, y0, x1, y1 = bbox(a)
-    w = x1 - x0
-    t = finish(resize_rgba(a[y0:y1, x0 + int(fx0 * w):x0 + int(fx1 * w)], TILE, TILE))
-    return symmetrise_x(t) if sym else t
-
-
-# ── assembly ──────────────────────────────────────────────────────────────────
-GPT = 'ChatGPT Image Aug 27, 2026 at '
-
-ARMAZEM = [                              # file, col, row, tiles wide, tiles tall
-    (GPT + '06_12_18 PM.png',       0,  9, 1, 1),   # barrel, upright
-    (GPT + '06_12_26 PM (1).png',   1,  9, 2, 2),   # stack of barrels
-    (GPT + '06_12_27 PM (2).png',   3,  9, 1, 1),   # barrel on its side
-    (GPT + '06_12_28 PM (3).png',   4,  9, 1, 1),   # pepper sack
-    (GPT + '06_12_28 PM (4).png',   5,  9, 2, 2),   # stack of sacks
-    (GPT + '06_12_28 PM (5).png',   7,  9, 1, 1),   # crate
-    (GPT + '06_12_29 PM (6).png',   8,  9, 2, 2),   # stack of crates
-    (GPT + '06_12_30 PM (7).png',  10,  9, 1, 1),   # coil of rope
-    (GPT + '06_12_30 PM (8).png',  11,  9, 2, 2),   # anchor
-    (GPT + '06_12_31 PM (9).png',  13,  9, 2, 2),   # bale of sailcloth
-    (GPT + '06_12_31 PM (10).png',  0, 11, 1, 1),   # wicker basket
-    (GPT + '06_15_26 PM.png',       1, 11, 1, 1),   # amphora
-]
-
-CONTAS = [
-    ('7_1_balanca.png',                      0, 12, 2, 2),
-    ('7_2_esfera_armilar.png',               2, 12, 2, 2),
-    ('7_3_carta_nautica_mesa.png',           4, 12, 3, 2),   # the Padrão Real
-    ('7_4_livro_aberto_pena.png',            7, 12, 1, 1),
-    ('7_5_pilha_livros.png',                 8, 12, 1, 1),
-    ('7_6_tinteiro_penas.png',               9, 12, 1, 1),
-    ('7_7_ampulheta.png',                   10, 12, 1, 1),
-    ('7_8_castical.png',                    11, 12, 1, 1),
-    ('7_9_arca_forte.png',                  12, 12, 1, 1),
-    ('7_10_astrolabio.png',                 13, 12, 2, 2),
-    ('7_11_cartas_portulano_enroladas.png',  0, 14, 2, 1),
-]
-
-
-def main():
-    atlas = np.zeros((ROWS * TILE, COLS * TILE, 4), np.uint8)
-
-    def put(tile, cx, cy):
-        h, w = tile.shape[:2]
-        atlas[cy * TILE:cy * TILE + h, cx * TILE:cx * TILE + w] = tile
-
-    # block A · floors (rows 0-1; the rich azulejo spans rows 0-3)
-    put(floor_azulejo_principal(), 0, 0)
-    put(floor_lioz(), 2, 0)
-    put(floor_madeira(), 4, 0)
-    put(floor_azulejo_variante(), 8, 0)
-
-    # block B · walls (rows 2-4): cornice / plaster face / azulejo dado + skirting
-    for i, t in enumerate(wall_column('3 - parede simples.png',
-                                      [(0.00, 0.155), (0.32, 0.52), (0.645, 1.00)])):
-        put(t, 0, 2 + i)
-    for i, t in enumerate(wall_column('3 - pilar de pedra.png',
-                                      [(0.00, 0.17), (0.34, 0.54), (0.66, 1.00)])):
-        put(t, 1, 2 + i)
-    for i, t in enumerate(wall_column('3 - Canto superior Esq.png',
-                                      [(0.00, 0.20), (0.34, 0.54), (0.62, 1.00)], tiles_w=2)):
-        put(t, 2, 2 + i)
-    for i, t in enumerate(wall_column('3 - Canto superior dir.png',
-                                      [(0.00, 0.20), (0.34, 0.54), (0.62, 1.00)], tiles_w=2)):
-        put(t, 4, 2 + i)
-    put(strip_piece('3 - topo parede.png', 0.10, 0.38), 6, 2)      # loose cornice
-    put(strip_piece('3 - faixa de azulejo.png', 0.02, 0.35), 6, 4)  # loose azulejo band
-
-    # block C · arch and window (rows 5-8)
-    put(fit_prop(load('4 - Arco Manuelino.png'), 3, 4, pad=0), 0, 5)
-    put(fit_prop(load('5 - Janela com Nau.png'), 3, 4, pad=0), 3, 5)
-
-    # blocks D and E · props (rows 9-11 and 12-14)
-    for name, cx, cy, tw, th in ARMAZEM + CONTAS:
-        put(fit_prop(load(name), tw, th), cx, cy)
-
-    # row 15 · furniture the map needs and the artwork did not supply
-    put(escrivaninha(), 0, 15)
-    put(banco(), 2, 15)
-    put(mesa_refeitorio(), 3, 15)
-
-    os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    Image.fromarray(atlas, 'RGBA').save(OUT)
-    used = len(np.unique(atlas.reshape(-1, 4)[atlas.reshape(-1, 4)[:, 3] > 0][:, :3], axis=0))
-    print(f'wrote {OUT}  256x256  {used} colours')
-
-
-if __name__ == '__main__':
-    main()
+atlas.save(OUT)
+filled = sum(1 for r in range(ROWS) for c in range(COLS)
+             if atlas.crop((c * TILE, r * TILE, c * TILE + TILE, r * TILE + TILE)).getbbox())
+print(f'wrote {OUT}  {atlas.width}×{atlas.height}, {TILE}px cells, {filled} non-empty')

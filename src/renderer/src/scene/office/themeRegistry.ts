@@ -74,11 +74,16 @@ export interface CoffeeConfig {
 }
 
 /** Adereços clicáveis (coordenadas de tile). calendar → GATILHOS,
- *  boards → TAREFAS, clock → HORA DE FECHAR. */
+ *  boards → TAREFAS, clock → HORA DE FECHAR, askme → PERGUNTA-ME.
+ *
+ *  O `askme` estava cravado à mão no `OfficeFloor.tsx`, no tile (14,10) do
+ *  escritório antigo — e ficou a apontar para o sítio errado assim que a planta
+ *  mudou. Vive aqui pela mesma razão que os outros três. */
 export interface AnchorConfig {
   calendar: Tile;
   boards: Tile;
   clock: Tile;
+  askme: Tile;
 }
 
 /** Paleta do chão. `background` é a cor com que se limpa a tela; `noteColors`

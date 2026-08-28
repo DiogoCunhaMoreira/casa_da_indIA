@@ -2,9 +2,9 @@
  * casa_da_indIA — o chão da Casa da Índia, e o único que há.
  *
  * A Ribeira das Naus (`ribeira.tmj`) desenhada com o atlas `casadaindia.png`,
- * mais o `interiors.png` por causa de seis tiles: a palmeira e a planta de
- * vaso. A ordem desta lista de atlas tem de bater certo com a ordem dos
- * `tilesets` do mapa — o carregador casa-os pelo índice.
+ * e mais nada: desde que a arte passou a 32 px por tile, o `interiors.png` —
+ * que é de 16 — saiu do mapa. A ordem desta lista de atlas tem de bater certo
+ * com a ordem dos `tilesets` do mapa: o carregador casa-os pelo índice.
  *
  * As coordenadas todas — lugares, adereços clicáveis, adega, recados — vivem
  * no `planta.ts`, que é gerado pelo mesmo script que desenha o mapa. Aqui não
@@ -21,7 +21,6 @@ import { getCastFrames } from '../cast';
 // compilação, por isso este não fecha nada.
 import type { ThemeConfig } from '../themeRegistry';
 import casadaindiaUrl from '@/assets/tilesets/casadaindia.png?url';
-import interiorsUrl from '@/assets/tilesets/interiors.png?url';
 // .tmj é Tiled JSON; entra como texto em bruto e é o carregador que o parseia.
 import ribeiraMapRaw from '@/assets/maps/ribeira.tmj?raw';
 import { ELENCO } from './elenco';
@@ -63,33 +62,22 @@ export const CASA_BY_NAME: Record<string, CastMember> =
 export const CASA_DEFAULT_CHARACTER = 'caminha';
 
 /**
- * Os dois atlas, por esta ordem.
+ * O atlas. Um só.
  *
- * O `firstgid` 2449 do nosso é o tile logo a seguir ao último do
- * `interiors.png` (que ocupa 1025–2448). O `ribeira.tmj` foi desenhado com
- * estes números — se algum mudar aqui, o mapa passa a apontar para os tiles
- * errados, e em silêncio.
+ * 512×512, células de 32 px, `firstgid` 1 — é o único tileset do mapa. O
+ * `ribeira.tmj` foi desenhado com estes números pelo `build_ribeira.py`; se
+ * algum mudar aqui, o mapa passa a apontar para os tiles errados, e em
+ * silêncio.
  */
 const ATLAS = [
   {
-    url: interiorsUrl,
-    firstgid: 1025,
-    image: 'interiors',
-    imagewidth: 256,
-    imageheight: 1424,
-    tilewidth: 16,
-    tileheight: 16,
-    columns: 16,
-    tilecount: 1424,
-  },
-  {
     url: casadaindiaUrl,
-    firstgid: 2449,
+    firstgid: 1,
     image: 'casadaindia',
-    imagewidth: 256,
-    imageheight: 256,
-    tilewidth: 16,
-    tileheight: 16,
+    imagewidth: 512,
+    imageheight: 512,
+    tilewidth: 32,
+    tileheight: 32,
     columns: 16,
     tilecount: 256,
   },

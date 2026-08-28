@@ -295,6 +295,15 @@ export function OfficeFloor() {
       camera.setViewSize(app.screen.width, app.screen.height);
       camera.fitToScreen();
 
+      // Every hand-drawn overlay below this line — the calendar, the boards, the
+      // clock, the cups, the errand fx, the sticky notes — was drawn in the 16 px
+      // units the floor used before the painted art moved it to 32. ART is the
+      // one factor that puts them back at the right size against the tiles: the
+      // Graphics gets `scale.set(ART)` and any offset it is positioned by is
+      // multiplied by ART. Deriving it from the map means the next change of
+      // tile size carries them along instead of leaving them half-sized.
+      const ART = mapRenderer.tileSize / 16;
+
       // ─── The boss's wall calendar → TRIGGERS ───────────────────────────────
       // A little tear-off month page hangs on the CEO office wall. Clicking it
       // selects Michael (the god) and opens the Command Center's TRIGGERS tab —
@@ -303,7 +312,9 @@ export function OfficeFloor() {
       const calG = new Graphics();
       calG.eventMode = 'static';
       calG.cursor = 'pointer';
-      calG.position.set(theme.anchors.calendar.x * calTs + 8, theme.anchors.calendar.y * calTs + 5);
+      calG.position.set(theme.anchors.calendar.x * calTs + 8 * ART,
+                        theme.anchors.calendar.y * calTs + 5 * ART);
+      calG.scale.set(ART);
       calG.zIndex = 3 * calTs;
       calG.on('pointertap', (ev) => {
         ev.stopPropagation();
@@ -452,6 +463,7 @@ export function OfficeFloor() {
       const trayG = new Graphics();
       trayG.eventMode = 'none';
       trayG.position.set(TRAY_TILE.x * ts0, TRAY_TILE.y * ts0);
+      trayG.scale.set(ART);
       trayG.zIndex = (TRAY_TILE.y + 1) * ts0;
       charLayer.addChild(trayG);
       const drawTray = (): void => {
@@ -466,6 +478,7 @@ export function OfficeFloor() {
       const sinkG = new Graphics();
       sinkG.eventMode = 'none';
       sinkG.position.set(SINK_TILE.x * ts0, SINK_TILE.y * ts0);
+      sinkG.scale.set(ART);
       sinkG.zIndex = (SINK_TILE.y + 1) * ts0;
       charLayer.addChild(sinkG);
       let sinkBusy = 0; // seconds of wash animation left
@@ -490,8 +503,13 @@ export function OfficeFloor() {
 
       const machineG = new Graphics(); // steam over the counter machine while brewing
       machineG.eventMode = 'none';
-      machineG.position.set(26 * ts0, 17 * ts0);
-      machineG.zIndex = 19 * ts0;
+      // Over the barrels themselves, which are the tile the stand faces. This
+      // used to be the literal tile (26,17) of the old floor plan, so it drifted
+      // off the counter the moment the plan changed; deriving it from the theme
+      // is the same rule the tray and the sink already follow.
+      machineG.position.set(MACHINE_STAND.x * ts0, (MACHINE_STAND.y - 1) * ts0);
+      machineG.scale.set(ART);
+      machineG.zIndex = (MACHINE_STAND.y + 1) * ts0;
       charLayer.addChild(machineG);
       let machineBusy = 0;
       const drawMachine = (t: number): void => {
@@ -807,6 +825,7 @@ export function OfficeFloor() {
           g = new Graphics();
           g.eventMode = 'none';
           g.position.set(spot.fx.x * ts0, spot.fx.y * ts0);
+          g.scale.set(ART);
           g.zIndex = (spot.fx.y + 1) * ts0;
           charLayer.addChild(g);
           errandFx.set(idx, g);
@@ -1029,7 +1048,8 @@ export function OfficeFloor() {
       const boardG = new Graphics();
       boardG.eventMode = 'static';
       boardG.cursor = 'pointer';
-      boardG.position.set(BOARD_TILE.x * tsB + BOARD_CENTER_PAD, BOARD_TILE.y * tsB);
+      boardG.position.set(BOARD_TILE.x * tsB + BOARD_CENTER_PAD * ART, BOARD_TILE.y * tsB);
+      boardG.scale.set(ART);
       boardG.zIndex = (BOARD_TILE.y + 1) * tsB;
       boardG.on('pointertap', (ev) => {
         ev.stopPropagation();
@@ -1084,7 +1104,8 @@ export function OfficeFloor() {
           if (!g) {
             g = new Graphics();
             g.eventMode = 'none';
-            g.position.set((desk.x - 1) * tsB + 3, (desk.y - 1) * tsB + 8);
+            g.position.set((desk.x - 1) * tsB + 3 * ART, (desk.y - 1) * tsB + 8 * ART);
+            g.scale.set(ART);
             g.zIndex = desk.y * tsB - 1;
             charLayer.addChild(g);
             deskNoteG.set(t.assignee!, g);
@@ -1121,7 +1142,10 @@ export function OfficeFloor() {
       clockG.eventMode = 'static';
       clockG.cursor = 'pointer';
       clockG.position.set(theme.anchors.clock.x * ts0, theme.anchors.clock.y * ts0);
+      // The hit area is in the Graphics' own (unscaled) space, so it stays in
+      // 16 px units even though the drawing is scaled up around it.
       clockG.hitArea = { contains: (x: number, y: number) => x >= 0 && x <= 16 && y >= 0 && y <= 32 };
+      clockG.scale.set(ART);
       clockG.zIndex = 3 * ts0;
       clockG.on('pointertap', (ev) => {
         ev.stopPropagation();
@@ -1138,8 +1162,9 @@ export function OfficeFloor() {
       const askG = new Graphics();
       askG.eventMode = 'static';
       askG.cursor = 'pointer';
-      askG.position.set(14 * tsB + 25, 10 * tsB);
-      askG.zIndex = 11 * tsB;
+      askG.position.set(theme.anchors.askme.x * tsB, theme.anchors.askme.y * tsB);
+      askG.scale.set(ART);
+      askG.zIndex = (theme.anchors.askme.y + 1) * tsB;
       askG.on('pointertap', (ev) => {
         ev.stopPropagation();
         const st = useStore.getState();
@@ -1227,6 +1252,7 @@ export function OfficeFloor() {
         g.eventMode = 'none';
         g.rect(0, 0, 5, 4).fill(color);
         g.rect(2, 0, 1, 1).fill(0x4a3b52);
+        g.scale.set(ART);
         charLayer.addChild(g);
         carriedNotes.set(actorId, g);
       };
@@ -1621,6 +1647,7 @@ export function OfficeFloor() {
         const to = posFor(toId);
         if (!from || !to) return; // sender or recipient not on the floor
         const env = new MessageEnvelope(from, to, act, needsHuman);
+        env.container.scale.set(ART);
         charLayer.addChild(env.container);
         envelopes.push(env);
       };

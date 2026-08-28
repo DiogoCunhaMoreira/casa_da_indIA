@@ -29,7 +29,9 @@ export function paintCup(g: Graphics, x: number, y: number): void {
   g.rect(x, y - 4, 5, 1).fill(0xffffff);
 }
 
-const SPEED = 48; // pixels/sec (tileSize=16)
+// Pixels/sec. Three tiles a second, which is where it has always been — the
+// number doubled when the floor went from 16 px tiles to 32.
+const SPEED = 96;
 // Slide the sprite when seated so it reads as "sitting on the chair" rather than
 // standing on the tile. The chair tile holds the chair/barrel, with the desk in
 // the tile the agent faces. The feet are anchored at the seat tile's bottom and
@@ -143,6 +145,7 @@ export class Character {
     this.sprite.setPosition(this.px, this.py);
 
     this.thoughtBubble = new ThoughtBubble();
+    this.thoughtBubble.setArtScale(this.mapRenderer.tileSize / 16);
     // Keep the cloud inside the world — Michael's corner office would
     // otherwise push his bubble off the top/left map edge.
     this.thoughtBubble.setBounds(
@@ -150,8 +153,11 @@ export class Character {
       this.mapRenderer.height * this.mapRenderer.tileSize
     );
 
+    // The halo is sized off the tile, not off a literal 14: it pulses by
+    // overwriting its own scale every frame, so unlike the other 16 px-unit
+    // overlays it cannot carry a fixed art scale.
     this.workGlow = new Graphics();
-    this.workGlow.circle(0, 0, 14);
+    this.workGlow.circle(0, 0, this.mapRenderer.tileSize * 0.875);
     this.workGlow.fill({ color: options.glowColor, alpha: 1 });
     this.workGlow.alpha = 0;
     this.workGlow.eventMode = 'none';
@@ -162,9 +168,12 @@ export class Character {
     this.fx = new Graphics();
     this.fx.eventMode = 'none';
 
+    // The cup parked on a desk sits in world space, not on the sprite, so it
+    // needs the same 16 px→tile art scale the scene's other overlays get.
     this.deskCup = new Graphics();
     this.deskCup.eventMode = 'none';
     this.deskCup.visible = false;
+    this.deskCup.scale.set(this.mapRenderer.tileSize / 16);
   }
 
   getAnimation(): CharacterAnimation { return this.state; }

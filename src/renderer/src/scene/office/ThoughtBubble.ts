@@ -59,6 +59,11 @@ export class ThoughtBubble {
   // never renders below its designed 1:1 screen size; at zoom ≥ 1 it keeps
   // scaling with the world as before.
   private zoom = 1;
+  // Art scale: tile size ÷ 16, the units the cloud is drawn in. It used to be
+  // implicit — the old 544×352 floor was always shown at ~2.5× zoom, so the
+  // bubble rode that up with it. The 1280×896 floor fits the window at ~1×, and
+  // without this the same bubble would suddenly render at a fifth of the area.
+  private art = 1;
   // World bounds (map size in px). An avatar near the map edge — Michael's CEO
   // room sits in the top-left corner — would otherwise push its cloud out of
   // the visible world. setPosition clamps the rect back inside, tooltip-style.
@@ -147,9 +152,17 @@ export class ThoughtBubble {
     this.container.scale.set(this.compensation());
   }
 
-  /** World-units multiplier that cancels a < 1 camera zoom (1 at zoom ≥ 1). */
+  /** How big the cloud is drawn: its art scale, times whatever it takes to
+   *  cancel a camera zoom below 1 (nothing, at zoom ≥ 1). */
   private compensation(): number {
-    return 1 / Math.min(this.zoom, 1);
+    return this.art / Math.min(this.zoom, 1);
+  }
+
+  /** Set the art scale (tile size ÷ 16) and apply it. */
+  setArtScale(k: number): void {
+    if (!(k > 0) || k === this.art) return;
+    this.art = k;
+    this.container.scale.set(this.compensation());
   }
 
   /** The world rect the bubble must stay inside (the map size, in px). */

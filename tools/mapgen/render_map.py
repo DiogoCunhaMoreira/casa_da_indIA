@@ -14,13 +14,13 @@ FLIP_V = 0x40000000
 FLIP_D = 0x20000000
 GID_MASK = 0x1FFFFFFF
 
-# firstgid -> (image path, columns, tilew, tileh)
+# firstgid -> (image path, columns, tilew, tileh). One atlas since the floor
+# moved to 32 px art — interiors.png is no longer part of this map.
 TILESETS = [
-    (1025, 'tilesets/interiors.png',   16, 16, 16),
-    (2449, 'tilesets/casadaindia.png', 16, 16, 16),
+    (1, 'tilesets/casadaindia.png', 16, 32, 32),
 ]
 TILE_LAYERS = ['floor', 'walls', 'furniture-below', 'furniture-above']
-SCALE = 3
+SCALE = 1
 
 def load_sheets():
     out = []
