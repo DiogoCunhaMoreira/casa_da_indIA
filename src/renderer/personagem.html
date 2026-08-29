@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <title>personagem · Casa da Índia</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; background: #14100c; }
+      body {
+        font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        color: #e8e0d2; padding: 16px 20px 40px;
+      }
+      h1 {
+        margin: 0 0 4px; font-size: 12px; letter-spacing: .14em;
+        text-transform: uppercase; color: #b9a480; font-weight: 600;
+      }
+      #sub { margin: 0 0 16px; font-size: 12px; color: #8d8172; }
+      #controlos {
+        display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+        background: rgba(30, 25, 19, .7); border: 1px solid #3a3128;
+        padding: 10px 14px; border-radius: 6px; margin-bottom: 18px;
+      }
+      #controlos label { display: flex; align-items: center; gap: 8px; user-select: none; }
+      #controlos input[type=range] { width: 140px; accent-color: #c8961e; }
+      #controlos input[type=checkbox] { accent-color: #c8961e; }
+      #palco { display: block; }
+      #erro {
+        display: none; background: #2a1414; border: 1px solid #7a2b2b;
+        padding: 16px; border-radius: 6px; white-space: pre-wrap;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+      }
+      a { color: #c8961e; }
+    </style>
+  </head>
+  <body>
+    <h1>personagem</h1>
+    <p id="sub">a carregar… · <a href="/cena.html">ver o chão →</a></p>
+    <div id="controlos">
+      <label>velocidade <input type="range" id="vel" min="1" max="24" value="10" /></label>
+      <label><input type="checkbox" id="grelha" checked /> grelha de 32 px (um tile)</label>
+      <label><input type="checkbox" id="passeio" checked /> passeio</label>
+      <label>ampliação
+        <select id="zoom">
+          <option value="1">1× (tamanho no jogo)</option>
+          <option value="2" selected>2×</option>
+          <option value="4">4×</option>
+        </select>
+      </label>
+    </div>
+    <div id="palco"></div>
+    <div id="erro"></div>
+    <script type="module" src="./src/personagem.tsx"></script>
+  </body>
+</html>

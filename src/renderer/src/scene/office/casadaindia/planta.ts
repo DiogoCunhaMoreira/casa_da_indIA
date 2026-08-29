@@ -4,6 +4,9 @@
  * GERADO por `tools/mapgen/build_ribeira.py` a partir do mesmo código que
  * desenha o `ribeira.tmj`. Não edites à mão — muda a planta no gerador e
  * volta a correr, ou o mapa e o tema deixam de dizer a mesma coisa.
+ *
+ * A lista de recados traz só os que têm mesmo um adereço desenhado contra o
+ * qual jogar. Enquanto a arte for chegando peça a peça, ela cresce sozinha.
  */
 import type { AnchorConfig, CoffeeConfig, ErrandSpot } from '../themeRegistry';
 
@@ -61,16 +64,5 @@ export const ANCORAS: AnchorConfig = {
 /** Os recados de ócio. Cada `fx` é o adereço, cada `stand` é o tile ao lado
  *  — ambos verificados contra a camada de colisão pelo gerador. */
 export const RECADOS: ErrandSpot[] = [
-  { kind: 'smoke', stand: { x: 5, y: 3 }, facing: 'up', fx: { x: 5, y: 2 }, duration: 18, godOnly: true },
-  { kind: 'window', stand: { x: 14, y: 3 }, facing: 'up', fx: { x: 14, y: 2 }, duration: 5 },
-  { kind: 'window', stand: { x: 25, y: 3 }, facing: 'up', fx: { x: 25, y: 2 }, duration: 5 },
-  { kind: 'window', stand: { x: 33, y: 3 }, facing: 'up', fx: { x: 33, y: 2 }, duration: 5 },
-  { kind: 'dispenser', stand: { x: 34, y: 5 }, facing: 'up', fx: { x: 34, y: 4 }, duration: 3.5 },
-  { kind: 'dispenser', stand: { x: 37, y: 20 }, facing: 'up', fx: { x: 37, y: 19 }, duration: 3.5 },
-  { kind: 'fridge', stand: { x: 24, y: 16 }, facing: 'up', fx: { x: 24, y: 15 }, duration: 3.2 },
-  { kind: 'fridge', stand: { x: 30, y: 16 }, facing: 'up', fx: { x: 30, y: 15 }, duration: 3.2 },
-  { kind: 'shelf', stand: { x: 23, y: 18 }, facing: 'up', fx: { x: 23, y: 17 }, duration: 4 },
-  { kind: 'shelf', stand: { x: 30, y: 26 }, facing: 'up', fx: { x: 30, y: 25 }, duration: 4 },
-  { kind: 'bin', stand: { x: 23, y: 25 }, facing: 'up', fx: { x: 23, y: 24 }, duration: 2.6 },
-  { kind: 'bin', stand: { x: 12, y: 10 }, facing: 'up', fx: { x: 12, y: 9 }, duration: 2.6 },
+
 ];

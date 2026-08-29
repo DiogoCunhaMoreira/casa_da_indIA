@@ -28,3 +28,7 @@ docs/media/MunderDifflin*.mp4
 
 # blog theme previews (local only)
 docs/blog-preview-*/
+
+# ambiente de python dos geradores de arte (npm run arte cria-o sozinho)
+tools/mapgen/.venv/
+tools/mapgen/__pycache__/

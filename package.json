@@ -12,6 +12,8 @@
   },
   "scripts": {
     "dev": "electron-vite dev",
+    "arte": "node tools/mapgen/run.cjs",
+    "cena": "vite --config vite.cena.config.ts",
     "build": "electron-vite build && npm run copy:main-assets",
     "copy:main-assets": "node tools/copy-main-assets.cjs",
     "preview": "electron-vite preview",
