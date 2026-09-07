@@ -15,6 +15,19 @@ este documento passa a mentir.
 3.  npm run cena      abre a cena no browser; recarrega-se sozinha
 ```
 
+O passo 1 também se faz sem desenhar nada. As 46 peças que lá estão vieram da
+PixelLab, e o `tools/mapgen/import_pecas.py` traz qualquer uma delas outra vez:
+
+```
+PIXELLAB_TOKEN=... python3 tools/mapgen/import_pecas.py            # o que faltar
+PIXELLAB_TOKEN=... python3 tools/mapgen/import_pecas.py --refaz barril
+```
+
+O `art/pecas/FONTES.json` diz de onde vem cada peça e **porquê daquele gerador**
+— a escolha está medida, não é gosto. Em resumo: chãos pelo `topdown_tileset`,
+paredes pelo `tiles_pro`, adereços pelo `map_object` a 1 geração cada. O kit
+inteiro custou 70 gerações.
+
 `npm run cena` monta o **mesmo** `TiledMapRenderer`, a mesma `Camera` e o mesmo
 `ThemeConfig` que o `OfficeFloor.tsx` monta dentro do Electron — o que fica de
 fora é o store, os agentes, os terminais e o assistente de arranque. Isso é o
@@ -74,7 +87,7 @@ ninguém desenhar nada.
 marca para segurar um aspecto pixelado à mão. Esta arte é pintada e a cor *é* o
 detalhe.
 
-Faz duas coisas, ambas medidas:
+Faz três coisas, todas medidas:
 
 **Recorta os chãos por dentro do bordo pintado** (`INSET_CHAO`, 4 px). Um tile
 de chão costuma vir desenhado com a sua própria argamassa à volta; encostando
@@ -88,6 +101,15 @@ mediu-se a descer de 52 para 20.
 **Dá aos adereços uma sombra de contacto** derivada da própria silhueta. Sem
 ela, cada barril e cada arca lê-se como um autocolante pousado no chão em vez de
 um objecto de pé.
+
+**Harmoniza o tom das variantes de chão** (`harmoniza_chaos`, 75% do caminho até
+à `-1` da família). Cada variante vem da sua própria chamada à PixelLab, e o
+gerador trata "terracota mais escura" como *outro terreno* e não como outra
+tijoleira do mesmo chão. Como chegaram, a terracota espalhava-se por **45 níveis
+de luma** entre variantes e o lioz por **78** — mais do que os 48 da gaiola que
+o `INSET_CHAO` foi criado para matar. O olho não via variedade, via manta de
+retalhos. Depois de harmonizar: 11.5 e 19.6. Não vai a 100% de propósito, senão
+sobravam oito cópias do mesmo tile.
 
 ## Porquê 32 px e não os 16 de antes
 

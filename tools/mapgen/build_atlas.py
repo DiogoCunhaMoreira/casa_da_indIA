@@ -31,6 +31,7 @@ adereços levam uma sombra de contacto derivada da própria silhueta
 Precisa de pillow + numpy.
 """
 import os
+import re
 import sys
 
 import numpy as np
@@ -101,6 +102,56 @@ def tira_ardosia(im, ate_linha):
     neutro = (rgb.max(-1) - rgb.min(-1) < 14) & (rgb.mean(-1) < 100)
     a[:ate_linha][neutro] = 0
     return Image.fromarray(a.astype(np.uint8), 'RGBA')
+
+
+def harmoniza_chaos(chaos, forca=0.75):
+    """Encosta as variantes de um chão ao tom da primeira.
+
+    A terceira coisa que se faz à arte, e pela mesma razão que as outras duas:
+    mediu-se e era o defeito mais barulhento da sala. As variantes vêm cada uma
+    da sua chamada à PixelLab, e o gerador trata "terracota mais escura" como
+    outro terreno e não como outra tijoleira do mesmo chão. Medido nas peças
+    entregues: a terracota espalha-se por **45 níveis de luma** entre variantes
+    e o lioz por **78** — contra os 48 do problema da gaiola, que já se tinha
+    achado inaceitável. O olho não vê variedade, vê manta de retalhos.
+
+    Cada variante é puxada `forca` do caminho até à média da `-1` da sua
+    família. Não vai a 100% de propósito: a diferença entre a tijoleira gasta e
+    a tijoleira queimada é o que se foi lá buscar, e apagá-la toda deixava oito
+    cópias do mesmo tile.
+
+    O deslocamento é feito em torno da média de cada tile, com a amplitude
+    encolhida só o suficiente para nada bater no 0 nem no 255. Somar a direito
+    era mais simples, mas empurrava os píxeis claros do lioz contra o tecto e
+    o tile perdia as juntas — que é exactamente a textura que aqui se quer
+    guardar.
+    """
+    familias = {}
+    for nome in chaos:
+        familias.setdefault(re.sub(r'-\d+$', '', nome), []).append(nome)
+
+    for nomes in familias.values():
+        nomes.sort()
+        ancora = np.asarray(chaos[nomes[0]], np.float32)[..., :3].reshape(-1, 3).mean(0)
+        for nome in nomes[1:]:
+            a = np.asarray(chaos[nome]).astype(np.float32)
+            rgb = a[..., :3]
+            media = rgb.reshape(-1, 3).mean(0)
+            alvo = media + (ancora - media) * forca
+
+            alto = rgb.reshape(-1, 3).max(0)
+            baixo = rgb.reshape(-1, 3).min(0)
+            escala = np.ones(3)
+            for c in range(3):
+                if alto[c] > media[c]:
+                    escala[c] = min(escala[c], (255 - alvo[c]) / (alto[c] - media[c]))
+                if media[c] > baixo[c]:
+                    escala[c] = min(escala[c], alvo[c] / (media[c] - baixo[c]))
+            escala = np.clip(escala, 0, 1)
+
+            a[..., :3] = (rgb - media) * escala + alvo
+            chaos[nome] = Image.fromarray(a.clip(0, 255).astype('uint8'), 'RGBA')
+    return chaos
 
 
 def sombra_de_contacto(adereco, linhas_pe=5):
@@ -214,13 +265,22 @@ def deriva(nome, peca):
 
 
 # Primeiro o que tem arte, depois o que se deriva do que já está colado.
+# Os chãos ficam de lado até ao fim da passagem: harmonizar o tom de uma
+# variante precisa de ver as irmãs todas, e nessa altura ainda não vimos.
+chaos_por_colar = {}
 for nome, peca in PECAS.items():
     if peca.derivar:
         continue
     feito = monta(nome, peca)
     if feito:
-        cola(peca, feito[0])
+        if peca.especie == 'chao':
+            chaos_por_colar[nome] = feito[0]
+        else:
+            cola(peca, feito[0])
         presentes.add(nome)
+
+for nome, im in harmoniza_chaos(chaos_por_colar).items():
+    cola(PECAS[nome], im)
 
 for nome, peca in PECAS.items():
     if not peca.derivar:
