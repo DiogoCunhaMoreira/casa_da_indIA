@@ -1,0 +1,42 @@
+# Casa da Índia — maquete Godot
+
+Protótipo 3D autónomo para Godot 4.6.2. Não depende da aplicação Electron nem altera a versão em pixel art. Modelos e materiais construídos em GDScript, sem assets externos.
+
+Abre `project.godot` no Godot e carrega em **F5** para abrir o gabinete detalhado (`scenes/gabinete.tscn`). A planta geral continua em `scenes/casa.tscn`: abre essa cena e usa **F6** para a executar separadamente.
+
+- Roda do rato, gesto de pinça/scroll no trackpad ou teclas +/−: aproximar/afastar.
+- Arrastar com o botão direito: deslocar a vista.
+- F: aproximar e centrar a personagem selecionada.
+- Setas esquerda/direita: rodar a câmara.
+- Clique numa personagem: nome, cargo e atividade.
+- Espaço: pausar/retomar as rotinas.
+- R: repor a câmara.
+- F11 (ou Fn+F11, conforme o teclado do Mac): alternar ecrã completo.
+
+A cena apresenta a sala de trabalho, o arquivo, mercadoria e um pequeno cais. Fernão Lourenço, Pêro Vaz de Caminha e Tomé Pires percorrem trajetos fixos com animação procedural. Os estados são simulados, sem ligação a agentes reais. É um estudo visual, não uma reconstrução histórica.
+
+A geometria é gerada por `scripts/casa.gd`, também no editor através de `@tool`. Para alterar a disposição, edita `_ready()`; os auxiliares `desk`, `shelf`, `barrel` e `make_official` constroem os elementos. Reabre a cena depois de alterar a geração. Os nós gerados são transitórios e ainda não constituem um conjunto de cenas modulares editáveis individualmente.
+
+Próximas iterações: acertar direção artística com feedback visual, separar mobiliário e personagens em cenas próprias, melhorar animações e navegação. A integração com a app fica para uma decisão posterior.
+
+## Revisão visual — personagens e detalhe
+
+Personagens com cabeças maiores, cabelo, bochechas, boinas e rostos distintos. Ombros, cotovelos, ancas e joelhos articulados; passada dependente da distância percorrida, aceleração e travagem graduais, transição suave para repouso, respiração e piscar de olhos. Animação ainda procedural, sem captura de movimento ou rig importado.
+
+Azulejos, cantaria, lanternas, livros abertos, escrita, selos, gavetas, vasos, sacos e cordas acrescentam detalhe ao cenário. Os nomes aparecem apenas na seleção. Os trajetos continuam predefinidos, sem navegação dinâmica.
+
+Para uma captura de revisão, executar o Godot com `--path godot/casa-da-india -- --capture` a partir da raiz do repositório. Grava `/tmp/casa-preview.png` e termina; no macOS, a janela pode precisar de estar em primeiro plano para renderizar.
+
+## Passo 1 — planta inspirada na referência em pixel art
+
+Quatro salas: gabinete do Feitor, escrivães, cartografia/arquivo e tesouraria. Corredor central com quatro vãos, entrada, pátio e pontão. Divisórias em corte para preservar a visibilidade. Mobiliário simples reaproveitado para avaliar escala e circulação; a decoração detalhada será trabalhada por sala. As três rotas passam pelos vãos e usam lados distintos do corredor quando possível. Ainda sem colisões ou navegação dinâmica.
+
+A planta é construída em `build_layout()`, com grupos próprios para cada divisão. Esta etapa substitui a disposição da sala única; a descrição de detalhes das revisões anteriores é um registo do protótipo anterior, não o inventário da planta atual.
+
+## Passo 2 — gabinete do Feitor
+
+Interior autónomo de 16 × 10 unidades, preparado para observação próxima, com um único oficial. A cena principal passa a ser `scenes/gabinete.tscn`; a planta das quatro salas é preservada em `scenes/casa.tscn`.
+
+`gabinete.gd` constrói a arquitetura e os adereços: piso de terracota, lambris, frisos e cantaria, janelas com portadas, tapeçaria, tapete bordado, secretária com painéis e pernas torneadas, cadeira estofada, livros com nervuras, arquivo de gavetas, carta decorativa, globo, castiçais, arca e mesa de consulta. Materiais e formas continuam procedurais. O mapa, a tapeçaria e os objetos são interpretações estilizadas, não reproduções documentais históricas.
+
+Validação desta etapa: execução de 600 frames no Godot 4.6.2 sem erros; captura visual da cena no renderer Compatibility. O enquadramento geral e o detalhe foram inspecionados; o botão de ecrã completo foi implementado, mas não foi testado interativamente nesta etapa.
