@@ -2,7 +2,7 @@
 
 Protótipo 3D autónomo para Godot 4.6.2. Não depende da aplicação Electron nem altera a versão em pixel art. Modelos e materiais construídos em GDScript, sem assets externos.
 
-Abre `project.godot` no Godot e carrega em **F5** para abrir o gabinete detalhado (`scenes/gabinete.tscn`). A planta geral continua em `scenes/casa.tscn`: abre essa cena e usa **F6** para a executar separadamente.
+Abre `project.godot` no Godot e carrega em **F5** para abrir a Sala dos Escrivães (`scenes/escrivaes.tscn`). Usa os botões **Gabinete**, **Escrivães** e **Planta** para alternar entre cenas. A planta geral continua em `scenes/casa.tscn`: abre essa cena e usa **F6** para a executar separadamente.
 
 - Roda do rato, gesto de pinça/scroll no trackpad ou teclas +/−: aproximar/afastar.
 - Arrastar com o botão direito: deslocar a vista.
@@ -40,3 +40,13 @@ Interior autónomo de 16 × 10 unidades, preparado para observação próxima, c
 `gabinete.gd` constrói a arquitetura e os adereços: piso de terracota, lambris, frisos e cantaria, janelas com portadas, tapeçaria, tapete bordado, secretária com painéis e pernas torneadas, cadeira estofada, livros com nervuras, arquivo de gavetas, carta decorativa, globo, castiçais, arca e mesa de consulta. Materiais e formas continuam procedurais. O mapa, a tapeçaria e os objetos são interpretações estilizadas, não reproduções documentais históricas.
 
 Validação desta etapa: execução de 600 frames no Godot 4.6.2 sem erros; captura visual da cena no renderer Compatibility. O enquadramento geral e o detalhe foram inspecionados; o botão de ecrã completo foi implementado, mas não foi testado interativamente nesta etapa.
+
+## Passo 3 — Sala dos Escrivães
+
+Nova cena `scenes/escrivaes.tscn`, construída por `scripts/escrivaes.gd`. Reutiliza os adereços do gabinete (biblioteca, janelas, castiçais, arca, bancos e vasos) e acrescenta seis postos com registos abertos, escrita, tinteiros, penas, selos, gavetas e travessas. Arquivo de registos, correspondência e contas; quadros de recados; azulejos; mesa de consulta e passadeiras.
+
+Três personagens com percursos locais predefinidos, independentes e sem cruzamentos entre si. Os outros três postos ficam disponíveis visualmente. Os bancos estão recolhidos ao lado dos postos; ainda não há animação de sentar nem ligação a agentes reais.
+
+A cena de arranque é agora a Sala dos Escrivães. Os botões no topo permitem alternar para o gabinete ou para a planta geral sem sair do jogo. A câmara, seleção, zoom, pausa e F11 continuam disponíveis.
+
+Verificação: captura renderizada inspecionada, execução sem erros, transições Escrivães → Gabinete → Planta → Escrivães testadas por código e 60 segundos simulados de movimento em cada etapa. A validação também confirmou que os oficiais se mantêm dentro das faixas de circulação previstas na sala nova.

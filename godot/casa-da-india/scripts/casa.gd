@@ -7,6 +7,7 @@ const WOOD = Color("78503d")
 const GOLD = Color("c69b59")
 const INK = Color("294954")
 @export var gabinete := false
+@export var escrivaes := false
 var camera: Camera3D
 var officials: Array[Dictionary] = []
 var info: Label
@@ -87,7 +88,14 @@ func _ready() -> void:
 	world.add_child(sun)
 	var backdrop := box(world, "Fundo", Vector3(0,-0.85,0), Vector3(200,0.2,200), Color("b8ced0"))
 	backdrop.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	if gabinete:
+	if escrivaes:
+		preload("res://scripts/escrivaes.gd").new().build(self, world)
+		var names := ["Pêro Vaz de Caminha", "Tomé Pires", "Duarte Barbosa"]
+		for i in range(3):
+			var x := -4.5+i*4.5
+			make_official(world,names[i],"Escrivão",[Color("487b80"),Color("73844b"),Color("9b5149")][i],[Vector3(x,0,2.5),Vector3(x+1.6,0,2.5),Vector3(x+1.6,0,3.7),Vector3(x,0,3.7),Vector3(x+1.6,0,3.7),Vector3(x+1.6,0,2.5)],i)
+		camera_focus = Vector3(0,0.8,0)
+	elif gabinete:
 		preload("res://scripts/gabinete.gd").new().build(self, world)
 		make_official(world,"Fernão Lourenço","Feitor",Color("9b5149"),[Vector3(0,0,-2.6),Vector3(2.8,0,-2.6),Vector3(2.8,0,2.7),Vector3(0,0,2.7),Vector3(2.8,0,2.7),Vector3(2.8,0,-2.6)],0)
 		officials[0].node.rotation.y = 0.0
@@ -101,7 +109,7 @@ func _ready() -> void:
 	camera = Camera3D.new()
 	camera.name = "CameraDaMaquete"
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 18.8 if gabinete else 25.5
+	camera.size = 18.8 if gabinete or escrivaes else 25.5
 	camera.near = 5.0
 	camera.far = 65.0
 	world.add_child(camera)
@@ -266,14 +274,14 @@ func animate_official(a: Dictionary, delta: float) -> void:
 		a.eyes[i].scale.y = 0.012 if blink else 0.105
 
 func update_camera() -> void:
-	camera.position = camera_focus + Vector3(sin(orbit+0.23)*22,19 if gabinete else 27,cos(orbit+0.23)*22)
+	camera.position = camera_focus + Vector3(sin(orbit+0.23)*22,19 if gabinete or escrivaes else 27,cos(orbit+0.23)*22)
 	camera.look_at(camera_focus)
 
 func make_ui() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	var panel := PanelContainer.new()
-	panel.position = Vector2(28,750) if gabinete else Vector2(28,26)
+	panel.position = Vector2(28,750) if gabinete or escrivaes else Vector2(28,85)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("243e48")
 	style.corner_radius_top_left = 12
@@ -294,17 +302,31 @@ func make_ui() -> void:
 	title.add_theme_font_size_override("font_size",26)
 	stack.add_child(title)
 	var subtitle := Label.new()
-	subtitle.text = "Gabinete do Feitor · Estudo de interior" if gabinete else "Passo 1 · Planta da Casa"
+	subtitle.text = "Sala dos Escrivães · Registos e correspondência" if escrivaes else ("Gabinete do Feitor · Estudo de interior" if gabinete else "Passo 1 · Planta da Casa")
 	subtitle.modulate = Color("e4c28c")
 	stack.add_child(subtitle)
 	info = Label.new()
-	info.text = ("Fernão Lourenço · rotina simulada" if gabinete else "Três oficiais · rotinas simuladas\nSeleciona uma personagem para a acompanhar.")
+	info.text = ("Seis postos · três oficiais · rotinas simuladas" if escrivaes else ("Fernão Lourenço · rotina simulada" if gabinete else "Três oficiais · rotinas simuladas\nSeleciona uma personagem para a acompanhar."))
 	stack.add_child(info)
 	var controls := Label.new()
 	controls.text = "Roda / + −: zoom · Arrastar botão direito: mover · F: focar · R: repor · F11: ecrã completo"
 	controls.position = Vector2(28,910)
 	controls.add_theme_color_override("font_color",INK)
 	layer.add_child(controls)
+	var rooms := HBoxContainer.new()
+	rooms.position = Vector2(28,26)
+	rooms.add_theme_constant_override("separation",10)
+	layer.add_child(rooms)
+	for entry in [["Gabinete", "gabinete"], ["Escrivães", "escrivaes"], ["Planta", "casa"]]:
+		var button := Button.new()
+		button.text = entry[0]
+		button.custom_minimum_size = Vector2(125,40)
+		button.disabled = (entry[1] == "gabinete" and gabinete) or (entry[1] == "escrivaes" and escrivaes) or (entry[1] == "casa" and not gabinete and not escrivaes)
+		button.pressed.connect(switch_room.bind(entry[1]))
+		rooms.add_child(button)
+
+func switch_room(room_name: String) -> void:
+	get_tree().change_scene_to_file("res://scenes/%s.tscn" % room_name)
 
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint():
@@ -354,7 +376,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				officials[i].ring.visible = i == selected
 				officials[i].label.visible = i == selected
 			if selected < 0:
-				info.text = ("Fernão Lourenço · rotina simulada" if gabinete else "Três oficiais · rotinas simuladas\nSeleciona uma personagem para a acompanhar.")
+				info.text = ("Seis postos · três oficiais · rotinas simuladas" if escrivaes else ("Fernão Lourenço · rotina simulada" if gabinete else "Três oficiais · rotinas simuladas\nSeleciona uma personagem para a acompanhar."))
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode in [KEY_PLUS, KEY_EQUAL, KEY_KP_ADD]:
 			zoom_camera(0.85)
@@ -372,11 +394,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			if paused:
 				info.text += "\nEm pausa"
 			elif selected < 0:
-				info.text = ("Fernão Lourenço · rotina simulada" if gabinete else "Três oficiais · rotinas simuladas\nSeleciona uma personagem para a acompanhar.")
+				info.text = ("Seis postos · três oficiais · rotinas simuladas" if escrivaes else ("Fernão Lourenço · rotina simulada" if gabinete else "Três oficiais · rotinas simuladas\nSeleciona uma personagem para a acompanhar."))
 		if event.physical_keycode == KEY_R:
-			camera_focus = Vector3(0,0.8,0) if gabinete else Vector3(0,0.2,0.5)
+			camera_focus = Vector3(0,0.8,0) if gabinete or escrivaes else Vector3(0,0.2,0.5)
 			orbit = 0.0
-			camera.size = 18.8 if gabinete else 25.5
+			camera.size = 18.8 if gabinete or escrivaes else 25.5
 			update_camera()
 
 func capture_preview() -> void:
