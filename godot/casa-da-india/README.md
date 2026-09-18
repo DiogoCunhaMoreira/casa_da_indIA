@@ -2,7 +2,7 @@
 
 Protótipo 3D autónomo para Godot 4.6.2. Não depende da aplicação Electron nem altera a versão em pixel art. Modelos e materiais construídos em GDScript, sem assets externos.
 
-Abre `project.godot` no Godot e carrega em **F5** para abrir Tesouraria e Contabilidade (`scenes/tesouraria.tscn`). Usa os botões **Gabinete**, **Escrivães**, **Conselho**, **Cartografia**, **Tesouraria** e **Planta** para alternar entre cenas. A planta geral continua em `scenes/casa.tscn`: abre essa cena e usa **F6** para a executar separadamente.
+Abre `project.godot` no Godot e carrega em **F5** para abrir Refeitório e Adega (`scenes/refeitorio.tscn`). Usa os botões **Gabinete**, **Escrivães**, **Conselho**, **Cartografia**, **Tesouraria**, **Refeitório** e **Planta** para alternar entre cenas. A planta geral continua em `scenes/casa.tscn`: abre essa cena e usa **F6** para a executar separadamente.
 
 - Roda do rato, gesto de pinça/scroll no trackpad ou teclas +/−: aproximar/afastar.
 - Arrastar com o botão direito: deslocar a vista.
@@ -70,3 +70,11 @@ Francisco Rodrigues e Rui Faleiro têm percursos independentes e atividade simul
 Nova cena de arranque `scenes/tesouraria.tscn`, com construção em `scripts/tesouraria.gd`. Balcão de contagem, balança com pratos e pesos, pilhas de moedas, livro de contas, quadro de lançamentos, cofres diferenciados, arquivo, sacos e posto do escrivão. Feitor e Caminha executam rotinas visuais predefinidas, sem ligação financeira real à app.
 
 Verificação: captura correta da Tesouraria inspecionada, execução sem erros, transições entre seis cenas e 60 segundos simulados das rotinas testados por código. O modo `--capture` impede mudanças de sala para não gravar acidentalmente uma sala diferente durante a captura; a navegação normal mantém-se disponível.
+
+## Passo 7 — Refeitório e Adega
+
+Cena `scenes/refeitorio.tscn`, construída em `scripts/refeitorio.gd`, como novo arranque. Duas mesas de dimensões diferentes, bancos compridos e bancos individuais deslocados, pratos, canecas, pão e cântaros. Lareira com brasas, lenha, balcão de servir, prateleiras de loiça e adega com barris e garrafas.
+
+Tomé Pires e Duarte Barbosa percorrem rotas independentes entre mesas e balcão. Estados de pausa próprios, sem gestos de escrita. Ainda não há animações de sentar, comer ou beber: trata-se de uma rotina visual de circulação e repouso.
+
+Verificação: captura renderizada inspecionada, transições entre as sete cenas (seis salas e planta) testadas por código, 60 segundos simulados dos percursos com posições válidas e verificação dos estados de pausa. Ecrã completo e controlos de câmara mantidos. As seis salas funcionais previstas têm agora cenas próprias; a planta geral continua a ser o estudo anterior de quatro divisões, não uma planta atualizada das seis salas.

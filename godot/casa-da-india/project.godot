@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Casa da Índia — Maquete"
-run/main_scene="res://scenes/tesouraria.tscn"
+run/main_scene="res://scenes/refeitorio.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 
 [display]
