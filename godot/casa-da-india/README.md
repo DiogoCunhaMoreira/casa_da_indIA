@@ -2,7 +2,7 @@
 
 Protótipo 3D autónomo para Godot 4.6.2. Não depende da aplicação Electron nem altera a versão em pixel art. Modelos e materiais construídos em GDScript, sem assets externos.
 
-Abre `project.godot` no Godot e carrega em **F5** para abrir a Sala dos Escrivães (`scenes/escrivaes.tscn`). Usa os botões **Gabinete**, **Escrivães** e **Planta** para alternar entre cenas. A planta geral continua em `scenes/casa.tscn`: abre essa cena e usa **F6** para a executar separadamente.
+Abre `project.godot` no Godot e carrega em **F5** para abrir Tesouraria e Contabilidade (`scenes/tesouraria.tscn`). Usa os botões **Gabinete**, **Escrivães**, **Conselho**, **Cartografia**, **Tesouraria** e **Planta** para alternar entre cenas. A planta geral continua em `scenes/casa.tscn`: abre essa cena e usa **F6** para a executar separadamente.
 
 - Roda do rato, gesto de pinça/scroll no trackpad ou teclas +/−: aproximar/afastar.
 - Arrastar com o botão direito: deslocar a vista.
@@ -50,3 +50,23 @@ Três personagens com percursos locais predefinidos, independentes e sem cruzame
 A cena de arranque é agora a Sala dos Escrivães. Os botões no topo permitem alternar para o gabinete ou para a planta geral sem sair do jogo. A câmara, seleção, zoom, pausa e F11 continuam disponíveis.
 
 Verificação: captura renderizada inspecionada, execução sem erros, transições Escrivães → Gabinete → Planta → Escrivães testadas por código e 60 segundos simulados de movimento em cada etapa. A validação também confirmou que os oficiais se mantêm dentro das faixas de circulação previstas na sala nova.
+
+## Passo 4 — Sala do Conselho
+
+Cena autónoma `scenes/conselho.tscn`, construída em `scripts/conselho.gd`, agora como cena de arranque. Mesa única com carta, marcadores de rota, atas, selos e castiçais; seis cadeiras com recuos, rotações e estofos variados; mapa de parede, pendões, aparador, globo e arca. Reutiliza os elementos de arquitetura e adereços do gabinete.
+
+Feitor e Caminha circulam pelos lados da mesa. A reunião é simulada; ainda não há animação de sentar nem ligação à app. Os nomes das atividades descrevem apenas a rotina visual.
+
+Validação: 600 frames sem erros, captura renderizada inspecionada, alternância entre as quatro cenas verificada por código e 60 segundos simulados dos percursos laterais do Conselho, com verificação de posições válidas e afastamento da mesa.
+
+## Passo 5 — Cartografia e Roteiros
+
+`scenes/cartografia.tscn` é a nova cena de arranque; `scripts/cartografia.gd` constrói o interior. Mesa em cavaletes ligeiramente rodada, carta com linhas de navegação e anotações, régua, compasso, arquivo horizontal de gavetas, nichos de rolos com ocupação variável, globo, instrumento armilar e posto de consulta. Composição assimétrica, mantendo a arquitetura comum às salas anteriores. Mapas e instrumentos são interpretações estilizadas, não reproduções históricas documentais.
+
+Francisco Rodrigues e Rui Faleiro têm percursos independentes e atividade simulada, sem integração com a app. Verificação: execução sem erros, captura inspecionada, transições entre as cinco cenas testadas por código e 60 segundos simulados das rotinas da nova sala com posições válidas.
+
+## Passo 6 — Tesouraria e Contabilidade
+
+Nova cena de arranque `scenes/tesouraria.tscn`, com construção em `scripts/tesouraria.gd`. Balcão de contagem, balança com pratos e pesos, pilhas de moedas, livro de contas, quadro de lançamentos, cofres diferenciados, arquivo, sacos e posto do escrivão. Feitor e Caminha executam rotinas visuais predefinidas, sem ligação financeira real à app.
+
+Verificação: captura correta da Tesouraria inspecionada, execução sem erros, transições entre seis cenas e 60 segundos simulados das rotinas testados por código. O modo `--capture` impede mudanças de sala para não gravar acidentalmente uma sala diferente durante a captura; a navegação normal mantém-se disponível.
