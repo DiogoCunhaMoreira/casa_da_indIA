@@ -2,7 +2,7 @@
 
 Protótipo 3D autónomo para Godot 4.6.2. Não depende da aplicação Electron nem altera a versão em pixel art. Modelos e materiais construídos em GDScript, sem assets externos.
 
-Abre `project.godot` no Godot e carrega em **F5** para abrir Refeitório e Adega (`scenes/refeitorio.tscn`). Usa os botões **Gabinete**, **Escrivães**, **Conselho**, **Cartografia**, **Tesouraria**, **Refeitório** e **Planta** para alternar entre cenas. A planta geral continua em `scenes/casa.tscn`: abre essa cena e usa **F6** para a executar separadamente.
+Abre `project.godot` no Godot e carrega em **F5** para abrir a planta geral (`scenes/casa.tscn`). Clica no chão de uma sala para abrir o seu interior detalhado. Usa os botões **Gabinete**, **Escrivães**, **Conselho**, **Cartografia**, **Tesouraria**, **Refeitório** e **Planta** para alternar entre cenas. As cenas individuais continuam em `scenes/`; podes também abri-las no editor e executar com **F6**.
 
 - Roda do rato, gesto de pinça/scroll no trackpad ou teclas +/−: aproximar/afastar.
 - Arrastar com o botão direito: deslocar a vista.
@@ -78,3 +78,21 @@ Cena `scenes/refeitorio.tscn`, construída em `scripts/refeitorio.gd`, como novo
 Tomé Pires e Duarte Barbosa percorrem rotas independentes entre mesas e balcão. Estados de pausa próprios, sem gestos de escrita. Ainda não há animações de sentar, comer ou beber: trata-se de uma rotina visual de circulação e repouso.
 
 Verificação: captura renderizada inspecionada, transições entre as sete cenas (seis salas e planta) testadas por código, 60 segundos simulados dos percursos com posições válidas e verificação dos estados de pausa. Ecrã completo e controlos de câmara mantidos. As seis salas funcionais previstas têm agora cenas próprias; a planta geral continua a ser o estudo anterior de quatro divisões, não uma planta atualizada das seis salas.
+
+## Passo 8 — planta geral das seis salas
+
+`scenes/casa.tscn` volta a ser a cena de arranque. `scripts/planta.gd` compõe os mesmos construtores de interiores numa planta comum: Feitor/Escrivães a norte, Conselho/Cartografia ao centro e Tesouraria/Refeitório a sul. Corredor central com seis portas, entrada, pátio e cais. A planta substitui o estudo anterior de quatro divisões.
+
+O clique no chão de cada divisão abre a cena respetiva; **Planta** regressa à vista geral. Seleção por interseção do raio da câmara com o piso e limites de cada sala. Câmara ajustada à dimensão do edifício, com zoom até 60 unidades. Paredes do corredor em corte e nomes ampliados na vista geral.
+
+Os interiores reutilizam a mesma geometria e adereços das cenas individuais. Duas personagens percorrem o corredor; não existe ainda transferência contínua de agentes, estados ou posições entre cenas. A entrada numa sala carrega uma nova cena e reinicia a respetiva simulação.
+
+Validação: captura visual inspecionada; seis destinos de clique testados em três escalas de zoom; corredor sem destino; transições para as seis salas e regresso à planta; 60 segundos simulados de circulação no corredor, sem erros.
+
+## Comparação das paredes da planta
+
+A planta abre com **paredes completas**: divisórias de 4,7 unidades de altura, vãos de 3,2, ombreiras, vergas e seis portas abertas para dentro. O botão abaixo da navegação alterna para **paredes em corte**, preservando a versão baixa anterior. A câmara, o mobiliário e os percursos mantêm-se ao alternar. As cenas individuais não são alteradas.
+
+A alternância é manual; não há ocultação automática das paredes em função da câmara. Na versão completa, algumas paredes tapam naturalmente parte dos interiores. O modo em corte permite comparar essa legibilidade.
+
+Verificação: capturas das duas versões na mesma vista inspecionadas; botão, visibilidade exclusiva dos grupos, preservação da câmara e destinos das seis salas testados sem erros. Para repetir as capturas: `-- --capture --compare-walls` grava `/tmp/casa-walls-full.png` e `/tmp/casa-walls-cut.png`.

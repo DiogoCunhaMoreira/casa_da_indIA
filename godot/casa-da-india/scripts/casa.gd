@@ -12,6 +12,11 @@ const INK = Color("294954")
 @export var cartografia := false
 @export var tesouraria := false
 @export var refeitorio := false
+var plan_rooms: Array[Dictionary] = []
+var plan_walls_cut: Node3D
+var plan_walls_full: Node3D
+var full_walls := true
+var walls_button: Button
 var camera: Camera3D
 var officials: Array[Dictionary] = []
 var info: Label
@@ -85,7 +90,7 @@ func _ready() -> void:
 	sun.shadow_enabled = true
 	# Uma maquete compacta não precisa de cascatas para grandes distâncias.
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
-	sun.directional_shadow_max_distance = 65.0
+	sun.directional_shadow_max_distance = 95.0
 	sun.directional_shadow_pancake_size = 0.0
 	sun.shadow_bias = 0.2
 	sun.shadow_normal_bias = 1.0
@@ -134,15 +139,15 @@ func _ready() -> void:
 		camera_focus = Vector3(0,0.8,0)
 	else:
 		build_layout(world)
-		make_official(world,"Fernão Lourenço","Feitor",Color("9b5149"),[Vector3(-5.3,0,-3.0),Vector3(-5.3,0,-2),Vector3(-0.65,0,-2),Vector3(-0.65,0,3.5),Vector3(-0.65,0,-2),Vector3(-5.3,0,-2)],0)
-		make_official(world,"Pêro Vaz de Caminha","Escrivão",Color("487b80"),[Vector3(4.0,0,-3),Vector3(4,0,-2),Vector3(0.65,0,-2),Vector3(0.65,0,0.8),Vector3(0.65,0,-2),Vector3(4,0,-2)],1)
-		make_official(world,"Tomé Pires","Boticário e cronista",Color("73844b"),[Vector3(-5.3,0,3),Vector3(-5.3,0,3.5),Vector3(-0.65,0,3.5),Vector3(-0.65,0,6),Vector3(-0.65,0,3.5),Vector3(-5.3,0,3.5)],2)
+		camera_focus = Vector3(0,0.2,2.5)
+		make_official(world,"Fernão Lourenço","Feitor",Color("9b5149"),[Vector3(-0.65,0,-8.3),Vector3(-0.65,0,2.7),Vector3(-0.65,0,13.7),Vector3(-0.65,0,2.7)],0)
+		make_official(world,"Pêro Vaz de Caminha","Escrivão",Color("487b80"),[Vector3(0.65,0,13.7),Vector3(0.65,0,2.7),Vector3(0.65,0,-8.3),Vector3(0.65,0,2.7)],1)
 	camera = Camera3D.new()
 	camera.name = "CameraDaMaquete"
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 18.8 if gabinete or escrivaes or conselho or cartografia or tesouraria or refeitorio else 25.5
+	camera.size = 18.8 if gabinete or escrivaes or conselho or cartografia or tesouraria or refeitorio else 49.0
 	camera.near = 5.0
-	camera.far = 65.0
+	camera.far = 95.0
 	world.add_child(camera)
 	update_camera()
 	camera.current = true
@@ -315,7 +320,7 @@ func make_ui() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	var panel := PanelContainer.new()
-	panel.position = Vector2(28,750) if gabinete or escrivaes or conselho or cartografia or tesouraria or refeitorio else Vector2(28,85)
+	panel.position = Vector2(28,750) if gabinete or escrivaes or conselho or cartografia or tesouraria or refeitorio else Vector2(28,750)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("243e48")
 	style.corner_radius_top_left = 12
@@ -336,11 +341,11 @@ func make_ui() -> void:
 	title.add_theme_font_size_override("font_size",26)
 	stack.add_child(title)
 	var subtitle := Label.new()
-	subtitle.text = "Refeitório e Adega · Pausa dos oficiais" if refeitorio else "Tesouraria e Contabilidade · Receitas e valores" if tesouraria else "Cartografia e Roteiros · Cartas e navegação" if cartografia else "Sala do Conselho · Roteiros e decisões" if conselho else "Sala dos Escrivães · Registos e correspondência" if escrivaes else ("Gabinete do Feitor · Estudo de interior" if gabinete else "Passo 1 · Planta da Casa")
+	subtitle.text = "Refeitório e Adega · Pausa dos oficiais" if refeitorio else "Tesouraria e Contabilidade · Receitas e valores" if tesouraria else "Cartografia e Roteiros · Cartas e navegação" if cartografia else "Sala do Conselho · Roteiros e decisões" if conselho else "Sala dos Escrivães · Registos e correspondência" if escrivaes else ("Gabinete do Feitor · Estudo de interior" if gabinete else "Planta geral · Seis salas e cais")
 	subtitle.modulate = Color("e4c28c")
 	stack.add_child(subtitle)
 	info = Label.new()
-	info.text = "Dois oficiais · pausa simulada" if refeitorio else "Dois oficiais · contabilidade simulada" if tesouraria else "Dois oficiais · estudo de cartas simulado" if cartografia else ("Seis lugares · dois oficiais · reunião simulada" if conselho else ("Seis postos · três oficiais · rotinas simuladas" if escrivaes else ("Fernão Lourenço · rotina simulada" if gabinete else "Três oficiais · rotinas simuladas\nSeleciona uma personagem para a acompanhar.")))
+	info.text = "Dois oficiais · pausa simulada" if refeitorio else "Dois oficiais · contabilidade simulada" if tesouraria else "Dois oficiais · estudo de cartas simulado" if cartografia else ("Seis lugares · dois oficiais · reunião simulada" if conselho else ("Seis postos · três oficiais · rotinas simuladas" if escrivaes else ("Fernão Lourenço · rotina simulada" if gabinete else "Clica numa sala para abrir o interior detalhado.")))
 	stack.add_child(info)
 	var controls := Label.new()
 	controls.text = "Roda / + −: zoom · Arrastar botão direito: mover · F: focar · R: repor · F11: ecrã completo"
@@ -358,6 +363,26 @@ func make_ui() -> void:
 		button.disabled = (entry[1] == "gabinete" and gabinete) or (entry[1] == "escrivaes" and escrivaes) or (entry[1] == "conselho" and conselho) or (entry[1] == "cartografia" and cartografia) or (entry[1] == "tesouraria" and tesouraria) or (entry[1] == "refeitorio" and refeitorio) or (entry[1] == "casa" and not gabinete and not escrivaes and not conselho and not cartografia and not tesouraria and not refeitorio)
 		button.pressed.connect(switch_room.bind(entry[1]))
 		rooms.add_child(button)
+
+	if not plan_rooms.is_empty():
+		walls_button = Button.new()
+		walls_button.position = Vector2(28,78)
+		walls_button.custom_minimum_size = Vector2(330,40)
+		walls_button.pressed.connect(toggle_plan_walls)
+		layer.add_child(walls_button)
+		set_plan_walls(full_walls)
+
+func toggle_plan_walls() -> void:
+	set_plan_walls(not full_walls)
+
+func set_plan_walls(complete: bool) -> void:
+	full_walls = complete
+	if is_instance_valid(plan_walls_cut):
+		plan_walls_cut.visible = not complete
+	if is_instance_valid(plan_walls_full):
+		plan_walls_full.visible = complete
+	if is_instance_valid(walls_button):
+		walls_button.text = "Paredes completas · Ver em corte" if complete else "Paredes em corte · Ver completas"
 
 func switch_room(room_name: String) -> void:
 	if "--capture" in OS.get_cmdline_user_args():
@@ -381,7 +406,7 @@ func _process(delta: float) -> void:
 		info.text = "%s · %s\n%s" % [a.name,a.role,a.state]
 
 func zoom_camera(factor: float) -> void:
-	camera.size = clampf(camera.size * factor, 2.5, 30.0)
+	camera.size = clampf(camera.size * factor, 2.5, 60.0)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if Engine.is_editor_hint():
@@ -400,6 +425,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			zoom_camera(pow(1.0 / 0.9, maxf(event.factor, 1.0)))
 		elif event.button_index == MOUSE_BUTTON_LEFT:
+			if not plan_rooms.is_empty():
+				var destination := plan_room_at(event.position)
+				if not destination.is_empty():
+					switch_room(destination)
+					return
 			selected = -1
 			var nearest := 48.0
 			for i in range(officials.size()):
@@ -412,7 +442,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				officials[i].ring.visible = i == selected
 				officials[i].label.visible = i == selected
 			if selected < 0:
-				info.text = "Dois oficiais · pausa simulada" if refeitorio else "Dois oficiais · contabilidade simulada" if tesouraria else "Dois oficiais · estudo de cartas simulado" if cartografia else ("Seis lugares · dois oficiais · reunião simulada" if conselho else ("Seis postos · três oficiais · rotinas simuladas" if escrivaes else ("Fernão Lourenço · rotina simulada" if gabinete else "Três oficiais · rotinas simuladas\nSeleciona uma personagem para a acompanhar.")))
+				info.text = "Dois oficiais · pausa simulada" if refeitorio else "Dois oficiais · contabilidade simulada" if tesouraria else "Dois oficiais · estudo de cartas simulado" if cartografia else ("Seis lugares · dois oficiais · reunião simulada" if conselho else ("Seis postos · três oficiais · rotinas simuladas" if escrivaes else ("Fernão Lourenço · rotina simulada" if gabinete else "Clica numa sala para abrir o interior detalhado.")))
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode in [KEY_PLUS, KEY_EQUAL, KEY_KP_ADD]:
 			zoom_camera(0.85)
@@ -430,17 +460,23 @@ func _unhandled_input(event: InputEvent) -> void:
 			if paused:
 				info.text += "\nEm pausa"
 			elif selected < 0:
-				info.text = "Dois oficiais · pausa simulada" if refeitorio else "Dois oficiais · contabilidade simulada" if tesouraria else "Dois oficiais · estudo de cartas simulado" if cartografia else ("Seis lugares · dois oficiais · reunião simulada" if conselho else ("Seis postos · três oficiais · rotinas simuladas" if escrivaes else ("Fernão Lourenço · rotina simulada" if gabinete else "Três oficiais · rotinas simuladas\nSeleciona uma personagem para a acompanhar.")))
+				info.text = "Dois oficiais · pausa simulada" if refeitorio else "Dois oficiais · contabilidade simulada" if tesouraria else "Dois oficiais · estudo de cartas simulado" if cartografia else ("Seis lugares · dois oficiais · reunião simulada" if conselho else ("Seis postos · três oficiais · rotinas simuladas" if escrivaes else ("Fernão Lourenço · rotina simulada" if gabinete else "Clica numa sala para abrir o interior detalhado.")))
 		if event.physical_keycode == KEY_R:
-			camera_focus = Vector3(0,0.8,0) if gabinete or escrivaes or conselho or cartografia or tesouraria or refeitorio else Vector3(0,0.2,0.5)
+			camera_focus = Vector3(0,0.8,0) if gabinete or escrivaes or conselho or cartografia or tesouraria or refeitorio else Vector3(0,0.2,2.5)
 			orbit = 0.0
-			camera.size = 18.8 if gabinete or escrivaes or conselho or cartografia or tesouraria or refeitorio else 25.5
+			camera.size = 18.8 if gabinete or escrivaes or conselho or cartografia or tesouraria or refeitorio else 49.0
 			update_camera()
 
 func capture_preview() -> void:
 	await get_tree().create_timer(3.0).timeout
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png("/tmp/casa-preview.png")
+	if "--compare-walls" in OS.get_cmdline_user_args() and not plan_rooms.is_empty():
+		get_viewport().get_texture().get_image().save_png("/tmp/casa-walls-full.png")
+		set_plan_walls(false)
+		await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("/tmp/casa-walls-cut.png")
 	get_tree().quit()
 
 func torus(parent: Node3D, pos: Vector3, radius: float, thickness: float, color: Color) -> MeshInstance3D:
@@ -466,7 +502,7 @@ func room_sign(parent: Node3D, title: String, pos: Vector3) -> void:
 	var label := Label3D.new()
 	label.text = title
 	label.font_size = 42
-	label.pixel_size = 0.009
+	label.pixel_size = 0.022
 	label.modulate = CREAM
 	label.outline_modulate = INK
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -474,71 +510,15 @@ func room_sign(parent: Node3D, title: String, pos: Vector3) -> void:
 	label.position = pos
 
 func build_layout(world: Node3D) -> void:
-	var building := pivot(world,"Edificio",Vector3.ZERO)
-	box(building,"Fundacao",Vector3(0,-0.35,0),Vector3(18.4,0.7,14.4),Color("b7ac96"))
-	for x in range(23):
-		for z in range(18):
-			var color := Color("c89873") if absf(-8.8+x*0.8)>1.6 else Color("d8c5a3")
-			box(building,"Laje",Vector3(-8.8+x*0.8,0.025,-6.8+z*0.8),Vector3(0.78,0.07,0.78),color.lightened(float((x+z*3)%4)*0.015))
-	box(building,"ParedeNorte",Vector3(0,1.5,-7.12),Vector3(18.4,3,0.26),CREAM)
-	box(building,"VigaNorte",Vector3(0,3.02,-7.12),Vector3(18.5,0.20,0.38),WOOD)
-	# Paredes em corte, para ler os quatro espaços de uma só vez.
-	for side in [-1.0,1.0]:
-		box(building,"ParedeExterior",Vector3(side*9.08,0.5,0),Vector3(0.24,1,14.3),CREAM)
-		box(building,"DivisoriaSalas",Vector3(side*5.35,0.45,0),Vector3(7.25,0.9,0.24),CREAM)
-		box(building,"Capeamento",Vector3(side*5.35,0.94,0),Vector3(7.3,0.10,0.3),Color("f1e4ca"))
-		# Portas de 1,8 m nos dois lados do corredor.
-		for limits in [Vector2(-7,-2.9),Vector2(-1.1,2.6),Vector2(4.4,7)]:
-			box(building,"ParedeCorredor",Vector3(side*1.7,0.45,(limits.x+limits.y)/2),Vector3(0.22,0.9,limits.y-limits.x),CREAM)
-		for door_z in [-2.0,3.5]:
-			for edge in [-0.92,0.92]:
-				box(building,"Ombreira",Vector3(side*1.7,0.65,door_z+edge),Vector3(0.3,1.3,0.15),WOOD)
-			box(building,"Soleira",Vector3(side*1.7,0.075,door_z),Vector3(0.45,0.04,1.8),Color("e9daba"))
-	room_rug(building,Vector3(0,0,0),Vector3(2.45,0.022,13.4),Color("984b45"))
-	var feitor := pivot(building,"GabineteDoFeitor",Vector3(-5.3,0,-4))
-	room_rug(feitor,Vector3(0,0,0.3),Vector3(4.2,0.022,3.2),Color("984b45"))
-	desk(feitor,Vector3.ZERO)
-	shelf(feitor,Vector3(-2.4,0,-2.5))
-	box(feitor,"Estandarte",Vector3(0,1.95,-2.96),Vector3(1.8,1.65,0.04),Color("994444"))
-	box(feitor,"Emblema",Vector3(0,1.95,-2.92),Vector3(0.45,0.65,0.03),GOLD)
-	room_sign(feitor,"FEITOR",Vector3(0,2.9,-2.6))
-	var scribes := pivot(building,"SalaDosEscrivaes",Vector3(5.3,0,-4))
-	for x in [-1.3,1.4]:
-		desk(scribes,Vector3(x,0,0))
-		desk(scribes,Vector3(x,0,-1.8))
-	room_sign(scribes,"ESCRIVÃES",Vector3(0,2.9,-2.6))
-	var archive := pivot(building,"CartografiaEArquivo",Vector3(-5.3,0,2))
-	room_rug(archive,Vector3(0,0,0.5),Vector3(4.2,0.022,3.3),Color("46757b"))
-	desk(archive,Vector3.ZERO)
-	for x in [-2.2,0.0,2.2]:
-		shelf(archive,Vector3(x,0,-1.5))
-	ball(archive,Vector3(2.1,1.2,0.6),Vector3(0.85,0.85,0.85),Color("6aabb0"))
-	round_shape(archive,"PeGlobo",Vector3(2.1,0.5,0.6),0.11,1.0,WOOD)
-	room_sign(archive,"CARTOGRAFIA · ARQUIVO",Vector3(0,2.8,-1.5))
-	var treasury := pivot(building,"Tesouraria",Vector3(5.3,0,2))
-	room_rug(treasury,Vector3(0,0,0.5),Vector3(4.2,0.022,3.3),Color("708366"))
-	desk(treasury,Vector3.ZERO)
-	for x in [-2.0,0.0,2.0]:
-		box(treasury,"Cofre",Vector3(x,0.5,-1.3),Vector3(1.35,1,0.8),WOOD.darkened(0.2))
-		for side in [-0.5,0.5]:
-			box(treasury,"Ferragem",Vector3(x+side,0.5,-0.88),Vector3(0.08,0.95,0.04),GOLD)
-		ball(treasury,Vector3(x,0.6,-0.86),Vector3(0.16,0.18,0.06),GOLD)
-	for x in [-0.3,0.1,0.5]:
-		round_shape(treasury,"Moedas",Vector3(x,1.09,0.1),0.08,0.15,GOLD)
-	room_sign(treasury,"TESOURARIA",Vector3(0,2.8,-1.5))
-	var entrance := pivot(world,"EntradaECais",Vector3.ZERO)
-	for side in [-1.0,1.0]:
-		box(entrance,"FachadaEmCorte",Vector3(side*5.35,0.38,7.1),Vector3(7.3,0.76,0.3),CREAM)
-		box(entrance,"PilarEntrada",Vector3(side*1.45,0.9,7.1),Vector3(0.35,1.8,0.4),CREAM)
-	box(entrance,"Patio",Vector3(0,-0.12,8.1),Vector3(18.4,0.24,1.7),Color("c4b89e"))
-	for x in [-7.7,-6.6,-5.5]:
-		barrel(entrance,Vector3(x,0,6.1))
-	box(entrance,"Mercadoria",Vector3(-4.2,0.45,6.1),Vector3(1.2,0.9,0.9),WOOD)
-	box(entrance,"Tejo",Vector3(0,-0.45,10.7),Vector3(18.4,0.16,3.5),Color("599d9f"))
-	for i in range(12):
-		box(entrance,"TabuaPontao",Vector3(0,-0.04,9+i*0.28),Vector3(2.5,0.16,0.26),WOOD.lightened(float(i%3)*0.025))
-	for side in [-1.0,1.0]:
-		for z in [9.1,11.9]:
-			round_shape(entrance,"Estaca",Vector3(side*1.1,-0.15,z),0.12,0.9,WOOD)
-			for y in [0.10,0.15]:
-				torus(entrance,Vector3(side*1.1,y,z),0.12,0.025,CREAM)
+	preload("res://scripts/planta.gd").new().build(self,world)
+
+func plan_room_at(screen_position: Vector2) -> String:
+	var origin := camera.project_ray_origin(screen_position)
+	var direction := camera.project_ray_normal(screen_position)
+	var hit = Plane(Vector3.UP,0.06).intersects_ray(origin,direction)
+	if hit == null:
+		return ""
+	for room in plan_rooms:
+		if room.bounds.has_point(Vector2(hit.x,hit.z)):
+			return room.id
+	return ""
