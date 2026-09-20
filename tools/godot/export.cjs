@@ -1,0 +1,14 @@
+const { spawnSync } = require('node:child_process');
+const { mkdirSync, copyFileSync, existsSync } = require('node:fs');
+const { resolve } = require('node:path');
+const root = resolve(__dirname, '../..');
+const binary = process.env.GODOT_BIN || (existsSync('/Applications/Godot.app/Contents/MacOS/Godot') ? '/Applications/Godot.app/Contents/MacOS/Godot' : 'godot');
+const version = spawnSync(binary, ['--version'], { encoding: 'utf8' });
+if (version.error || !version.stdout.startsWith('4.6.2.')) throw new Error('Define GODOT_BIN com o executável do Godot 4.6.2.');
+if (!existsSync(resolve(root, '.cache/godot/web_nothreads_release.zip'))) throw new Error('Extrai web_nothreads_release.zip e web_nothreads_debug.zip dos templates oficiais 4.6.2 para .cache/godot/. Consulta godot/INTEGRATION.md.');
+const output = resolve(root, 'src/renderer/public/godot');
+mkdirSync(output, { recursive: true });
+const result = spawnSync(binary, ['--headless', '--path', resolve(root, 'godot/casa-da-india'), '--export-release', 'Casa Web', resolve(output, 'index.html')], { stdio: 'inherit' });
+if (result.status !== 0) process.exit(result.status || 1);
+copyFileSync(resolve(root, 'godot/web/bridge.js'), resolve(output, 'bridge.js'));
+console.log('Godot exportado para desenvolvimento e empacotamento offline.');

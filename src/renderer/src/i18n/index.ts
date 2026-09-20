@@ -1,13 +1,8 @@
 /**
  * i18n bootstrap — react-i18next with inline JSON resources.
  *
- * English is the default language (and the fallback for any missing key).
- * The user's choice is persisted in localStorage (`cth.language`). With nothing
- * saved the app starts in English, ALWAYS — it deliberately does not read
- * navigator.language. Auto-detect would change the UI out from under every
- * existing user on a non-English machine, who never asked for a translation and
- * may not want a partial one. Nothing moves until someone picks a language in
- * Settings.
+ * Portuguese is the default for fresh installations; saved choices are preserved.
+ * English remains the fallback for missing keys.
  *
  * Adding a language: drop a `locales/<code>.json` with the exact same key
  * tree as `en.json`, register it in `resources` and `supportedLngs`, and add

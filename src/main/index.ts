@@ -1,3 +1,4 @@
+import { registerWorldProtocol } from './worldProtocol';
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, powerMonitor, powerSaveBlocker, screen, shell, Notification } from 'electron';
 import { spawn } from 'node:child_process';
 import {
@@ -2228,7 +2229,7 @@ function createWindow(opts: { floor?: boolean } = {}): BrowserWindow {
     ...(geom && geom.x !== undefined && geom.y !== undefined ? { x: geom.x, y: geom.y } : {}),
     minWidth: MIN_WIN.width,
     minHeight: MIN_WIN.height,
-    title: isFloor ? 'casa_da_indIA — Floor' : 'casa_da_indIA',
+    title: isFloor ? 'Casa da Índia — Nova Casa' : 'casa_da_indIA',
     backgroundColor: '#FFF8E7',
     titleBarStyle: 'hiddenInset',
     show: false,
@@ -2250,6 +2251,8 @@ function createWindow(opts: { floor?: boolean } = {}): BrowserWindow {
       ...(isFloor ? { partition: `persist:floor-${++floorSeq}` } : {})
     }
   });
+
+  registerWorldProtocol(win.webContents.session);
 
   // Capture the webContents once: after 'closed' the window is gone, but this
   // reference stays valid as the per-PTY ownership key.
@@ -2397,7 +2400,7 @@ function openFloor(): BrowserWindow | null {
 function installAppMenu(): void {
   const isMac = process.platform === 'darwin';
   const newFloorItem = {
-    label: 'New Floor',
+    label: 'Nova Casa',
     accelerator: 'CmdOrCtrl+Shift+N',
     click: () => { openFloor(); }
   };

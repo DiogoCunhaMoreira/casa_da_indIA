@@ -78,8 +78,8 @@ func build(host: Node3D, world: Node3D) -> void:
 	b(chart,"CartaAberta",Vector3(0,1.03,0),Vector3(1.35,0.02,0.76),PAPER)
 	for i in range(5):
 		rod(chart,Vector3(-0.5+i*0.22,1.048,-0.29),Vector3(-0.3+i*0.22,1.048,0.26),0.008,TRIM)
-	stool(room,Vector3(5.25,0,2.7))
-	chest(room,Vector3(6.6,0,3.7))
+	stool(room,Vector3(4.3,0,2.7))
+	chest(room,Vector3(5.3,0,4.1))
 	for pos in [Vector3(-6.9,0,3.7),Vector3(7.0,0,-1.3)]:
 		plant(room,pos)
 	for x in [-2.5,1.45]:

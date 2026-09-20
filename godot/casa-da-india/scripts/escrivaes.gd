@@ -1,6 +1,6 @@
 @tool
 extends "res://scripts/gabinete.gd"
-## Sala coletiva: seis postos, arquivo de registos e percursos livres.
+## Sala coletiva: oito postos, arquivo de registos e percursos livres.
 
 func build(host: Node3D, world: Node3D) -> void:
 	h = host
@@ -47,12 +47,12 @@ func build(host: Node3D, world: Node3D) -> void:
 			for line in range(4):
 				b(room,"LinhaRecado",Vector3(x-0.32+i*0.3,1.45+line*0.085+float(i%2)*0.14,-4.56),Vector3(0.20,0.014,0.008),TRIM)
 	for row in range(2):
-		for column in range(3):
-			workstation(room,Vector3(-4.5+column*4.5,0,-1.8+row*3.3),row*3+column)
+		for column in range(4):
+			workstation(room,Vector3(-5.4+column*3.6,0,-1.8+row*3.3),row*4+column)
 	# Passadeiras marcam os corredores entre as mesas.
 	h.room_rug(room,Vector3(-2.25,0,-0.2),Vector3(0.82,0.022,5.3),Color("527b7b"))
 	h.room_rug(room,Vector3(2.25,0,1.6),Vector3(0.82,0.022,3.2),Color("75816c"))
-	plant(room,Vector3(-7.0,0,3.8))
+	plant(room,Vector3(-7.0,0,-2.9))
 	chest(room,Vector3(7.35,0,4.3))
 	# Mesa estreita de consulta, encostada ao lado nascente.
 	var consultation = h.pivot(room,"MesaDeConsulta",Vector3(7.1,0,-1.2))
@@ -62,8 +62,8 @@ func build(host: Node3D, world: Node3D) -> void:
 	for i in range(5):
 		rod(consultation,Vector3(-0.55+i*0.25,1.05,-0.28),Vector3(-0.35+i*0.25,1.05,0.25),0.008,TRIM)
 	for i in range(4):
-		scroll(room,Vector3(-7.0,0.5+i*0.12,3.0))
-	b(room,"CaixaDeRolos",Vector3(-7.0,0.28,3.0),Vector3(0.65,0.52,0.85),OAK)
+		scroll(room,Vector3(-7.0,0.5+i*0.12,0.0))
+	b(room,"CaixaDeRolos",Vector3(-7.0,0.28,0.0),Vector3(0.65,0.52,0.85),OAK)
 
 func workstation(p: Node3D, pos: Vector3, index: int) -> void:
 	var d = h.pivot(p,"Posto%02d" % (index+1),pos)
@@ -80,7 +80,7 @@ func workstation(p: Node3D, pos: Vector3, index: int) -> void:
 	h.ball(d,Vector3(0,0.9,0.62),Vector3(0.12,0.065,0.045),BRASS)
 	# Cada posto tem um conjunto fixo de objetos, sem aleatoriedade por arranque.
 	var work = h.pivot(d,"Documentos",Vector3(0,0,0))
-	work.rotation.y = [-0.10,0.07,0.0,0.12,-0.06,0.04][index]
+	work.rotation.y = [-0.10,0.07,0.0,0.12,-0.06,0.04][index%6]
 	if index in [0,3,5]:
 		b(work,"CapaRegisto",Vector3(-0.15,1.20,0.10),Vector3(1.05,0.05,0.76),RED if index == 0 else OAK)
 		for side in [-1.0,1.0]:
@@ -122,8 +122,8 @@ func workstation(p: Node3D, pos: Vector3, index: int) -> void:
 		Vector3(-0.20,0,0.92), Vector3(0.55,0,1.15), Vector3(-0.65,0,0.38),
 		Vector3(-1.02,0,1.12), Vector3(-0.25,0,0.12), Vector3(-1.08,0,0.62),
 	]
-	var seat = h.pivot(d,"BancoDeslocado",stool_positions[index])
-	seat.rotation.y = [-0.18,0.35,-0.10,0.22,-0.30,0.12][index]
+	var seat = h.pivot(d,"BancoDeslocado",stool_positions[index%6])
+	seat.rotation.y = [-0.18,0.35,-0.10,0.22,-0.30,0.12][index%6]
 	stool(seat,Vector3.ZERO)
 
 func style_archive(parent: Node3D, variant: int) -> void:

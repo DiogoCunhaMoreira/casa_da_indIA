@@ -36,3 +36,7 @@ tools/mapgen/__pycache__/
 # zips e folhas descarregados da PixelLab — o FONTES.json tem os ids, e o
 # import_pecas.py volta a buscá-los. É cache, não é fonte.
 tools/mapgen/art/.cache/
+
+# Reproducible Godot Web export and official templates
+.cache/godot/
+src/renderer/public/godot/

@@ -12,6 +12,8 @@ const INK = Color("294954")
 @export var cartografia := false
 @export var tesouraria := false
 @export var refeitorio := false
+var live_world: Node
+var material_cache: Dictionary = {}
 var plan_rooms: Array[Dictionary] = []
 var plan_walls_cut: Node3D
 var plan_walls_full: Node3D
@@ -27,9 +29,12 @@ var orbit := 0.0
 var camera_focus := Vector3(0,0.2,0.5)
 
 func material(color: Color) -> StandardMaterial3D:
+	if material_cache.has(color):
+		return material_cache[color]
 	var m := StandardMaterial3D.new()
 	m.albedo_color = color
 	m.roughness = 0.88
+	material_cache[color] = m
 	return m
 
 func box(parent: Node3D, title: String, pos: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
@@ -153,6 +158,9 @@ func _ready() -> void:
 	camera.current = true
 	if not Engine.is_editor_hint():
 		make_ui()
+		if OS.has_feature("web"):
+			live_world = preload("res://scripts/live_world.gd").new()
+			add_child(live_world)
 		if "--capture" in OS.get_cmdline_user_args():
 			capture_preview()
 
@@ -187,12 +195,12 @@ func pivot(parent: Node3D, title: String, pos: Vector3) -> Node3D:
 	n.position = pos
 	return n
 
-func make_official(parent: Node3D, title: String, role: String, color: Color, route: Array, index: int) -> void:
+func make_official(parent: Node3D, title: String, role: String, color: Color, route: Array, index: int, appearance: Dictionary = {}) -> void:
 	var actor := pivot(parent,title,route[0])
 	actor.rotation.y = PI
 	var body := pivot(actor,"Corpo",Vector3.ZERO)
-	var skin: Color = [Color("efbd96"),Color("e6ae87"),Color("d99e76")][index]
-	var hair: Color = [Color("554139"),Color("755340"),Color("3e3534")][index]
+	var skin: Color = Color(appearance.get("skin", ["efbd96","e6ae87","d99e76"][index%3]))
+	var hair: Color = Color(appearance.get("hair", ["554139","755340","3e3534"][index%3]))
 	# Cabeça generosa, bochechas e roupa com volumes suaves.
 	ball(body,Vector3(0,0.83,0),Vector3(0.66,0.71,0.43),color)
 	ball(body,Vector3(0,0.56,0),Vector3(0.65,0.25,0.45),color.darkened(0.08))
@@ -216,11 +224,11 @@ func make_official(parent: Node3D, title: String, role: String, color: Color, ro
 		brow.rotation.z = -x*0.5
 	ball(head,Vector3(0,-0.065,0.375),Vector3(0.115,0.10,0.10),skin.lightened(0.035))
 	ball(head,Vector3(0,-0.18,0.343),Vector3(0.105,0.026,0.018),Color("a36b57"))
-	if index == 0:
+	if appearance.get("beard", "bigode" if index == 0 else "") == "bigode":
 		for side in [-1.0,1.0]:
 			var moustache := ball(head,Vector3(side*0.065,-0.125,0.365),Vector3(0.145,0.055,0.045),hair)
 			moustache.rotation.z = side*0.22
-	if index == 1:
+	if appearance.get("beard", "curta" if index == 1 else "") in ["curta","cheia","bifurcada","longa"]:
 		ball(head,Vector3(0,-0.26,0.24),Vector3(0.36,0.19,0.2),hair)
 	for i in range(4):
 		ball(head,Vector3(-0.24+i*0.15,0.25-abs(i-1.0)*0.025,0.21),Vector3(0.24,0.19,0.2),hair)
@@ -229,6 +237,18 @@ func make_official(parent: Node3D, title: String, role: String, color: Color, ro
 	ball(hat,Vector3.ZERO,Vector3(0.86,0.20,0.73),color.darkened(0.25))
 	ball(hat,Vector3(-0.06,0.095,0),Vector3(0.7,0.23,0.58),color)
 	ball(hat,Vector3(0.23,0.04,0.28),Vector3(0.09,0.10,0.045),GOLD)
+	var hat_style: String = appearance.get("hat", "barrete")
+	hat.visible = hat_style != "nenhuma"
+	if hat_style == "chapeuAba":
+		round_shape(hat,"Aba",Vector3(0,-0.06,0),0.61,0.045,color.darkened(0.25))
+	elif hat_style in ["toucado","coifa"]:
+		ball(head,Vector3(0,0,-0.22),Vector3(0.86,0.95,0.45),CREAM)
+	elif hat_style == "elmo":
+		for part in hat.get_children():
+			if part is MeshInstance3D:
+				part.material_override = material(Color("9aa3ab"))
+	if appearance.get("cape", "nenhuma") != "nenhuma":
+		ball(body,Vector3(0,0.67,-0.24),Vector3(0.79,0.88,0.19),Color(appearance.get("capeColor", "78503d")))
 	var arms: Array[Node3D] = []
 	var elbows: Array[Node3D] = []
 	var legs: Array[Node3D] = []
@@ -275,9 +295,16 @@ func animate_official(a: Dictionary, delta: float) -> void:
 	else:
 		if direction.length() < 0.025:
 			actor.position = a.route[a.target]
-			a.target = (int(a.target)+1)%a.route.size()
-			a.wait = 3.8+float(a.index)*0.8
-			a.facing = float(a.get("home_facing", 0.0 if gabinete else PI)) if a.target == 1 else actor.rotation.y+0.45
+			if a.has("live_id"):
+				if int(a.target)+1 < a.route.size():
+					a.target += 1
+				else:
+					a.wait = 3600.0
+			else:
+				a.target = (int(a.target)+1)%a.route.size()
+				a.wait = 3.8+float(a.index)*0.8
+			if not a.has("live_id") or a.wait > 0.0:
+				a.facing = float(a.get("home_facing", 0.0 if gabinete else PI)) if a.target == 1 else actor.rotation.y+0.45
 		else:
 			a.facing = atan2(direction.x,direction.z)
 			# Travar antes da paragem e começar só depois de virar o corpo.
@@ -302,6 +329,8 @@ func animate_official(a: Dictionary, delta: float) -> void:
 	a.head.rotation.y = sin(idle*0.65)*0.1*(1.0-blend)
 	a.head.rotation.z = -body.rotation.z*0.65
 	var working: float = (1.0-blend) if a.target == 1 and not refeitorio else 0.0
+	if a.has("live_id"):
+		working = (1.0-blend) if a.get("live_working", false) else 0.0
 	for i in range(2):
 		var cycle := stride+float(i)*PI
 		a.legs[i].rotation.x = sin(cycle)*0.42*blend
@@ -317,6 +346,14 @@ func update_camera() -> void:
 	camera.look_at(camera_focus)
 
 func make_ui() -> void:
+	if OS.has_feature("web"):
+		var live_layer := CanvasLayer.new()
+		add_child(live_layer)
+		info = Label.new()
+		info.position = Vector2(20,20)
+		info.add_theme_color_override("font_color", INK)
+		live_layer.add_child(info)
+		return
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	var panel := PanelContainer.new()
@@ -385,6 +422,9 @@ func set_plan_walls(complete: bool) -> void:
 		walls_button.text = "Paredes completas · Ver em corte" if complete else "Paredes em corte · Ver completas"
 
 func switch_room(room_name: String) -> void:
+	if is_instance_valid(live_world):
+		live_world.view_room(room_name)
+		return
 	if "--capture" in OS.get_cmdline_user_args():
 		return
 	get_tree().change_scene_to_file("res://scenes/%s.tscn" % room_name)
@@ -400,10 +440,15 @@ func _process(delta: float) -> void:
 		return
 	elapsed += delta
 	for a in officials:
+		if is_instance_valid(live_world):
+			live_world.tick(a,delta)
+		var live_state: String = a.state
 		animate_official(a,delta)
+		if a.has("live_id"):
+			a.state = live_state
 	if selected >= 0:
 		var a := officials[selected]
-		info.text = "%s · %s\n%s" % [a.name,a.role,a.state]
+		info.text = "%s · %s\n%s" % [a.name,a.role,a.get("caption",a.state)]
 
 func zoom_camera(factor: float) -> void:
 	camera.size = clampf(camera.size * factor, 2.5, 60.0)
@@ -425,7 +470,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			zoom_camera(pow(1.0 / 0.9, maxf(event.factor, 1.0)))
 		elif event.button_index == MOUSE_BUTTON_LEFT:
-			if not plan_rooms.is_empty():
+			if is_instance_valid(live_world):
+				var board_point := camera.unproject_position(live_world.task_label.position)
+				if board_point.distance_to(event.position) < 65.0:
+					live_world.emit({"type":"openPanel","panel":"human" if event.shift_pressed else "tasks"})
+					return
+			if not plan_rooms.is_empty() and not is_instance_valid(live_world):
 				var destination := plan_room_at(event.position)
 				if not destination.is_empty():
 					switch_room(destination)
@@ -441,7 +491,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			for i in range(officials.size()):
 				officials[i].ring.visible = i == selected
 				officials[i].label.visible = i == selected
-			if selected < 0:
+			if is_instance_valid(live_world) and selected >= 0:
+				live_world.emit({"type":"openTerminal" if event.double_click else "select", "id":officials[selected].live_id})
+			if selected < 0 and not is_instance_valid(live_world):
 				info.text = "Dois oficiais · pausa simulada" if refeitorio else "Dois oficiais · contabilidade simulada" if tesouraria else "Dois oficiais · estudo de cartas simulado" if cartografia else ("Seis lugares · dois oficiais · reunião simulada" if conselho else ("Seis postos · três oficiais · rotinas simuladas" if escrivaes else ("Fernão Lourenço · rotina simulada" if gabinete else "Clica numa sala para abrir o interior detalhado.")))
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode in [KEY_PLUS, KEY_EQUAL, KEY_KP_ADD]:

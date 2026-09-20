@@ -47,7 +47,7 @@ func build(host: Node3D, world: Node3D) -> void:
 	for i in range(3):
 		scroll(table,Vector3(-2.07+i*0.19,1.36,-0.2))
 	stool(room,Vector3(-2.8,0,1.75))
-	globe(room,Vector3(-5.85,0,1.95))
+	globe(room,Vector3(-5.85,0,0.7))
 	# Instrumento armilar em pedestal independente, à direita.
 	var instrument = h.pivot(room,"InstrumentoArmilar",Vector3(5.2,0,2.7))
 	h.round_shape(instrument,"Base",Vector3(0,0.13,0),0.50,0.18,OAK)
@@ -63,7 +63,7 @@ func build(host: Node3D, world: Node3D) -> void:
 		var volume = b(consult,"LivroDeRoteiros",Vector3(-0.63,1.07+i*0.09,0.12),Vector3(0.5,0.08,0.6),RED if i%2 == 0 else TRIM)
 		volume.rotation.y = i*0.06
 	stool(room,Vector3(5.7,0,-0.55))
-	plant(room,Vector3(-7.0,0,3.85))
+	plant(room,Vector3(7.0,0,-2.9))
 	chest(room,Vector3(7.0,0,3.8))
 	h.room_rug(room,Vector3(-1.0,0,3.45),Vector3(4.0,0.022,0.85),Color("536f79"))
 
