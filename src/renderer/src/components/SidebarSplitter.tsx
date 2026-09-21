@@ -1,66 +1,94 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { clampSidebarWidth, SIDEBAR_DEFAULT, SPLITTER_WIDTH } from './sidebarLayout';
 
 export interface SidebarSplitterProps {
-  /** Current sidebar width in px. */
   width: number;
-  /** Called with the new width (already clamped externally). */
   onChange: (px: number) => void;
-  /** Containing viewport width — used to clamp delta to a sane max. */
-  viewportWidth: number;
-  min?: number;
-  max?: number;
+  min: number;
+  max: number;
 }
 
-/**
- * Vertical drag handle. Sits between the floor canvas (left) and the sidebar
- * (right). Drag left → wider sidebar. Cursor + pixel-stripe affordance.
- */
-export function SidebarSplitter({
-  width, onChange, viewportWidth, min = 320, max = 1200
-}: SidebarSplitterProps) {
-  const startRef = useRef<{ clientX: number; width: number } | null>(null);
+/** Capture the pointer above the embedded world for the entire drag. */
+export function SidebarSplitter({ width, onChange, min, max }: SidebarSplitterProps) {
+  const { t } = useTranslation();
+  const handleRef = useRef<HTMLDivElement>(null);
+  const startRef = useRef<{ clientX: number; width: number; pointerId: number } | null>(null);
   const [active, setActive] = useState(false);
+  const finish = useCallback(() => {
+    const start = startRef.current;
+    startRef.current = null;
+    if (start && handleRef.current?.hasPointerCapture(start.pointerId)) {
+      handleRef.current.releasePointerCapture(start.pointerId);
+    }
+    setActive(false);
+  }, []);
 
   useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      if (!startRef.current) return;
-      const delta = startRef.current.clientX - e.clientX; // left drag = positive delta → grow sidebar
-      const clampMax = Math.min(max, Math.max(min, viewportWidth - 360));
-      const next = Math.min(clampMax, Math.max(min, startRef.current.width + delta));
-      onChange(next);
+    if (!active) return;
+    const previousCursor = document.body.style.cursor;
+    const previousSelection = document.body.style.userSelect;
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); finish(); }
     };
-    const onUp = () => {
-      startRef.current = null;
-      setActive(false);
-      document.body.style.cursor = '';
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-    if (active) {
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup', onUp);
-      document.body.style.cursor = 'ew-resize';
-    }
+    window.addEventListener('blur', finish);
+    window.addEventListener('keydown', onKey);
     return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = previousCursor;
+      document.body.style.userSelect = previousSelection;
+      window.removeEventListener('blur', finish);
+      window.removeEventListener('keydown', onKey);
+      startRef.current = null;
     };
-  }, [active, viewportWidth, min, max, onChange]);
+  }, [active, finish]);
 
-  return (
+  const change = (value: number) => onChange(clampSidebarWidth(value, min, max));
+  return <>
+    {active && <div aria-hidden="true" style={{
+      position: 'fixed', inset: 0, zIndex: 9999, cursor: 'ew-resize', touchAction: 'none'
+    }} />}
     <div
-      onMouseDown={(e) => {
-        startRef.current = { clientX: e.clientX, width };
+      ref={handleRef}
+      role="separator"
+      tabIndex={0}
+      aria-orientation="vertical"
+      aria-label={t('sidebar.resizeLabel')}
+      aria-controls="agent-detail-panel"
+      aria-valuemin={min}
+      aria-valuemax={max}
+      aria-valuenow={width}
+      onPointerDown={(event) => {
+        if (event.button !== 0 || startRef.current) return;
+        event.preventDefault();
+        event.currentTarget.focus();
+        event.currentTarget.setPointerCapture(event.pointerId);
+        startRef.current = { clientX: event.clientX, width, pointerId: event.pointerId };
         setActive(true);
-        e.preventDefault();
       }}
-      onDoubleClick={() => onChange(420)}
-      title="Drag to resize · double-click to reset"
+      onPointerMove={(event) => {
+        const start = startRef.current;
+        if (!start || start.pointerId !== event.pointerId) return;
+        change(start.width + start.clientX - event.clientX);
+      }}
+      onPointerUp={finish}
+      onPointerCancel={finish}
+      onLostPointerCapture={finish}
+      onDoubleClick={() => change(SIDEBAR_DEFAULT)}
+      onKeyDown={(event) => {
+        const step = event.shiftKey ? 50 : 10;
+        const next = event.key === 'ArrowLeft' ? width + step
+          : event.key === 'ArrowRight' ? width - step
+          : event.key === 'Home' ? min : event.key === 'End' ? max
+          : event.key === 'Enter' ? SIDEBAR_DEFAULT : null;
+        if (next !== null) { event.preventDefault(); change(next); }
+      }}
+      title={t('sidebar.resizeHint')}
       style={{
-        width: 10,
-        cursor: 'ew-resize',
-        flexShrink: 0,
-        position: 'relative',
+        width: SPLITTER_WIDTH,
+        cursor: 'ew-resize', touchAction: 'none', userSelect: 'none',
+        flexShrink: 0, position: 'relative', zIndex: active ? 10000 : undefined,
         background: active ? 'var(--cth-cream-300)' : 'transparent'
       }}
     >
@@ -82,5 +110,5 @@ export function SidebarSplitter({
         <span style={{ height: 2, background: 'var(--cth-ink-900)' }} />
       </div>
     </div>
-  );
+  </>;
 }

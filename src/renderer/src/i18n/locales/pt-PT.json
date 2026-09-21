@@ -211,6 +211,8 @@
     "restoreAll": "restaurar tudo ({{count}})"
   },
   "sidebar": {
+    "resizeLabel": "Redimensionar painel do agente",
+    "resizeHint": "Arrasta para redimensionar · duplo clique ou Enter para repor · setas para ajustar",
     "terminal": "terminal",
     "git": "git",
     "messages": "mensagens",

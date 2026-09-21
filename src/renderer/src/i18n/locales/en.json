@@ -126,6 +126,8 @@
     "restoreAll": "restore all ({{count}})"
   },
   "sidebar": {
+    "resizeLabel": "Resize agent panel",
+    "resizeHint": "Drag to resize · double-click or Enter to reset · arrow keys to adjust",
     "terminal": "terminal",
     "git": "git",
     "messages": "messages",

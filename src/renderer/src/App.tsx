@@ -26,6 +26,7 @@ import { PixelPanel } from '@/components/PixelPanel';
 import { PixelButton } from '@/components/PixelButton';
 import { Icon } from '@/components/Icon';
 import { SidebarSplitter } from '@/components/SidebarSplitter';
+import { sidebarLimits, clampSidebarWidth } from '@/components/sidebarLayout';
 import { acquireTerminal, notifyThemeChangeAll } from '@/components/terminalPool';
 import { FullscreenTerminal } from '@/components/FullscreenTerminal';
 import { TaskDetailOverlay } from '@/components/TaskDetailOverlay';
@@ -78,7 +79,10 @@ export function App() {
   const [settingsSection, setSettingsSection] = useState<SettingsSection | undefined>(undefined);
   const [quitWarn, setQuitWarn] = useState<{ ptyCount: number } | null>(null);
   const [closing, setClosing] = useState<ClosingTimeState | null>(null);
-  const [vpWidth, setVpWidth] = useState<number>(window.innerWidth);
+  const [splitContainer, setSplitContainer] = useState<HTMLDivElement | null>(null);
+  const [splitWidth, setSplitWidth] = useState(Math.max(0, window.innerWidth - 32));
+  const sidebarBounds = sidebarLimits(splitWidth);
+  const visibleSidebarWidth = clampSidebarWidth(sidebarWidth, sidebarBounds.min, sidebarBounds.max);
 
   // Deep link into Settings from anywhere in the tree. Settings' open state is
   // local to App, so a nested control (e.g. "set it now" beside a disabled Talk
@@ -242,12 +246,14 @@ export function App() {
     useStore.getState().restoreFocusMode();
   }, [config?.onboardingComplete, agents]);
 
-  // Track viewport width for splitter clamping
+  // Observe the actual content box; window size includes padding and other chrome.
+  // Clamping the displayed width must not overwrite the saved preference.
   useEffect(() => {
-    const onResize = () => setVpWidth(window.innerWidth);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
+    if (!splitContainer) return;
+    const observer = new ResizeObserver(([entry]) => setSplitWidth(entry.contentRect.width));
+    observer.observe(splitContainer);
+    return () => observer.disconnect();
+  }, [splitContainer]);
 
   if (!config) {
     return <div style={{ width: '100vw', height: '100vh', background: 'var(--cth-cream-100)' }} />;
@@ -389,13 +395,13 @@ export function App() {
 
       </div>
 
-      <div style={{
-        flex: 1, minHeight: 0,
+      <div ref={setSplitContainer} style={{
+        flex: 1, minHeight: 0, minWidth: 0,
         display: 'flex',
         padding: 16,
         gap: 0
       }}>
-        <div style={{ flex: 1, minHeight: 0, minWidth: 0, position: 'relative' }}>
+        <div style={{ flex: 1, minHeight: 0, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
           <WorldViewport />
           <MemoryPanel />
           {agentCount === 0 && godStatus === 'booting' && <FeitorAChegar />}
@@ -424,13 +430,14 @@ export function App() {
         </div>
 
         <SidebarSplitter
-          width={sidebarWidth}
+          width={visibleSidebarWidth}
           onChange={setSidebarWidth}
-          viewportWidth={vpWidth}
+          min={sidebarBounds.min}
+          max={sidebarBounds.max}
         />
 
-        <div style={{
-          width: sidebarWidth, flexShrink: 0,
+        <div id="agent-detail-panel" style={{
+          width: visibleSidebarWidth, minWidth: 0, flexShrink: 0,
           minHeight: 0, display: 'flex', flexDirection: 'column'
         }}>
           {agent ? (

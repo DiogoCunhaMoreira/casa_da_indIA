@@ -30,6 +30,7 @@
     "godot:export": "node tools/godot/export.cjs",
     "build:godot": "npm run build",
     "test:godot": "electron tools/godot/smoke.cjs",
+    "test:sidebar": "electron tools/sidebar-smoke.cjs",
     "predev": "npm run godot:export",
     "godot:portraits": "node tools/godot/portraits.cjs"
   },

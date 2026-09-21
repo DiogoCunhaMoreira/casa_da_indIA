@@ -126,6 +126,8 @@
     "restoreAll": "全部恢复（{{count}}）"
   },
   "sidebar": {
+    "resizeLabel": "调整智能体面板大小",
+    "resizeHint": "拖动调整大小 · 双击或按 Enter 重置 · 使用方向键调整",
     "terminal": "终端",
     "git": "Git",
     "messages": "消息",

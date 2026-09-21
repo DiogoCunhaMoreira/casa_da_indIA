@@ -9,8 +9,8 @@ A aplicação abre diretamente a Casa em 3D dentro do Electron. A vista Godot é
 - A aplicação atribui e guarda os lugares: gabinete (1), escrivães (7), cartografia (3), tesouraria (4), conselho (6 de reserva). O refeitório não ocupa lugares de trabalho. Acima de 21, os restantes aguardam lugar.
 - Os estados vêm do store existente. Bloqueio e espera de lugar são diferentes. As estações de ferramentas orientam as deslocações. Os percursos são calculados a partir da geometria, com margem para a personagem.
 - Quatro lugares de pausa no refeitório, com serviço, refeição e lavagem. Uma mudança para trabalho cancela a pausa. Isto é animação: nunca suspende PTYs ou tarefas reais.
-- O quadro apresenta contagens reais de tarefas. Clicar abre Tarefas; Shift+clique abre as perguntas para o utilizador. Correspondência real produz envelopes, sem transmitir o conteúdo das mensagens ao Godot.
-- Clique seleciona um agente; duplo clique abre o seu terminal. Roda/pinça e botões +/− fazem zoom, arrastar com o botão direito move a câmara, F foca o agente, R repõe a vista. O seletor de sala e a opção de paredes ficam na aplicação.
+- A barra fixa acima do cenário apresenta contagens reais de tarefas e botões para abrir Tarefas e perguntas para o utilizador. Correspondência real produz envelopes, sem transmitir o conteúdo das mensagens ao Godot.
+- Clique seleciona um agente; duplo clique abre o seu terminal. Roda/pinça e botões +/− fazem zoom, arrastar com o botão esquerdo, direito ou central move a câmara; a roda/pinça aproxima a zona sob o ponteiro, F foca o agente, R repõe a vista. O seletor de sala e a opção de paredes ficam na aplicação.
 - Quando o cenário está oculto ou o terminal está em foco, o desenho pausa. O backend continua ativo. O regresso envia um snapshot completo.
 
 ## Fronteira de segurança
