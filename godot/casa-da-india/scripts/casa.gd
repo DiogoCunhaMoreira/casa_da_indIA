@@ -282,42 +282,75 @@ func make_official(parent: Node3D, title: String, role: String, color: Color, ro
 	actor.add_child(label)
 	officials.append({"node":actor,"body":body,"head":head,"arms":arms,"elbows":elbows,"legs":legs,"knees":knees,"eyes":eyes,"label":label,"ring":ring,"name":title,"role":role,"route":route,"target":1,"wait":3.0+index*1.7,"state":"A trabalhar","speed":0.0,"phase":index*1.9,"blend":0.0,"index":index,"facing":PI})
 
+func advance_live(a: Dictionary, delta: float) -> float:
+	var actor: Node3D = a.node
+	if a.wait > 0.0:
+		a.speed = move_toward(float(a.speed),0.0,delta*2.4)
+		return 0.0
+	var remaining: float = actor.position.distance_to(a.route[a.target])
+	for i in range(int(a.target),a.route.size()-1):
+		remaining += a.route[i].distance_to(a.route[i+1])
+	# Brake for the final destination, never for each 25 cm navigation cell.
+	var desired := minf(1.15,sqrt(2.0*2.4*remaining))
+	a.speed = move_toward(float(a.speed),desired,delta*2.4)
+	var budget: float = a.speed*delta
+	var travelled := 0.0
+	var start: Vector3 = actor.position
+	while a.wait <= 0.0:
+		var direction: Vector3 = a.route[a.target]-actor.position
+		var length := direction.length()
+		if length > budget and length > 0.00001:
+			actor.position += direction/length*budget
+			travelled += budget
+			break
+		actor.position = a.route[a.target]
+		budget -= length
+		travelled += length
+		if int(a.target)+1 < a.route.size():
+			a.target += 1
+		else:
+			a.wait = 3600.0
+			a.speed = 0.0
+			break
+	var motion: Vector3 = actor.position-start
+	if motion.length_squared() > 0.000001:
+		a.facing = atan2(motion.x,motion.z)
+	actor.rotation.y = lerp_angle(actor.rotation.y,float(a.facing),1.0-exp(-delta*8.0))
+	return travelled
+
 func animate_official(a: Dictionary, delta: float) -> void:
 	var actor: Node3D = a.node
-	var direction: Vector3 = a.route[a.target]-actor.position
-	var desired_speed := 0.0
-	if a.wait > 0.0:
-		a.wait = maxf(0.0,a.wait-delta)
-		if refeitorio:
-			a.state = "À mesa" if a.target == 1 else ("Junto ao balcão" if a.target == 3 else "Em pausa")
-		else:
-			a.state = ("A estudar cartas" if cartografia else ("Em reunião" if conselho else "A trabalhar")) if a.target == 1 else "A consultar registos"
+	var distance := 0.0
+	if a.has("live_id"):
+		distance = advance_live(a,delta)
 	else:
-		if direction.length() < 0.025:
-			actor.position = a.route[a.target]
-			if a.has("live_id"):
-				if int(a.target)+1 < a.route.size():
-					a.target += 1
-				else:
-					a.wait = 3600.0
+		var direction: Vector3 = a.route[a.target]-actor.position
+		var desired_speed := 0.0
+		if a.wait > 0.0:
+			a.wait = maxf(0.0,a.wait-delta)
+			if refeitorio:
+				a.state = "À mesa" if a.target == 1 else ("Junto ao balcão" if a.target == 3 else "Em pausa")
 			else:
+				a.state = ("A estudar cartas" if cartografia else ("Em reunião" if conselho else "A trabalhar")) if a.target == 1 else "A consultar registos"
+		else:
+			if direction.length() < 0.025:
+				actor.position = a.route[a.target]
 				a.target = (int(a.target)+1)%a.route.size()
 				a.wait = 3.8+float(a.index)*0.8
-			if not a.has("live_id") or a.wait > 0.0:
 				a.facing = float(a.get("home_facing", 0.0 if gabinete else PI)) if a.target == 1 else actor.rotation.y+0.45
-		else:
-			a.facing = atan2(direction.x,direction.z)
-			# Travar antes da paragem e começar só depois de virar o corpo.
-			var facing_error := absf(wrapf(float(a.facing)-actor.rotation.y,-PI,PI))
-			desired_speed = minf(0.88+float(a.index)*0.06,sqrt(2.0*1.7*direction.length()))
-			desired_speed *= clampf(1.0-facing_error/1.8,0.0,1.0)
-			a.state = "A circular"
-	a.speed = move_toward(float(a.speed),desired_speed,delta*1.7)
-	actor.rotation.y = lerp_angle(actor.rotation.y,float(a.facing),1.0-exp(-delta*5.0))
-	var distance := minf(float(a.speed)*delta,direction.length()) if a.wait <= 0.0 else 0.0
-	if distance > 0.0:
-		actor.position += direction.normalized()*distance
-	a.phase += distance*TAU/0.72
+			else:
+				a.facing = atan2(direction.x,direction.z)
+				# Travar antes da paragem e começar só depois de virar o corpo.
+				var facing_error := absf(wrapf(float(a.facing)-actor.rotation.y,-PI,PI))
+				desired_speed = minf(0.88+float(a.index)*0.06,sqrt(2.0*1.7*direction.length()))
+				desired_speed *= clampf(1.0-facing_error/1.8,0.0,1.0)
+				a.state = "A circular"
+		a.speed = move_toward(float(a.speed),desired_speed,delta*1.7)
+		actor.rotation.y = lerp_angle(actor.rotation.y,float(a.facing),1.0-exp(-delta*5.0))
+		distance = minf(float(a.speed)*delta,direction.length()) if a.wait <= 0.0 else 0.0
+		if distance > 0.0:
+			actor.position += direction.normalized()*distance
+	a.phase += distance*TAU/(1.0 if a.has("live_id") else 0.72)
 	a.blend = move_toward(float(a.blend),clampf(float(a.speed)/0.65,0,1),delta*4.0)
 	var stride: float = a.phase
 	var blend: float = a.blend

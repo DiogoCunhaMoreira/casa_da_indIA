@@ -14,7 +14,7 @@
     "dev": "electron-vite dev",
     "arte": "node tools/mapgen/run.cjs",
     "cena": "vite --config vite.cena.config.ts",
-    "build": "electron-vite build && npm run copy:main-assets",
+    "build": "npm run godot:export && electron-vite build && npm run copy:main-assets",
     "copy:main-assets": "node tools/copy-main-assets.cjs",
     "preview": "electron-vite preview",
     "postinstall": "electron-rebuild -f && node tools/ensure-pty-perms.cjs && node tools/patch-node-pty-conpty.cjs",
@@ -28,8 +28,9 @@
     "dist:win": "npm run build && electron-builder --win",
     "dist:linux": "npm run build && electron-builder --linux",
     "godot:export": "node tools/godot/export.cjs",
-    "build:godot": "npm run godot:export && npm run build",
-    "test:godot": "electron tools/godot/smoke.cjs"
+    "build:godot": "npm run build",
+    "test:godot": "electron tools/godot/smoke.cjs",
+    "predev": "npm run godot:export"
   },
   "dependencies": {
     "@codemirror/lang-css": "^6.3.1",

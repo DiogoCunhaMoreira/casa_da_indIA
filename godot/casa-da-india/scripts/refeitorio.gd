@@ -79,7 +79,6 @@ func build(host: Node3D, world: Node3D) -> void:
 	bench(room,Vector3(3.7,0,-0.30),0.04,2.30)
 	stool(room,Vector3(4.6,0,2.2))
 	stool(room,Vector3(5.5,0,0.9))
-	plant(room,Vector3(-7.0,0,3.8))
 	var basket = h.pivot(room,"CestoDeLenha",Vector3(-6.9,0,-2.1))
 	b(basket,"Caixa",Vector3(0,0.25,0),Vector3(0.85,0.50,0.8),OAK)
 	for i in range(4):

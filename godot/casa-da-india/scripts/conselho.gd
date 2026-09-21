@@ -59,7 +59,6 @@ func build(host: Node3D, world: Node3D) -> void:
 	for x in [0.35,0.6,0.85]:
 		scroll(cupboard,Vector3(x,1.6,0))
 	globe(room,Vector3(6.4,0,-3.7))
-	chest(room,Vector3(6.7,0,3.6))
 	plant(room,Vector3(-6.8,0,3.8))
 	plant(room,Vector3(7.1,0,-0.4))
 

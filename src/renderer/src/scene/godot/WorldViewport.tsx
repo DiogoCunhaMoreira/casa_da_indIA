@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/store/store';
 import { ELENCO } from '@/scene/office/casadaindia/elenco';
-import { OfficeFloor } from '@/scene/office/OfficeFloor';
 import { allocateWorldSeats, isWorldRequest, WORLD_ORIGIN, WORLD_ROOMS, type WorldRoom, type WorldPayload } from '@shared/worldBridge';
 
 const read = (key: string) => { try { return localStorage.getItem(key); } catch { return null; } };
 const save = (key: string, value: string) => { try { localStorage.setItem(key, value); } catch { /* session still works */ } };
 export function WorldViewport() {
-  const [mode, setMode] = useState(read('casa.world.mode') === 'godot' ? 'godot' : 'pixel');
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
   const [generation, setGeneration] = useState(0);
@@ -23,7 +21,6 @@ export function WorldViewport() {
     if (WORLD_ROOMS.includes(saved)) { room.current = saved; setView(saved); }
   }, []);
   useEffect(() => {
-    if (mode !== 'godot') return;
     setError(''); setReady(false);
     let alive = true;
     let connected = false;
@@ -42,7 +39,7 @@ export function WorldViewport() {
     };
     publish.current = snapshot;
     const handshake = setInterval(() => { if (!connected) post({ type: 'hello' }); }, 500);
-    const timeout = setTimeout(() => { if (alive && !connected) setError('O cenário não respondeu. Exporta o Godot com npm run godot:export ou volta ao pixel art.'); }, 60000);
+    const timeout = setTimeout(() => { if (alive && !connected) setError('O cenário não respondeu. Tenta carregar novamente. Os agentes continuam disponíveis.'); }, 60000);
     const receive = (event: MessageEvent) => {
       if (event.source !== frame.current?.contentWindow || event.origin !== WORLD_ORIGIN || !isWorldRequest(event.data)) return;
       const message = event.data;
@@ -93,25 +90,21 @@ export function WorldViewport() {
       if (!pending) pending = setTimeout(() => { pending = undefined; snapshot(); }, 100);
     });
     return () => { alive = false; offMessage?.(); clearInterval(taskTimer); clearInterval(handshake); clearTimeout(timeout); clearTimeout(pending); unsubscribe(); window.removeEventListener('message', receive); document.removeEventListener('visibilitychange', snapshot); };
-  }, [mode, generation]);
+  }, [generation]);
   return <div style={{ height: '100%', position: 'relative', display: 'flex', flexDirection: 'column' }}>
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '6px 10px', background: 'var(--cth-paper-100)' }}>
       <strong>Casa da Índia</strong>
-      <label>Visualização <select aria-label="Visualização do mundo" value={mode} onChange={e => { setMode(e.target.value); save('casa.world.mode', e.target.value); }}>
-        <option value="pixel">Pixel art</option><option value="godot">Godot 3D · experimental</option>
-      </select></label>
-      {mode === 'godot' && <><select aria-label="Sala" value={view} onChange={e => { room.current = e.target.value as WorldRoom; setView(room.current); save('casa.world.room', room.current); publish.current(); }}>
+      <select aria-label="Sala" value={view} onChange={e => { room.current = e.target.value as WorldRoom; setView(room.current); save('casa.world.room', room.current); publish.current(); }}>
         {WORLD_ROOMS.map((r, i) => <option key={r} value={r}>{['Planta geral', 'Gabinete', 'Escrivães', 'Conselho', 'Cartografia', 'Tesouraria', 'Refeitório'][i]}</option>)}
-      </select><button aria-label="Aproximar" onClick={() => control('zoom_in')}>+</button><button aria-label="Afastar" onClick={() => control('zoom_out')}>−</button><button onClick={() => control('walls')}>Paredes</button></>}
-      {mode === 'godot' && !ready && !error && <span role="status">A carregar o cenário…</span>}
+      </select><button aria-label="Aproximar" onClick={() => control('zoom_in')}>+</button><button aria-label="Afastar" onClick={() => control('zoom_out')}>−</button><button onClick={() => control('walls')}>Paredes</button>
+      {!ready && !error && <span role="status">A carregar o cenário…</span>}
     </div>
     <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
-      {mode === 'pixel' ? <OfficeFloor /> : <iframe key={generation} ref={frame} title="Casa da Índia — mundo 3D" src={`${WORLD_ORIGIN}/index.html`}
-        sandbox="allow-scripts allow-same-origin" allow="fullscreen" style={{ width: '100%', height: '100%', border: 0 }} />}
-      {mode === 'godot' && error && <div role="alert" style={{ position: 'absolute', inset: 20, background: 'var(--cth-paper-100)', padding: 24 }}>
+      <iframe key={generation} ref={frame} title="Casa da Índia — mundo 3D" src={`${WORLD_ORIGIN}/index.html`}
+        sandbox="allow-scripts allow-same-origin" allow="fullscreen" style={{ width: '100%', height: '100%', border: 0 }} />
+      {error && <div role="alert" style={{ position: 'absolute', inset: 20, background: 'var(--cth-paper-100)', padding: 24 }}>
         <p>{error}</p><p>Os agentes e terminais continuam disponíveis.</p>
         <button onClick={() => setGeneration(g => g + 1)}>Tentar novamente</button>
-        <button onClick={() => { setMode('pixel'); save('casa.world.mode', 'pixel'); }}>Voltar ao pixel art</button>
       </div>}
     </div>
   </div>;

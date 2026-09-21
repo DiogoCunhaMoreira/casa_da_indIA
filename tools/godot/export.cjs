@@ -1,8 +1,9 @@
 const { spawnSync } = require('node:child_process');
 const { mkdirSync, copyFileSync, existsSync } = require('node:fs');
-const { resolve } = require('node:path');
+const { resolve, join } = require('node:path');
+const { homedir } = require('node:os');
 const root = resolve(__dirname, '../..');
-const binary = process.env.GODOT_BIN || (existsSync('/Applications/Godot.app/Contents/MacOS/Godot') ? '/Applications/Godot.app/Contents/MacOS/Godot' : 'godot');
+const binary = process.env.GODOT_BIN || ['/Applications/Godot.app/Contents/MacOS/Godot', join(homedir(), 'Downloads/Godot.app/Contents/MacOS/Godot')].find(existsSync) || 'godot';
 const version = spawnSync(binary, ['--version'], { encoding: 'utf8' });
 if (version.error || !version.stdout.startsWith('4.6.2.')) throw new Error('Define GODOT_BIN com o executável do Godot 4.6.2.');
 if (!existsSync(resolve(root, '.cache/godot/web_nothreads_release.zip'))) throw new Error('Extrai web_nothreads_release.zip e web_nothreads_debug.zip dos templates oficiais 4.6.2 para .cache/godot/. Consulta godot/INTEGRATION.md.');

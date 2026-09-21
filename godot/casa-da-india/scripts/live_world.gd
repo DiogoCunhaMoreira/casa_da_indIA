@@ -11,6 +11,7 @@ var task_label: Label3D
 var message_ids: Array = []
 var envelopes: Array = []
 var metrics_time := 0.0
+const SEAT_IDS = [0,1,2,3,4,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21]
 const CAPTIONS = {"idle":"Disponível", "working":"A trabalhar", "thinking":"A pensar", "compacting":"A organizar contexto", "waiting":"À espera", "blocked":"Precisa de ajuda", "success":"Concluído", "ghost":"Desligado", "looping":"A repetir", "typing":"A escrever"}
 const CENTRES = {"gabinete": Vector3(-10.5,0,-11), "escrivaes": Vector3(10.5,0,-11), "conselho": Vector3(-10.5,0,0), "cartografia": Vector3(10.5,0,0), "tesouraria": Vector3(-10.5,0,11), "refeitorio": Vector3(10.5,0,11)}
 

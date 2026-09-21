@@ -47,7 +47,7 @@ func build(host: Node3D, world: Node3D) -> void:
 	for i in range(3):
 		scroll(table,Vector3(-2.07+i*0.19,1.36,-0.2))
 	stool(room,Vector3(-2.8,0,1.75))
-	globe(room,Vector3(-5.85,0,0.7))
+	globe(room,Vector3(-5.85,0,-1.4))
 	# Instrumento armilar em pedestal independente, à direita.
 	var instrument = h.pivot(room,"InstrumentoArmilar",Vector3(5.2,0,2.7))
 	h.round_shape(instrument,"Base",Vector3(0,0.13,0),0.50,0.18,OAK)

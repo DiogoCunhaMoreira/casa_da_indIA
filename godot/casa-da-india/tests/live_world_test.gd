@@ -7,12 +7,14 @@ func run() -> void:
 	var scene = load("res://scenes/casa.tscn").instantiate()
 	root.add_child(scene)
 	await process_frame
+	verify_doors(scene)
+	verify_continuous_walk(scene)
 	var live = load("res://scripts/live_world.gd").new()
 	scene.add_child(live)
 	scene.live_world = live
 	var roster: Array = []
 	for i in range(24):
-		roster.append({"id":"test-%d"%i,"name":"Oficial %d"%i,"character":"character-%d"%i,"status":"working","seat":i if i<22 else null,"selected":i==0,"isGod":i==0})
+		roster.append({"id":"test-%d"%i,"name":"Oficial %d"%i,"character":"character-%d"%i,"status":"working","seat":live.SEAT_IDS[i] if i<live.SEAT_IDS.size() else null,"selected":i==0,"isGod":i==0})
 	live.apply_snapshot({"version":1,"type":"snapshot","room":"casa","visible":true,"agents":roster})
 	assert(live.agents.size()==24)
 	var identity: int = live.agents["test-0"].node.get_instance_id()
@@ -24,7 +26,7 @@ func run() -> void:
 	assert(live.agents["test-0"].name == "Nome personalizado")
 	assert(live.agents["test-0"].node.get_instance_id()==identity)
 	var failed := 0
-	for i in range(22):
+	for i in live.SEAT_IDS:
 		var path = live.navigation.route(live.seat_position(i),Vector3(0,0,14))
 		if path.is_empty():
 			printerr("UNREACHABLE SEAT ",i)
@@ -48,3 +50,34 @@ func run() -> void:
 	assert(live.agents.size()==23)
 	print("LIVE WORLD: identity, roster, rooms, states verified; unreachable seats: ",failed)
 	quit(1 if failed else 0)
+
+func verify_doors(scene: Node3D) -> void:
+	for room in scene.get_node("Maquete/CasaCompleta").get_children():
+		if room.name not in ["Gabinete do Feitor","Escrivães","Conselho","Cartografia","Tesouraria","Refeitório e Adega"]:
+			continue
+		# Conservative envelope of the entire door swing, including a safety margin.
+		var zone := AABB(Vector3(-8.35 if room.position.x>0 else 5.65,0.15,1.35),Vector3(2.7,3.0,2.65))
+		for mesh in room.find_children("*","MeshInstance3D",true,false):
+			if not mesh.is_visible_in_tree():
+				continue
+			var bounds: AABB = room.global_transform.affine_inverse()*mesh.global_transform*mesh.get_aabb()
+			assert(not bounds.intersects(zone),"Objeto na abertura da porta: %s" % mesh.get_path())
+
+func verify_continuous_walk(scene: Node3D) -> void:
+	for hz in [30,60,120]:
+		var actor := Node3D.new()
+		scene.add_child(actor)
+		var route: Array = [Vector3.ZERO]
+		for i in range(1,41):
+			route.append(Vector3(float(i)*0.25,0,0))
+		var a := {"node":actor,"route":route,"target":1,"wait":0.0,"speed":0.0,"facing":0.0}
+		for frame in range(hz*4):
+			var travelled: float = scene.advance_live(a,1.0/hz)
+			if frame > hz:
+				assert(travelled*hz > 1.14,"Interrupção num ponto intermédio do percurso")
+		assert(actor.position.x > 4.25 and actor.position.x < 4.4,"Velocidade depende do framerate")
+		for frame in range(hz*8):
+			scene.advance_live(a,1.0/hz)
+		assert(actor.position.is_equal_approx(Vector3(10,0,0)),"Ultrapassou o destino")
+		actor.queue_free()
+	print("DOORS / WALK: six clear door sweeps; continuous movement at 30, 60 and 120 Hz")

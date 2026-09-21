@@ -2,6 +2,8 @@
 export const WORLD_VERSION = 1 as const;
 export const WORLD_ORIGIN = 'casa-world://app';
 export const WORLD_ROOMS = ['casa', 'gabinete', 'escrivaes', 'conselho', 'cartografia', 'tesouraria', 'refeitorio'] as const;
+// Retire seat 5 without renumbering occupied places in other rooms.
+export const WORLD_SEAT_IDS = Array.from({ length: 22 }, (_, i) => i).filter(i => i !== 5);
 export type WorldRoom = typeof WORLD_ROOMS[number];
 export interface WorldAgent {
   id: string; name: string; character: string; status: string; seat: number | null;
@@ -34,13 +36,13 @@ export function allocateWorldSeats(agents: { id: string; isGod?: boolean }[], pr
   const ordered = [...agents].sort((a, b) => Number(!!b.isGod) - Number(!!a.isGod));
   for (const a of ordered) {
     const seat = previous[a.id];
-    if (Number.isInteger(seat) && seat >= 0 && seat < 22 && !used.has(seat) && (a.isGod ? seat === 0 : seat !== 0)) {
+    if (Number.isInteger(seat) && WORLD_SEAT_IDS.includes(seat) && !used.has(seat) && (a.isGod ? seat === 0 : seat !== 0)) {
       next[a.id] = seat; used.add(seat);
     }
   }
   for (const a of ordered) {
     if (next[a.id] !== undefined) continue;
-    const candidates = a.isGod ? [0] : Array.from({ length: 21 }, (_, i) => i + 1);
+    const candidates = a.isGod ? [0] : WORLD_SEAT_IDS.filter(i => i !== 0);
     const seat = candidates.find(i => !used.has(i));
     if (seat !== undefined) { next[a.id] = seat; used.add(seat); }
   }

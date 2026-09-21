@@ -1,7 +1,7 @@
 window.results = [];
 window.sendSnapshot = (count = 16, room = 'casa') => {
   document.getElementById('world').contentWindow.postMessage({ version: 1, type: 'snapshot', room, visible: true,
-    agents: Array.from({ length: count }, (_, i) => ({ id: `smoke-${i}`, name: i === 0 ? 'Feitor de teste' : `Oficial ${i}`, character: `character-${i}`, status: i === 1 ? 'blocked' : 'working', seat: i < 22 ? i : null, selected: i === 0, isGod: i === 0 }))
+    agents: Array.from({ length: count }, (_, i) => ({ id: `smoke-${i}`, name: i === 0 ? 'Feitor de teste' : `Oficial ${i}`, character: `character-${i}`, status: i === 1 ? 'blocked' : 'working', seat: i < 21 ? (i < 5 ? i : i + 1) : null, selected: i === 0, isGod: i === 0 }))
   }, 'casa-world://app');
 };
 window.addEventListener('message', e => {

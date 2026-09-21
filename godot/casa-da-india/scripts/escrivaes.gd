@@ -1,6 +1,6 @@
 @tool
 extends "res://scripts/gabinete.gd"
-## Sala coletiva: oito postos, arquivo de registos e percursos livres.
+## Sala coletiva: sete postos, arquivo de registos e percursos livres.
 
 func build(host: Node3D, world: Node3D) -> void:
 	h = host
@@ -48,6 +48,8 @@ func build(host: Node3D, world: Node3D) -> void:
 				b(room,"LinhaRecado",Vector3(x-0.32+i*0.3,1.45+line*0.085+float(i%2)*0.14,-4.56),Vector3(0.20,0.014,0.008),TRIM)
 	for row in range(2):
 		for column in range(4):
+			if row == 1 and column == 0:
+				continue # Entrada livre: este posto foi retirado.
 			workstation(room,Vector3(-5.4+column*3.6,0,-1.8+row*3.3),row*4+column)
 	# Passadeiras marcam os corredores entre as mesas.
 	h.room_rug(room,Vector3(-2.25,0,-0.2),Vector3(0.82,0.022,5.3),Color("527b7b"))

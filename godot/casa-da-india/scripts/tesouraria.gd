@@ -57,9 +57,7 @@ func build(host: Node3D, world: Node3D) -> void:
 	h.desk(ledger,Vector3.ZERO)
 	for i in range(3):
 		b(ledger,"LivroReceita",Vector3(-0.73,1.07+i*0.09,0),Vector3(0.46,0.08,0.64),RED if i%2 == 0 else Color("557471"))
-	stool(room,Vector3(6.2,0,1.6))
 	chest(room,Vector3(-6.6,0,3.6))
-	plant(room,Vector3(7.0,0,3.85))
 	for pos in [Vector3(-6.5,0,2.35),Vector3(-5.75,0,3.55)]:
 		h.ball(room,pos+Vector3(0,0.32,0),Vector3(0.50,0.61,0.46),Color("b7a17d"))
 		h.round_shape(room,"BocaSaco",pos+Vector3(0,0.64,0),0.09,0.16,PAPER,0.05)

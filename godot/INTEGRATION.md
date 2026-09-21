@@ -1,12 +1,12 @@
 # Casa da Índia dentro da aplicação
 
-O seletor **Visualização → Godot 3D · experimental**, acima do cenário, abre a Casa dentro do Electron. Pixel art continua disponível durante a transição. A lista de agentes e os terminais funcionam mesmo que o cenário não carregue; o aviso permite tentar novamente ou voltar ao pixel art.
+A aplicação abre diretamente a Casa em 3D dentro do Electron. A vista Godot é a visualização definitiva; o seletor de pixel art foi retirado. A lista de agentes e os terminais funcionam mesmo que o cenário não carregue; o aviso permite tentar novamente.
 
 ## O que está ligado
 
 - As seis salas partilham um único mundo. Mudar de sala move a câmara; não recria os agentes.
 - Cada agente mantém o ID, o nome personalizado e a personagem escolhida. As cores, cabelo, pele, barba, cobertura da cabeça e capa vêm do elenco da aplicação.
-- A aplicação atribui e guarda os lugares: gabinete (1), escrivães (8), cartografia (3), tesouraria (4), conselho (6 de reserva). O refeitório não ocupa lugares de trabalho. Acima de 22, os restantes aguardam lugar.
+- A aplicação atribui e guarda os lugares: gabinete (1), escrivães (7), cartografia (3), tesouraria (4), conselho (6 de reserva). O refeitório não ocupa lugares de trabalho. Acima de 21, os restantes aguardam lugar.
 - Os estados vêm do store existente. Bloqueio e espera de lugar são diferentes. As estações de ferramentas orientam as deslocações. Os percursos são calculados a partir da geometria, com margem para a personagem.
 - Quatro lugares de pausa no refeitório, com serviço, refeição e lavagem. Uma mudança para trabalho cancela a pausa. Isto é animação: nunca suspende PTYs ou tarefas reais.
 - O quadro apresenta contagens reais de tarefas. Clicar abre Tarefas; Shift+clique abre as perguntas para o utilizador. Correspondência real produz envelopes, sem transmitir o conteúdo das mensagens ao Godot.
@@ -34,9 +34,9 @@ GODOT_BIN=/caminho/para/Godot npm run build:godot
 npm run dev
 ```
 
-No macOS, a instalação em `/Applications/Godot.app` é detetada automaticamente; noutros locais usar `GODOT_BIN`. Se estiver no PATH, o comando `godot` também funciona.
+No macOS, a instalação em `/Applications/Godot.app` ou `~/Downloads/Godot.app` é detetada automaticamente; noutros locais usar `GODOT_BIN`. Se estiver no PATH, o comando `godot` também funciona.
 
-A exportação fica em `src/renderer/public/godot/`; Vite copia-a para `out/renderer/godot/`, incluído no pacote Electron. Templates e exportações são ignorados pelo Git. Depois de alterar GDScript ou a shell, repetir a exportação; `npm run build` sozinho não recompila o Godot.
+A exportação fica em `src/renderer/public/godot/`; Vite copia-a para `out/renderer/godot/`, incluído no pacote Electron. Templates e exportações são ignorados pelo Git. `npm run dev` e `npm run build` exportam automaticamente o Godot antes de arrancar ou compilar a aplicação. Durante uma sessão já aberta, repetir `npm run godot:export` depois de alterar GDScript ou a shell e recarregar o cenário.
 
 O cenário não tem áudio e usa o driver Dummy. Não utiliza IndexedDB: a aplicação é a dona do estado. Isto evita inicializações desnecessárias de áudio/armazenamento no iframe.
 
@@ -63,7 +63,7 @@ CASA_WORLD_ASSETS="$PWD/dist/mac-arm64/casa_da_indIA.app/Contents/Resources/app.
 
 TypeScript, testes de regressão, teste nativo e exportação Web foram executados. Foi criado um pacote local macOS arm64 sem assinatura/notarização e sem publicação. A integração offline foi exercitada com os assets do `app.asar`; isso não substitui um ensaio completo dos providers na aplicação empacotada.
 
-A migração mantém-se experimental. Faltam a avaliação visual pelo utilizador, sessões prolongadas com agentes reais (incluindo foco de terminal, memória após muitas mudanças de sala e recuperação gráfica), e a validação de Windows/Linux. A promoção do Godot a predefinição e a remoção do Pixi dependem dessa aceitação. Não se alterou o motor de agentes para acomodar a visualização.
+O Godot é a visualização definitiva por decisão do utilizador. O código do antigo cenário e as dependências usadas pelos retratos permanecem no repositório, mas o cenário pixel art já não é montado pela aplicação. Continuam relevantes os ensaios prolongados com providers reais e a validação de Windows/Linux.
 
 ### Resultado do ensaio local — 20/09/2026
 
@@ -73,3 +73,9 @@ A migração mantém-se experimental. Faltam a avaliação visual pelo utilizado
 - O agrupamento estático reduziu o ensaio de 16 agentes para cerca de 1.637 chamadas de desenho e 2.235 nós. Materiais repetidos são partilhados.
 - Sem erros de JavaScript/Godot no ensaio Electron. Confirmado: `typeof require` e `typeof window.cth` são `undefined` dentro do mundo.
 - O Godot nativo em sandbox emitiu avisos de acesso às definições do editor/certificados do macOS; os testes e a exportação terminaram com sucesso. A execução Web isolada não emitiu esses avisos.
+
+### Ajustes após revisão visual
+
+As seis zonas de abertura das portas estão livres de mobiliário, vasos e bancos. O movimento conserva a velocidade entre os pontos da grelha e trava apenas no destino; testes a 30, 60 e 120 Hz verificam que não há paragens intermédias nem ultrapassagem do destino.
+
+A secretária junto à entrada dos Escrivães foi retirada: há agora 15 lugares principais e 6 no Conselho. O ID do posto retirado (5) fica reservado, para preservar os outros lugares guardados. O globo da Cartografia foi afastado da entrada para a zona do arquivo.
