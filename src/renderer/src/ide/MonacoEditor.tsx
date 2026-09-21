@@ -1,6 +1,8 @@
+import { useAppTheme } from '@/design/theme';
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useRef } from 'react';
 import Editor, { type OnMount } from '@monaco-editor/react';
-import { setupMonaco, CTH_MONACO_THEME, languageForPath } from './monaco';
+import { setupMonaco, languageForPath } from './monaco';
 
 // Pin @monaco-editor/react to the bundled monaco + register themes at module load,
 // before any <Editor/> mounts (avoids a CDN fetch / unthemed first paint).
@@ -17,6 +19,8 @@ export interface MonacoEditorProps {
 }
 
 export function MonacoEditor({ path, value, onChange, onSave, readOnly }: MonacoEditorProps) {
+  useUiLanguage();
+  const theme = useAppTheme();
   // Keep the latest onSave in a ref so the editor command (bound once at mount)
   // always calls the current handler without rebinding.
   const onSaveRef = useRef(onSave);
@@ -30,16 +34,16 @@ export function MonacoEditor({ path, value, onChange, onSave, readOnly }: Monaco
 
   return (
     <Editor
-      theme={CTH_MONACO_THEME}
+      theme={theme === 'dark' ? 'cth-dark' : 'cth-light'}
       language={languageForPath(path)}
       value={value}
       onChange={(v) => onChange(v ?? '')}
       onMount={handleMount}
-      loading={<div style={{ padding: 12, color: 'var(--cth-ink-500)', fontFamily: 'var(--cth-font-ui)' }}>loading editor…</div>}
+      loading={<div style={{ padding: 12, color: 'var(--cth-ink-500)', fontFamily: 'var(--cth-font-ui)' }}>{uiText("loading_editor_35bdc4")}</div>}
       options={{
         readOnly,
         fontFamily: '"JetBrains Mono", "SF Mono", Menlo, monospace',
-        fontSize: 12,
+        fontSize: 14,
         lineHeight: 20,
         minimap: { enabled: false },
         scrollBeyondLastLine: false,

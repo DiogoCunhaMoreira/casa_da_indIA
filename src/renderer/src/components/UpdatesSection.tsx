@@ -1,3 +1,5 @@
+import { catalogText } from '@/i18n/catalog';
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 /**
  * Settings → General → "Updates".
  *
@@ -20,6 +22,7 @@ import { PixelButton } from './PixelButton';
 declare const __APP_VERSION__: string;
 
 export function UpdatesSection() {
+  useUiLanguage();
   const { t } = useTranslation();
   const [status, setStatus] = useState<UpdateStatus | null>(null);
   const [busy, setBusy] = useState(false);
@@ -131,8 +134,8 @@ export function UpdatesSection() {
   return (
     <div>
       <div style={{
-        fontFamily: 'var(--cth-font-display)', fontSize: 8, lineHeight: '12px',
-        color: 'var(--cth-ink-500)', textTransform: 'uppercase', marginBottom: 10
+        fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
+        color: 'var(--cth-ink-500)', textTransform: 'none', marginBottom: 10
       }}>
         {t('updatesSection.title')}
       </div>
@@ -146,7 +149,7 @@ export function UpdatesSection() {
           }}>
             {viewText.headline}
           </span>
-          <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+          <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
             {viewText.detail}
           </span>
         </div>
@@ -189,14 +192,11 @@ export function UpdatesSection() {
           border: '2px solid var(--cth-ink-900)'
         }}>
           <Trans i18nKey="updatesSection.manualDownloadingTitle" values={{ version: manualStarted }} components={{ b: <b /> }}>
-            v{manualStarted} is downloading in your browser.
-          </Trans>{' '}
-          <Trans i18nKey="updatesSection.manualDownloadingBody" values={{ os: steps.os }}>
-            When it lands, quit this app, install the new version over the current one, open it and
-            pick the same project. On {steps.os}:
+            v{manualStarted} {uiText("is_downloading_in_your_browser_01a79f")} </Trans>{' '}
+          <Trans i18nKey="updatesSection.manualDownloadingBody" values={{ os: steps.os }}> {uiText("When_it_lands_quit_this_app_install_the_new_v_3e69ee")} {steps.os}:
           </Trans>
           <ol style={{ margin: '4px 0 0', paddingLeft: 18, color: 'var(--cth-ink-700)' }}>
-            {steps.steps.map((t) => <li key={t}>{t}</li>)}
+            {steps.steps.map((t) => <li key={t}>{catalogText(t)}</li>)}
           </ol>
         </div>
       )}
@@ -208,7 +208,7 @@ export function UpdatesSection() {
           {notes.map((line, i) => (
             <li key={i} style={{
               display: 'flex', gap: 6,
-              fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)'
+              fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)'
             }}>
               <span aria-hidden style={{ color: 'var(--cth-ink-300)' }}>•</span>
               <span>{line}</span>

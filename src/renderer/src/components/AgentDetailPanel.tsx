@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PixelPanel } from './PixelPanel';
@@ -25,6 +26,7 @@ export interface AgentDetailPanelProps {
 }
 
 export function AgentDetailPanel({ agent }: AgentDetailPanelProps) {
+  useUiLanguage();
   const { t } = useTranslation();
   const [openTerminalState, setOpenTerminalState] = useState<'idle' | 'opening' | 'ok' | 'error'>('idle');
   const [openTerminalError, setOpenTerminalError] = useState<string | undefined>();
@@ -105,7 +107,7 @@ export function AgentDetailPanel({ agent }: AgentDetailPanelProps) {
         setTimeout(() => setOpenTerminalState('idle'), 1500);
       } else {
         setOpenTerminalState('error');
-        setOpenTerminalError(result.error ?? 'unknown error');
+        setOpenTerminalError(result.error ?? uiText("unknown_error_af6321"));
         setTimeout(() => setOpenTerminalState('idle'), 4000);
       }
     } catch (e) {
@@ -136,11 +138,11 @@ export function AgentDetailPanel({ agent }: AgentDetailPanelProps) {
       noPadding
     >
       {/* Thin header strip */}
-      <div ref={headerRef} style={{
+      <div className="cth-agent-header" ref={headerRef} style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        padding: '6px 8px',
+        padding: '12px',
         background: 'var(--cth-cream-100)',
-        borderBottom: '1px solid var(--cth-ink-700)',
+        borderBottom: '1px solid var(--cth-ink-100)',
         flexShrink: 0
       }}>
         <div style={{
@@ -153,12 +155,11 @@ export function AgentDetailPanel({ agent }: AgentDetailPanelProps) {
           <SpritePortrait character={agent.character} scale={1} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', minWidth: 0, lineHeight: '14px' }}>
+          <div style={{ display: 'flex', minWidth: 0, lineHeight: '18px' }}>
             <AgentNameEditor
               name={agent.name}
               onCommit={(name) => renameAgent(agent.id, name)}
-              uppercase
-              fontSize={10}
+              fontSize={14}
             />
           </div>
           <div style={{
@@ -175,8 +176,8 @@ export function AgentDetailPanel({ agent }: AgentDetailPanelProps) {
         <PixelButton variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
           <span
             className="cth-tip cth-tip-wrap"
-            data-tip={`Edit ${agent.name}: their name and face, which engine they run on, and the briefing that tells them what they are for.`}
-            aria-label="Edit this agent"
+            data-tip={uiText('dynamic0', { v0: agent.name })}
+            aria-label={uiText("Edit_this_agent_d315e8")}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
           >
             <Icon name="edit" />{!compactHeader && ' edit'}
@@ -294,6 +295,7 @@ export function AgentDetailPanel({ agent }: AgentDetailPanelProps) {
 }
 
 function EmptyTab({ title, children }: { title: string; children: React.ReactNode }) {
+  useUiLanguage();
   return (
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
@@ -302,9 +304,9 @@ function EmptyTab({ title, children }: { title: string; children: React.ReactNod
       background: 'var(--cth-paper-200)'
     }}>
       <div style={{
-        fontFamily: 'var(--cth-font-display)', fontSize: 10, lineHeight: '14px',
+        fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
         color: 'var(--cth-ink-500)'
-      }}>{title.toUpperCase()}</div>
+      }}>{title}</div>
       <p style={{
         margin: 0, fontSize: 13, textAlign: 'center', color: 'var(--cth-ink-700)',
         maxWidth: 280

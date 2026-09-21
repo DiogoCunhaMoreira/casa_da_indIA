@@ -1,3 +1,4 @@
+import { catalogText } from '@/i18n/catalog';
 import { useState, useEffect, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { HarnessConfig, AgentProvider } from '@/store/config';
@@ -49,14 +50,14 @@ const inputStyle: CSSProperties = {
 };
 const labelStyle: CSSProperties = {
   fontFamily: 'var(--cth-font-display)',
-  fontSize: 8,
-  lineHeight: '12px',
+  fontSize: 12,
+  lineHeight: '18px',
   color: 'var(--cth-ink-700)',
-  textTransform: 'uppercase'
+  textTransform: 'none'
 };
 const headStyle: CSSProperties = {
-  fontFamily: 'var(--cth-font-display)', fontSize: 8, lineHeight: '12px',
-  color: 'var(--cth-ink-500)', textTransform: 'uppercase', marginBottom: 2
+  fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
+  color: 'var(--cth-ink-500)', textTransform: 'none', marginBottom: 2
 };
 const linkStyle: CSSProperties = { color: 'var(--cth-ink-900)', textDecoration: 'underline', cursor: 'pointer' };
 
@@ -158,7 +159,7 @@ export function AiEnginesSettings({ config }: { config: HarnessConfig }) {
                 <PixelButton variant="secondary" size="sm" onClick={() => clearKey(b.id)}>{t('common.delete')}</PixelButton>
               )}
             </div>
-            {note[b.id] && <div style={{ fontSize: 11, color: 'var(--cth-ink-500)' }}>{note[b.id]}</div>}
+            {note[b.id] && <div style={{ fontSize: 12, color: 'var(--cth-ink-500)' }}>{note[b.id]}</div>}
           </div>
         ))}
       </div>
@@ -173,7 +174,7 @@ export function AiEnginesSettings({ config }: { config: HarnessConfig }) {
             </label>
             <div style={{ display: 'flex', gap: 6 }}>
               <input
-                placeholder={`base-URL — ${c.hint}`}
+                placeholder={catalogText(c.hint)}
                 defaultValue={baseUrls[c.id] ?? ''}
                 onBlur={(e) => saveBaseUrl(c.id, e.target.value)}
                 style={inputStyle}

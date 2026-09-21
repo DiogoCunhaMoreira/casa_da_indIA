@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useRef, useState } from 'react';
 import { isComposingKey } from '@shared/imeGuard';
 
@@ -16,6 +17,7 @@ export function AgentNameEditor({
   uppercase = false,
   fontSize = 'var(--cth-text-display-sm)'
 }: AgentNameEditorProps) {
+  useUiLanguage();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
   const [error, setError] = useState<string>();
@@ -36,7 +38,7 @@ export function AgentNameEditor({
     if (committing.current || cancelling.current) return;
     const nextName = draft.trim();
     if (!nextName) {
-      setError('Name is required');
+      setError(uiText("Name_is_required_222c72"));
       return;
     }
     if (nextName === name) {
@@ -49,9 +51,9 @@ export function AgentNameEditor({
     try {
       const result = await onCommit(nextName);
       if (result.ok) setEditing(false);
-      else setError(result.error ?? 'Could not rename agent');
+      else setError(result.error ?? uiText("Could_not_rename_agent_0538f9"));
     } catch (commitError) {
-      setError(commitError instanceof Error ? commitError.message : 'Could not rename agent');
+      setError(commitError instanceof Error ? commitError.message : uiText("Could_not_rename_agent_0538f9"));
     } finally {
       committing.current = false;
     }
@@ -118,7 +120,7 @@ export function AgentNameEditor({
           flexShrink: 0, width: 14, height: 14, padding: 0,
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           border: 'none', background: 'transparent', cursor: 'text',
-          color: 'var(--cth-ink-500)', fontFamily: 'var(--cth-font-ui)', fontSize: 9, lineHeight: 1
+          color: 'var(--cth-ink-500)', fontFamily: 'var(--cth-font-ui)', fontSize: 12, lineHeight: 1
         }}
       >✎</button>
     </span>

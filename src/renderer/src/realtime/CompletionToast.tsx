@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 /**
  * Realtime Michael — completion toast (card rt-12, Phase 2, the visual half of
  * "respond when done").
@@ -43,7 +44,8 @@ const AUTO_DISMISS_MS = 9000;
 const MAX_VISIBLE = 4;
 
 export function CompletionToast(): JSX.Element | null {
-  const godName = useStore((s) => s.agents.find((a) => a.isGod)?.name) ?? 'the orchestrator';
+  useUiLanguage();
+  const godName = useStore((s) => s.agents.find((a) => a.isGod)?.name) ?? uiText("the_orchestrator_fc0fec");
   const [toasts, setToasts] = useState<ActiveToast[]>([]);
   // Stable across renders so the subscription's closures always see live timers.
   const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -118,24 +120,23 @@ export function CompletionToast(): JSX.Element | null {
               alignItems: 'center',
               gap: 8,
               fontFamily: 'var(--cth-font-display)',
-              fontSize: 8,
-              lineHeight: '12px',
+              fontSize: 12,
+              lineHeight: '18px',
               color: 'var(--cth-ink-900)',
-              textTransform: 'uppercase'
+              textTransform: 'none'
             }}
           >
-            <Icon name="bell" /> {godName} · completed
-            <button
+            <Icon name="bell" /> {godName} {uiText("completed_5c7696")} <button
               type="button"
               onClick={() => dismiss(t.key)}
-              aria-label="Dismiss"
+              aria-label={uiText("Dismiss_70afe9")}
               style={{
                 marginLeft: 'auto',
                 border: 'none',
                 background: 'transparent',
                 cursor: 'pointer',
                 fontFamily: 'var(--cth-font-display)',
-                fontSize: 10,
+                fontSize: 12,
                 lineHeight: '10px',
                 color: 'var(--cth-ink-700)',
                 padding: 0

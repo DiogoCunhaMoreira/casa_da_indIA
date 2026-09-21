@@ -80,7 +80,7 @@ test('Free Flow still saves immediately: it arms a global hotkey', () => {
 
 test('the section heading is defined once, not written out seventeen times', () => {
   assert.match(MODAL, /const sectionHead = \{/);
-  const inline = MODAL.match(/fontFamily: 'var\(--cth-font-display\)', fontSize: 8, lineHeight: '12px',/g) ?? [];
+  const inline = MODAL.match(/fontFamily: 'var\(--cth-font-ui\)', fontSize: 14, fontWeight: 600, lineHeight: '22px',/g) ?? [];
   assert.equal(inline.length, 1, `${inline.length} inline copies remain — only the const should define it`);
 });
 

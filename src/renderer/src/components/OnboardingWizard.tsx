@@ -1,3 +1,5 @@
+import { catalogText } from '@/i18n/catalog';
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { PixelPanel } from './PixelPanel';
@@ -8,7 +10,7 @@ import { ProviderLogo } from './ProviderLogo';
 import { AGENT_PROVIDER_PRESETS, modelsForProvider, type AgentProvider, type HarnessConfig } from '@/store/config';
 import { canReceiveInbox, providerPreset } from '@shared/agentProvider';
 import {
-  classifyEngineAvailability, engineAvailabilityBadge, engineAvailabilityMessage, engineBlocksOnboarding
+  classifyEngineAvailability, engineAvailabilityBadge, engineBlocksOnboarding
 } from '@shared/engineAvailability';
 import type { ToolStatus } from '@shared/toolCatalog';
 import { useResolvedGodName } from '@/hooks/useResolvedGodName';
@@ -90,6 +92,7 @@ const PROVIDER_BLURB_KEYS: Partial<Record<AgentProvider, string>> = {
 };
 
 export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
+  useUiLanguage();
   const { t } = useTranslation();
   // Onboarding runs before god exists in the store, so read the persisted name.
   const godName = useResolvedGodName();
@@ -280,7 +283,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   </div>
                 </div>
 
-                <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 10, color: 'var(--cth-ink-700)' }}>
+                <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 12, color: 'var(--cth-ink-700)' }}>
                   {t('onboarding.persona.ask')}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -343,11 +346,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       <div style={{ minWidth: 0 }}>
                         <div style={{
                           fontFamily: 'var(--cth-font-display)',
-                          fontSize: 10, lineHeight: '14px', marginBottom: 3
+                          fontSize: 12, lineHeight: '18px', marginBottom: 3
                           // These labels are literal caps to match their siblings, so
                           // the orchestrator's name has to arrive upper-cased too.
-                        }}>{t(f.labelKey, { godName: godName.toUpperCase() })}</div>
-                        <div style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-700)' }}>
+                        }}>{t(f.labelKey, { godName: godName })}</div>
+                        <div style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-700)' }}>
                           {plain ? t(f.descPlainKey) : t(f.descKey)}
                         </div>
                       </div>
@@ -397,22 +400,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <span>
                     {plain ? (
                       <Trans i18nKey="onboarding.orchestrator.cliAgentPlain" components={{ strong: <strong /> }}>
-                        A <strong>CLI agent</strong> is an AI coding assistant that runs on your
-                        computer — popular ones are Claude Code (Anthropic), Codex (OpenAI) and
-                        Antigravity (Google Gemini). <strong>Your clone</strong> is the always-on
-                        one that runs your whole office. We recommend Claude Code on Opus 4.8 (1M).
-                        You can add or switch the others later.
-                      </Trans>
+                        A <strong>{uiText("CLI_agent_116f4d")}</strong> {uiText("is_an_AI_coding_assistant_that_runs_on_your_c_b36745")} <strong>{uiText("Your_clone_a54a37")}</strong> {uiText("is_the_always_on_one_that_runs_your_whole_off_1d84c5")} </Trans>
                     ) : (
-                      <Trans i18nKey="onboarding.orchestrator.cliAgent" components={{ strong: <strong /> }}>
-                        Each option is a <strong>CLI engine</strong> (Claude Code, Codex,
-                        Antigravity/Gemini, or a local proxy like Qwen). Engines marked
-                        INSTALLED are already on this machine; INSTALLS ON FIRST RUN means the app
-                        sets it up when Michael first starts.
-                        <strong> Your clone</strong> (Michael) is the engine that orchestrates the whole
-                        hive. Recommended: Claude Code · Opus 4.8 · 1M. Other providers can be wired
-                        per agent later.
-                      </Trans>
+                      <Trans i18nKey="onboarding.orchestrator.cliAgent" components={{ strong: <strong /> }}> {uiText("Each_option_is_a_18f5e2")} <strong>{uiText("CLI_engine_84226c")}</strong> {uiText("Claude_Code_Codex_Antigravity_Gemini_or_a_loc_c66b4a")} <strong> {uiText("Your_clone_a54a37")}</strong> {uiText("Michael_is_the_engine_that_orchestrates_the_w_82da67")} </Trans>
                     )}
                   </span>
                 </div>
@@ -448,11 +438,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                           <ProviderLogo provider={p.id} size={18} />
                         </span>
                         <span style={{ flex: 1, minWidth: 0 }}>
-                          <span style={{ display: 'block', fontFamily: 'var(--cth-font-display)', fontSize: 11 }}>
-                            {p.label.toUpperCase()}
+                          <span style={{ display: 'block', fontFamily: 'var(--cth-font-display)', fontSize: 12 }}>
+                            {p.label}
                           </span>
                           {PROVIDER_BLURB_KEYS[p.id] && (
-                            <span style={{ display: 'block', fontSize: 11, color: 'var(--cth-ink-500)' }}>
+                            <span style={{ display: 'block', fontSize: 12, color: 'var(--cth-ink-500)' }}>
                               {t(PROVIDER_BLURB_KEYS[p.id]!)}
                             </span>
                           )}
@@ -464,17 +454,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                           const bad = a.state === 'not-installable';
                           return (
                             <span title={a.path ?? undefined} style={{
-                              fontSize: 10, padding: '1px 5px', lineHeight: '16px',
+                              fontSize: 12, padding: '1px 5px', lineHeight: '18px',
                               background: a.state === 'installed' ? 'var(--cth-mint-light)' : bad ? 'var(--cth-paper-100)' : 'var(--cth-cream-200)',
                               color: bad ? 'var(--cth-ink-500)' : 'var(--cth-ink-900)',
                               boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)',
                               fontFamily: 'var(--cth-font-display)', flexShrink: 0
-                            }}>{badge}</span>
+                            }}>{catalogText(badge)}</span>
                           );
                         })()}
                         {p.id === 'claude' && (
                           <span style={{
-                            fontSize: 10, padding: '1px 5px', lineHeight: '16px',
+                            fontSize: 12, padding: '1px 5px', lineHeight: '18px',
                             background: 'var(--cth-lemon)',
                             boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)',
                             fontFamily: 'var(--cth-font-display)', flexShrink: 0
@@ -490,15 +480,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     background: 'var(--cth-paper-100)', boxShadow: 'inset 0 0 0 2px var(--cth-ink-900)',
                     fontSize: 12, lineHeight: '17px', color: 'var(--cth-ink-900)'
                   }}>
-                    <span>{engineAvailabilityMessage(selectedEngine, providerPreset(godProvider).label)}</span>
+                    <span>{uiText('engineNotInstalled', { label: providerPreset(godProvider).label })}</span>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                       <PixelButton variant="secondary" size="sm" onClick={() => { void probeEngines(); }} disabled={probing}>
-                        {probing ? 'checking...' : 'check again'}
+                        {probing ? 'checking...' : uiText("check_again_fb3676")}
                       </PixelButton>
                       {selectedEngine.docsUrl && (
-                        <PixelButton variant="ghost" size="sm" onClick={() => { void window.cth.openExternal(selectedEngine.docsUrl!); }}>
-                          install instructions
-                        </PixelButton>
+                        <PixelButton variant="ghost" size="sm" onClick={() => { void window.cth.openExternal(selectedEngine.docsUrl!); }}> {uiText("install_instructions_52330e")} </PixelButton>
                       )}
                     </div>
                   </div>
@@ -574,7 +562,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     that maps to each engine's flag (item 6): autoMode → claude
                     bypassPermissions / codex -a never -s workspace-write (sandbox kept),
                     etc.; off → each engine's ask-first default. */}
-                <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 10, color: 'var(--cth-ink-700)' }}>
+                <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 12, color: 'var(--cth-ink-700)' }}>
                   {t('onboarding.permissions.autonomyHead')}
                 </div>
                 <label style={{
@@ -591,7 +579,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     style={{ width: 18, height: 18, flexShrink: 0 }}
                   />
                   <div>
-                    <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 10, lineHeight: '14px' }}>
+                    <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px' }}>
                       {plain ? t('onboarding.permissions.autoLabelPlain') : t('onboarding.permissions.autoLabel')}
                     </div>
                     <div style={{ fontSize: 13, color: 'var(--cth-ink-700)' }}>
@@ -608,7 +596,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 <div style={{ height: 1, background: 'var(--cth-ink-300)', margin: '2px 0' }} />
 
                 {/* RELIABILITY "— keeping work firing while you're away. */}
-                <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 10, color: 'var(--cth-ink-700)' }}>
+                <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 12, color: 'var(--cth-ink-700)' }}>
                   {t('onboarding.permissions.reliabilityHead')}
                 </div>
                 <p style={{ margin: 0, lineHeight: '20px', fontSize: 12, color: 'var(--cth-ink-700)' }}>
@@ -670,10 +658,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   </span>
                   <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <div>
-                      <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 10, lineHeight: '14px', marginBottom: 3 }}>
+                      <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px', marginBottom: 3 }}>
                         {t('onboarding.permissions.stayAwake')}
                       </div>
-                      <div style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-700)' }}>
+                      <div style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-700)' }}>
                         {t('onboarding.permissions.stayAwakeDesc')}
                       </div>
                     </div>
@@ -729,7 +717,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       // screen, instead of letting a pick that cannot boot through
                       // to a Michael that never starts.
                       if (step === 'orchestrator' && engineBlocked) {
-                        setError(`${providerPreset(godProvider).label} is not installed. Install it and press "check again", or pick another engine.`);
+                        setError(uiText('dynamic9', { v0: providerPreset(godProvider).label }));
                         return;
                       }
                       setError(undefined);
@@ -761,6 +749,7 @@ function PersonaCard({ icon, title, desc, selected, onClick }: {
   selected: boolean;
   onClick: () => void;
 }) {
+  useUiLanguage();
   return (
     <button
       onClick={onClick}
@@ -777,10 +766,10 @@ function PersonaCard({ icon, title, desc, selected, onClick }: {
       }}>
         <Icon name={icon} />
       </span>
-      <span style={{ fontFamily: 'var(--cth-font-display)', fontSize: 11, lineHeight: '15px', color: 'var(--cth-ink-900)' }}>
+      <span style={{ fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-900)' }}>
         {title}
       </span>
-      <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-700)' }}>
+      <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-700)' }}>
         {desc}
       </span>
     </button>
@@ -796,6 +785,7 @@ function ToggleRow({ icon, label, desc, on, tint, edge, onChange }: {
   edge: string; // border token when on
   onChange: (v: boolean) => void;
 }) {
+  useUiLanguage();
   return (
     <label style={{
       display: 'flex', gap: 10, alignItems: 'flex-start', padding: 10,
@@ -817,10 +807,10 @@ function ToggleRow({ icon, label, desc, on, tint, edge, onChange }: {
         <Icon name={icon} />
       </span>
       <span style={{ minWidth: 0 }}>
-        <span style={{ display: 'block', fontFamily: 'var(--cth-font-display)', fontSize: 10, lineHeight: '14px', marginBottom: 3 }}>
+        <span style={{ display: 'block', fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px', marginBottom: 3 }}>
           {label}
         </span>
-        <span style={{ display: 'block', fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-700)' }}>
+        <span style={{ display: 'block', fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-700)' }}>
           {desc}
         </span>
       </span>
@@ -829,6 +819,7 @@ function ToggleRow({ icon, label, desc, on, tint, edge, onChange }: {
 }
 
 function Dots({ step }: { step: Step }) {
+  useUiLanguage();
   const order: Step[] = ['persona', 'welcome', 'home', 'orchestrator', 'repos', 'permissions'];
   return (
     <div style={{ display: 'flex', gap: 4 }}>

@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 /**
  * Auto-update toast (v0.3.4) — the visual half of the background updater.
  *
@@ -79,6 +80,7 @@ function markStarAsked(): void {
 }
 
 export function UpdateToast() {
+  useUiLanguage();
   const [status, setStatus] = useState<ToastStatus | null>(null);
   const [busy, setBusy] = useState(false);
   // Read once per window, so persisting the flag below cannot make the link
@@ -213,7 +215,7 @@ export function UpdateToast() {
   };
 
   const linkStyle: React.CSSProperties = {
-    fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-900)',
+    fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-900)',
     textDecoration: 'underline', cursor: 'pointer'
   };
 
@@ -232,23 +234,21 @@ export function UpdateToast() {
         <span style={{ fontSize: 13, color: 'var(--cth-ink-900)', fontWeight: 600 }}>
           {status.state === 'downloaded'
             ? `Update v${status.version} downloaded`
-            : `v${status.version} is available`}
+            : uiText('dynamic17', { v0: status.version })}
         </span>
       </div>
-      <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-700)' }}>
+      <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-700)' }}>
         {status.state === 'downloaded'
-          ? 'Restart casa_da_indIA whenever you like to apply it — nothing restarts on its own.'
-          : 'This install can’t update itself — grab the new build from the releases page.'}
+          ? uiText("Restart_casa_da_indIA_whenever_you_like_to_ap_0e8c37")
+          : uiText("This_install_can_t_update_itself_grab_the_new_70b57c")}
       </span>
 
       {notes.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{
-            fontFamily: 'var(--cth-font-display)', fontSize: 8, lineHeight: '12px',
-            color: 'var(--cth-ink-500)', textTransform: 'uppercase'
-          }}>
-            What’s new
-          </div>
+            fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
+            color: 'var(--cth-ink-500)', textTransform: 'none'
+          }}> {uiText("What_s_new_369702")} </div>
           {/* The digest is already capped at ~280 chars; the clamp is the second
               belt, for the day a release body defeats the parser. */}
           <ul style={{
@@ -259,7 +259,7 @@ export function UpdateToast() {
             {notes.map((line, i) => (
               <li key={i} style={{
                 display: 'flex', gap: 6,
-                fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-700)'
+                fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-700)'
               }}>
                 <span aria-hidden style={{ color: 'var(--cth-ink-300)' }}>•</span>
                 <span>{line}</span>
@@ -271,13 +271,13 @@ export function UpdateToast() {
               href={status.state === 'available-manual' ? status.url : GITHUB_RELEASES_URL}
               onClick={(e) => { e.preventDefault(); openRelease(); }}
               style={linkStyle}
-            >Read more</a>
+            >{uiText("Read_more_ad086c")}</a>
             {showStar && (
               <a
                 href={GITHUB_REPO_URL}
                 onClick={(e) => { e.preventDefault(); void window.cth.openExternal(GITHUB_REPO_URL); }}
                 style={linkStyle}
-              >⭐ Star us on GitHub</a>
+              >{uiText("Star_us_on_GitHub_4764e5")}</a>
             )}
           </div>
         </div>
@@ -287,19 +287,17 @@ export function UpdateToast() {
         <button
           onClick={() => setStatus(null)}
           style={{ ...buttonStyle, background: 'var(--cth-cream-100)' }}
-        >
-          later
-        </button>
+        > {uiText("later_3f14ec")} </button>
         {status.state === 'downloaded' ? (
           <button onClick={restart} disabled={busy} style={buttonStyle}>
-            {busy ? 'restarting…' : 'restart to update'}
+            {busy ? 'restarting…' : uiText("restart_to_update_591c89")}
           </button>
         ) : (
           <button
             onClick={openRelease}
             style={buttonStyle}
           >
-            {hasDownload ? `download ${status.version}` : 'open releases'}
+            {hasDownload ? `download ${status.version}` : uiText("open_releases_a6c1cc")}
           </button>
         )}
       </div>

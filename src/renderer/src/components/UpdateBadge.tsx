@@ -1,3 +1,6 @@
+import { describeLocalizedUpdate } from '@/i18n/updatePresentation';
+import { catalogText } from '@/i18n/catalog';
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 /**
  * Toolbar version + update control — top-left, right next to the logo.
  *
@@ -13,12 +16,13 @@
  * is wiring and pixels.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { describeUpdate, manualDownloadUrl, manualInstallSteps, pendingVersion, reduceStatus, type UpdateStatus } from '@shared/updateState';
+import { manualDownloadUrl, manualInstallSteps, pendingVersion, reduceStatus, type UpdateStatus } from '@shared/updateState';
 import { PixelButton } from './PixelButton';
 
 declare const __APP_VERSION__: string;
 
 export function UpdateBadge() {
+  useUiLanguage();
   const [status, setStatus] = useState<UpdateStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [hover, setHover] = useState(false);
@@ -49,7 +53,7 @@ export function UpdateBadge() {
     return () => clearTimeout(t);
   }, [checkedOk]);
 
-  const view = describeUpdate(status, __APP_VERSION__);
+  const view = describeLocalizedUpdate(status, __APP_VERSION__);
 
   const onClick = useCallback(async () => {
     if (view.action === 'none' || busy) return;
@@ -105,7 +109,7 @@ export function UpdateBadge() {
       onClick={() => { void onClick(); }}
       disabled={!interactive}
       title={view.title}
-      aria-label={view.label ? `${view.title}` : `Version ${__APP_VERSION__} — check for updates`}
+      aria-label={view.label ? `${view.title}` : uiText('dynamic16', { v0: __APP_VERSION__ })}
       aria-busy={view.busy || busy}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -141,22 +145,19 @@ export function UpdateBadge() {
           position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 400,
           width: 340, padding: '10px 12px',
           background: 'var(--cth-paper-100)', color: INK,
-          border: `2px solid ${INK}`, boxShadow: `4px 4px 0 ${INK}`,
+          border: '1px solid var(--cth-ink-300)', boxShadow: `4px 4px 0 ${INK}`,
           fontFamily: 'var(--cth-font-ui)', fontSize: 12, lineHeight: 1.5, textAlign: 'left'
         }}
       >
-        <div style={{ fontFamily: 'var(--cth-font-mono, monospace)', fontWeight: 700, fontSize: 12.5 }}>
-          Click to download v{pending}
+        <div style={{ fontFamily: 'var(--cth-font-mono, monospace)', fontWeight: 700, fontSize: 12.5 }}> {uiText("Click_to_download_v_dda155")}{pending}
         </div>
-        <div style={{ marginTop: 4, color: 'var(--cth-ink-700)' }}>
-          Download the latest version and replace the app you have. Prefer the app to update itself? Settings &rarr; Updates.
-        </div>
+        <div style={{ marginTop: 4, color: 'var(--cth-ink-700)' }}> {uiText("Download_the_latest_version_and_replace_the_a_4b0ff7")} </div>
         <div style={{
-          marginTop: 8, fontFamily: 'var(--cth-font-mono, monospace)', fontSize: 9,
-          letterSpacing: '.18em', textTransform: 'uppercase', color: 'var(--cth-ink-500)'
-        }}>On {steps.os}</div>
+          marginTop: 8, fontFamily: 'var(--cth-font-mono, monospace)', fontSize: 12,
+          letterSpacing: '.18em', textTransform: 'none', color: 'var(--cth-ink-500)'
+        }}>{uiText("On_e0049a")} {steps.os}</div>
         <ol style={{ margin: '4px 0 0', paddingLeft: 18, color: 'var(--cth-ink-700)' }}>
-          {steps.steps.map((t) => <li key={t}>{t}</li>)}
+          {steps.steps.map((t) => <li key={t}>{catalogText(t)}</li>)}
         </ol>
       </div>
     )}
@@ -165,28 +166,24 @@ export function UpdateBadge() {
     {started && (
       <div
         role="dialog"
-        aria-label="Install the update"
+        aria-label={uiText("Install_the_update_ac0f0e")}
         className="cth-titlebar-nodrag"
         style={{
           position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 400,
           width: 380, padding: '12px 14px',
           background: 'var(--cth-paper-100)', color: INK,
-          border: `2px solid ${INK}`, boxShadow: `4px 4px 0 ${INK}`,
+          border: '1px solid var(--cth-ink-300)', boxShadow: `4px 4px 0 ${INK}`,
           fontFamily: 'var(--cth-font-ui)', fontSize: 12.5, lineHeight: 1.5, textAlign: 'left'
         }}
       >
         <div style={{ fontFamily: 'var(--cth-font-mono, monospace)', fontWeight: 700, fontSize: 13 }}>
-          v{started} is downloading in your browser.
-        </div>
-        <div style={{ marginTop: 6, color: 'var(--cth-ink-700)' }}>
-          When it lands, quit this app and install the new version over the current one. Open it and
-          pick the same project. Your agents, memory and settings stay where they are.
-        </div>
+          v{started} {uiText("is_downloading_in_your_browser_01a79f")} </div>
+        <div style={{ marginTop: 6, color: 'var(--cth-ink-700)' }}> {uiText("When_it_lands_quit_this_app_and_install_the_n_a50e5d")} </div>
         <ol style={{ margin: '8px 0 0', paddingLeft: 18, color: 'var(--cth-ink-700)' }}>
-          {steps.steps.map((t) => <li key={t}>{t}</li>)}
+          {steps.steps.map((t) => <li key={t}>{catalogText(t)}</li>)}
         </ol>
         <div style={{ display: 'flex', gap: 8, marginTop: 10, justifyContent: 'flex-end' }}>
-          <PixelButton variant="ghost" size="sm" onClick={() => setStarted(null)}>got it</PixelButton>
+          <PixelButton variant="ghost" size="sm" onClick={() => setStarted(null)}>{uiText("got_it_3226c5")}</PixelButton>
         </div>
       </div>
     )}
@@ -202,7 +199,7 @@ export function UpdateBadge() {
           position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 400,
           width: 300, padding: '10px 12px',
           background: 'var(--cth-paper-100)', color: INK,
-          border: `2px solid ${INK}`, boxShadow: `4px 4px 0 ${INK}`,
+          border: '1px solid var(--cth-ink-300)', boxShadow: `4px 4px 0 ${INK}`,
           fontFamily: 'var(--cth-font-ui)', fontSize: 12.5, lineHeight: 1.5, textAlign: 'left'
         }}
       >
@@ -211,12 +208,9 @@ export function UpdateBadge() {
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             width: 18, height: 18, borderRadius: 999,
             background: 'var(--cth-mint-light, #d0f0e0)', color: 'var(--cth-ink-900)', fontSize: 12
-          }}>&#10003;</span>
-          You are on the latest version.
-        </div>
+          }}>&#10003;</span> {uiText("You_are_on_the_latest_version_78178f")} </div>
         <div style={{ marginTop: 4, color: 'var(--cth-ink-700)' }}>
-          v{__APP_VERSION__} is the newest release. Checked just now.
-        </div>
+          v{__APP_VERSION__} {uiText("is_the_newest_release_Checked_just_now_2085cf")} </div>
       </div>
     )}
     </span>

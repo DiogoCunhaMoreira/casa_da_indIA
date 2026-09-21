@@ -1,3 +1,4 @@
+import { uiLocale } from '@/i18n/uiText';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PixelPanel } from './PixelPanel';
@@ -103,12 +104,12 @@ export function ThreadsPanel({ agentId }: ThreadsPanelProps) {
                 display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
                 padding: '6px 10px', border: 'none', cursor: 'pointer', background: 'var(--cth-cream-200)',
                 fontFamily: 'var(--cth-font-display)', fontSize: 'var(--cth-text-display-sm)',
-                lineHeight: '14px', color: 'var(--cth-ink-900)', boxShadow: 'inset 0 -1px 0 var(--cth-ink-900)'
+                lineHeight: '18px', color: 'var(--cth-ink-900)', boxShadow: 'inset 0 -1px 0 var(--cth-ink-900)'
               }}
             >
               <span style={{ width: 12, flexShrink: 0 }}>{open ? '▾' : '▸'}</span>
               <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {thread.subject.toUpperCase()}
+                {thread.subject}
               </span>
               <span style={{ fontSize: 12, color: 'var(--cth-ink-500)' }}>{thread.messages.length}</span>
             </button>
@@ -124,12 +125,12 @@ export function ThreadsPanel({ agentId }: ThreadsPanelProps) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <span style={{ fontFamily: 'var(--cth-font-ui)', fontSize: 13, fontWeight: 700, color: 'var(--cth-ink-900)' }}>{m.from}</span>
                         <span style={{
-                          fontFamily: 'var(--cth-font-ui)', fontSize: 12, lineHeight: '16px', padding: '0 6px',
+                          fontFamily: 'var(--cth-font-ui)', fontSize: 12, lineHeight: '18px', padding: '0 6px',
                           background: 'var(--cth-cream-100)', boxShadow: `inset 0 0 0 1px ${ACT_COLOR[m.act] ?? 'var(--cth-ink-300)'}`,
                           color: 'var(--cth-ink-900)'
                         }}>{m.act}</span>
                         <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--cth-ink-500)' }}>
-                          {new Date(m.created_at).toLocaleString()}
+                          {new Date(m.created_at).toLocaleString(uiLocale())}
                         </span>
                       </div>
                       <div dir={rtl ? 'auto' : undefined} style={{ fontFamily: 'var(--cth-font-ui)', fontSize: 13, lineHeight: '18px', color: 'var(--cth-ink-700)', marginTop: 2, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>

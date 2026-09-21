@@ -1,3 +1,4 @@
+import { uiText } from '@/i18n/uiText';
 // Integrations registry client — the renderer's single doorway to the
 // integrations registry + secret broker.
 //
@@ -107,10 +108,10 @@ const mockClient: IntegrationsClient = {
   },
   test: (id) => {
     const r = mockRecords.find((x) => x.id === id);
-    if (!r) return Promise.resolve({ ok: false, error: 'unknown integration' });
-    if (!r.enabled) return Promise.resolve({ ok: false, error: 'integration is disabled' });
+    if (!r) return Promise.resolve({ ok: false, error: uiText("unknown_integration_b872b7") });
+    if (!r.enabled) return Promise.resolve({ ok: false, error: uiText("integration_is_disabled_fdef54") });
     if (authTypeNeedsSecret(r.authType) && !(r.secretRef && mockSecret.has(r.secretRef))) {
-      return Promise.resolve({ ok: false, status: 503, error: 'no secret set' });
+      return Promise.resolve({ ok: false, status: 503, error: uiText("no_secret_set_ea3f5c") });
     }
     return Promise.resolve({ ok: true, status: 200 });
   }

@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -52,6 +53,7 @@ function relTime(ms: number, t: TFunction): string {
 }
 
 export function SchedulesSection({ onSummary }: { onSummary?: (s: string) => void }) {
+  useUiLanguage();
   const { t } = useTranslation();
   const rtl = useRtl();
   const agents = useStore((s) => s.agents);
@@ -108,7 +110,7 @@ export function SchedulesSection({ onSummary }: { onSummary?: (s: string) => voi
 
   const targetName = (to: string) =>
     to === 'broadcast' ? t('schedulesSection.everyone')
-      : to === 'god' ? (agents.find((a) => a.isGod)?.name ?? 'the orchestrator')
+      : to === 'god' ? (agents.find((a) => a.isGod)?.name ?? uiText("the_orchestrator_fc0fec"))
         : agents.find((a) => a.id === to)?.name ?? to;
 
   return (
@@ -132,7 +134,7 @@ export function SchedulesSection({ onSummary }: { onSummary?: (s: string) => voi
       )}
       {adding && (
         <SubCard>
-          <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 8, color: 'var(--cth-ink-500)' }}>{t('schedulesSection.newSchedule')}</div>
+          <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 12, color: 'var(--cth-ink-500)' }}>{t('schedulesSection.newSchedule')}</div>
           <Field label={t('schedulesSection.label')}>
             <input
               value={mLabel}
@@ -144,7 +146,7 @@ export function SchedulesSection({ onSummary }: { onSummary?: (s: string) => voi
           <Field label={t('schedulesSection.goesTo')}>
             <Select value={mTo} onChange={setMTo} style={{ width: '100%' }}>
               <option value="broadcast">{t('schedulesSection.everyone')}</option>
-              <option value="god">{agents.find((a) => a.isGod)?.name ?? 'the orchestrator'}</option>
+              <option value="god">{agents.find((a) => a.isGod)?.name ?? uiText("the_orchestrator_fc0fec")}</option>
               {agents.filter((a) => !a.isGod).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </Select>
           </Field>
@@ -191,6 +193,7 @@ function MissionRow({ mission, targetName, agents, onPatch, onDelete }: {
   onPatch: (fields: Partial<ScheduledMission>) => void;
   onDelete: () => void;
 }) {
+  useUiLanguage();
   const { t } = useTranslation();
   const rtl = useRtl();
   const [open, setOpen] = useState(false);
@@ -276,7 +279,7 @@ function MissionRow({ mission, targetName, agents, onPatch, onDelete }: {
         <div style={{
           marginTop: 6, padding: '4px 6px',
           background: 'var(--cth-paper-100)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-100)',
-          fontFamily: 'var(--cth-font-mono)', fontSize: 11, lineHeight: '15px',
+          fontFamily: 'var(--cth-font-mono)', fontSize: 12, lineHeight: '18px',
           color: 'var(--cth-ink-700)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
         }}>{mission.body.trim() || t('schedulesSection.noPrompt')}</div>
       )}
@@ -289,7 +292,7 @@ function MissionRow({ mission, targetName, agents, onPatch, onDelete }: {
           <Field label={t('schedulesSection.goesTo')}>
             <Select value={to} onChange={setTo} style={{ width: '100%' }}>
               <option value="broadcast">{t('schedulesSection.everyone')}</option>
-              <option value="god">{agents.find((a) => a.isGod)?.name ?? 'the orchestrator'}</option>
+              <option value="god">{agents.find((a) => a.isGod)?.name ?? uiText("the_orchestrator_fc0fec")}</option>
               {agents.filter((a) => !a.isGod).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </Select>
           </Field>

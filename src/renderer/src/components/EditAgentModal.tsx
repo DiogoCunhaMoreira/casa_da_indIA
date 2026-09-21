@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useState, type CSSProperties } from 'react';
 import { PixelPanel } from './PixelPanel';
 import { PixelButton } from './PixelButton';
@@ -31,6 +32,7 @@ export interface EditAgentModalProps {
  * via updateAgent (engine changes apply on the next restart).
  */
 export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
+  useUiLanguage();
   const updateAgent = useStore((s) => s.updateAgent);
   const [config, setConfig] = useState<HarnessConfig | null>(null);
 
@@ -73,7 +75,7 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
 
   const save = () => {
     const trimmedName = name.trim() || agent.name;
-    const trimmedDescription = description.trim() || 'a fresh harness';
+    const trimmedDescription = description.trim() || uiText("a_fresh_harness_24e449");
     const trimmedGoal = goal.trim();
     const command = config
       ? buildSpawnCommand(config, model, provider)
@@ -106,7 +108,7 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
           one job — describe an agent — and a tall narrow dialog next to a wide
           one reads as two unrelated screens. */}
       <div onClick={(e) => e.stopPropagation()} style={{ width: 940, maxWidth: '95vw' }}>
-        <PixelPanel variant="dialog" title="EDIT AGENT" style={{ padding: 16 }} noPadding>
+        <PixelPanel variant="dialog" title={uiText("EDIT_AGENT_251dbe")} style={{ padding: 16 }} noPadding>
           <div style={{
             display: 'flex', flexDirection: 'column', gap: 14,
             padding: 16, maxHeight: '86vh', overflowY: 'auto'
@@ -120,18 +122,18 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
               gap: 16, alignItems: 'start', minHeight: 260
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
-            <Section label="Identity" hint="name · character · color">
-              <Row label="Name">
+            <Section label={uiText("Identity_7e5a97")} hint="name · character · color">
+              <Row label={uiText("Name_709a23")}>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Stanley"
+                  placeholder={uiText("Stanley_a305f5")}
                   style={inputStyle}
                   autoFocus
                 />
               </Row>
 
-              <Row label="Character">
+              <Row label={uiText("Character_ee9946")}>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {ELENCO.map((c) => {
                     const active = character === c.name;
@@ -158,14 +160,14 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
                         }}>
                           <SpritePortrait character={c.name} scale={1.5} />
                         </div>
-                        <span style={{ fontSize: 10, color: 'var(--cth-ink-700)' }}>{c.displayName}</span>
+                        <span style={{ fontSize: 12, color: 'var(--cth-ink-700)' }}>{c.displayName}</span>
                       </button>
                     );
                   })}
                 </div>
               </Row>
 
-              <Row label="Color">
+              <Row label={uiText("Color_1d0c83")}>
                 <div style={{ display: 'flex', gap: 6 }}>
                   {ACCENTS.map((a) => (
                     <button
@@ -187,8 +189,8 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
               </Row>
             </Section>
 
-            <Section label="Engine" hint="provider · model · next restart">
-              <Row label="Provider">
+            <Section label={uiText("Engine_c1f65d")} hint="provider · model · next restart">
+              <Row label={uiText("Provider_7ceee3")}>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {AGENT_PROVIDER_PRESETS.map((p) => {
                     const active = provider === p.id;
@@ -218,7 +220,7 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
               </Row>
 
               {preset.supportsModel && (
-                <Row label="Model">
+                <Row label={uiText("Model_68c2cc")}>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {(() => {
                       const known = modelsForProvider(provider);
@@ -232,7 +234,7 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
                           key={m.label}
                           type="button"
                           onClick={() => setModel(m.id)}
-                          title={m.id ?? 'CLI default model'}
+                          title={m.id ?? uiText("CLI_default_model_b3fcc8")}
                           style={{
                             padding: '3px 8px 1px',
                             background: active ? `var(--cth-${accent}-light)` : 'var(--cth-cream-100)',
@@ -251,28 +253,26 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
                 </Row>
               )}
 
-              <span style={{ fontSize: 12, color: 'var(--cth-ink-500)', lineHeight: '16px' }}>
-                Engine changes are saved for the next restart. Use Command Center → Floor to restart a live session onto a new provider/model now.
-              </span>
+              <span style={{ fontSize: 12, color: 'var(--cth-ink-500)', lineHeight: '18px' }}> {uiText("Engine_changes_are_saved_for_the_next_restart_2b29bf")} </span>
             </Section>
 
               </div>
               <div style={{ minWidth: 0 }}>
-            <Section label="Briefing" hint="description · goal">
-              <Row label="Description">
+            <Section label={uiText("Briefing_084694")} hint="description · goal">
+              <Row label={uiText("Description_55f8eb")}>
                 <input
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="what is this agent for"
+                  placeholder={uiText("what_is_this_agent_for_847b91")}
                   style={inputStyle}
                 />
               </Row>
 
-              <Row label="Goal (optional)">
+              <Row label={uiText("Goal_optional_865b56")}>
                 <textarea
                   value={goal}
                   onChange={(e) => setGoal(e.target.value)}
-                  placeholder="long-running directive injected on every prompt"
+                  placeholder={uiText("long_running_directive_injected_on_every_prom_9dfef9")}
                   rows={4}
                   style={{ ...inputStyle, fontFamily: 'var(--cth-font-ui)', resize: 'vertical', minHeight: 200 }}
                 />
@@ -282,9 +282,9 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
             </div>
 
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-              <PixelButton variant="ghost" size="md" onClick={onClose}>cancel</PixelButton>
+              <PixelButton variant="ghost" size="md" onClick={onClose}>{uiText("cancel_4fd065")}</PixelButton>
               <div style={{ flex: 1 }} />
-              <PixelButton variant="primary" size="md" onClick={save}>save changes</PixelButton>
+              <PixelButton variant="primary" size="md" onClick={save}>{uiText("save_changes_c0d61b")}</PixelButton>
             </div>
           </div>
         </PixelPanel>
@@ -315,16 +315,17 @@ function Section({
   hint: string;
   children: React.ReactNode;
 }) {
+  useUiLanguage();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
         <span style={{
           fontFamily: 'var(--cth-font-display)',
-          fontSize: 9, lineHeight: '12px',
+          fontSize: 12, lineHeight: '18px',
           color: 'var(--cth-ink-900)',
-          textTransform: 'uppercase'
+          textTransform: 'none'
         }}>{label}</span>
-        <span style={{ fontSize: 11, color: 'var(--cth-ink-500)' }}>{hint}</span>
+        <span style={{ fontSize: 12, color: 'var(--cth-ink-500)' }}>{hint}</span>
       </div>
       {children}
     </div>
@@ -332,13 +333,14 @@ function Section({
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  useUiLanguage();
   return (
     <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <span style={{
         fontFamily: 'var(--cth-font-display)',
-        fontSize: 8, lineHeight: '12px',
+        fontSize: 12, lineHeight: '18px',
         color: 'var(--cth-ink-700)',
-        textTransform: 'uppercase'
+        textTransform: 'none'
       }}>{label}</span>
       {children}
     </label>

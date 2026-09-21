@@ -25,8 +25,8 @@ const PROVIDER_LABEL: Record<LocalSkill['provider'], string> = {
 function Chip({ text, tone = 'quiet' }: { text: string; tone?: 'quiet' | 'accent' }) {
   return (
     <span style={{
-      fontSize: 10, fontFamily: 'var(--cth-font-display)', letterSpacing: 0.4,
-      padding: '2px 6px', flexShrink: 0, textTransform: 'uppercase',
+      fontSize: 12, fontFamily: 'var(--cth-font-display)', letterSpacing: 0.4,
+      padding: '2px 6px', flexShrink: 0, textTransform: 'none',
       color: 'var(--cth-ink-900)',
       background: tone === 'accent' ? 'var(--cth-mint-light)' : 'var(--cth-cream-200)',
       boxShadow: `inset 0 0 0 1px ${tone === 'accent' ? 'var(--cth-mint)' : 'var(--cth-ink-300)'}`
@@ -144,7 +144,7 @@ export function SkillsTab({ agentCwd }: { agentCwd?: string }) {
 
   const actionBtn = (kind: 'primary' | 'quiet' | 'danger'): React.CSSProperties => ({
     padding: '3px 9px 2px', border: 'none', cursor: 'pointer', flexShrink: 0,
-    fontFamily: 'var(--cth-font-ui)', fontSize: 11,
+    fontFamily: 'var(--cth-font-ui)', fontSize: 12,
     color: 'var(--cth-ink-900)',
     background:
       kind === 'primary' ? 'var(--cth-mint-light)'
@@ -241,8 +241,8 @@ export function SkillsTab({ agentCwd }: { agentCwd?: string }) {
               {shownLocal.map((s) => (
                 <div key={s.id + s.path} style={rowStyle}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span style={{ fontFamily: 'var(--cth-font-display)', fontSize: 11, flex: 1, minWidth: 0 }}>
-                      {s.name.toUpperCase()}
+                    <span style={{ fontFamily: 'var(--cth-font-display)', fontSize: 12, flex: 1, minWidth: 0 }}>
+                      {s.name}
                     </span>
                     <Chip text={PROVIDER_LABEL[s.provider]} />
                     <Chip text={s.scope} tone={s.scope === 'project' ? 'accent' : 'quiet'} />
@@ -253,7 +253,7 @@ export function SkillsTab({ agentCwd }: { agentCwd?: string }) {
                     </div>
                   )}
                   <div style={{
-                    fontFamily: 'var(--cth-font-mono)', fontSize: 10.5,
+                    fontFamily: 'var(--cth-font-mono)', fontSize: 12,
                     color: 'var(--cth-ink-500)', wordBreak: 'break-all'
                   }}>{s.path}</div>
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -264,7 +264,7 @@ export function SkillsTab({ agentCwd }: { agentCwd?: string }) {
                       // Bundled skills ship inside the app and are re-copied into
                       // every agent on spawn, so "removing" one would silently come
                       // back. Say that instead of offering a button that lies.
-                      <span style={{ fontSize: 11, color: 'var(--cth-ink-500)' }}>
+                      <span style={{ fontSize: 12, color: 'var(--cth-ink-500)' }}>
                         {t('skillsTab.shipsWithApp')}
                       </span>
                     ) : confirming === s.path ? (
@@ -282,7 +282,7 @@ export function SkillsTab({ agentCwd }: { agentCwd?: string }) {
                       >{action[s.path]?.busy ? t('skillsTab.removing') : t('skillsTab.uninstall')}</button>
                     )}
                     {action[s.path]?.error && (
-                      <span style={{ fontSize: 11, color: 'var(--cth-coral)' }}>{action[s.path]?.error}</span>
+                      <span style={{ fontSize: 12, color: 'var(--cth-coral)' }}>{action[s.path]?.error}</span>
                     )}
                   </div>
                 </div>
@@ -300,7 +300,7 @@ export function SkillsTab({ agentCwd }: { agentCwd?: string }) {
                 {t('skillsTab.cachedCopy', { error: catalogMeta.error })}
               </div>
             )}
-            <div style={{ fontSize: 11, color: 'var(--cth-ink-500)', marginBottom: 8 }}>
+            <div style={{ fontSize: 12, color: 'var(--cth-ink-500)', marginBottom: 8 }}>
               {totalMatching > shownCatalog.length
                 ? t('skillsTab.matchingFirst', { count: totalMatching, shown: shownCatalog.length })
                 : t('skillsTab.matching', { count: totalMatching })}
@@ -310,8 +310,8 @@ export function SkillsTab({ agentCwd }: { agentCwd?: string }) {
               {shownCatalog.map((s) => (
                 <div key={s.url + s.name} style={rowStyle}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span style={{ fontFamily: 'var(--cth-font-display)', fontSize: 11, flex: 1, minWidth: 0 }}>
-                      {s.name.toUpperCase()}
+                    <span style={{ fontFamily: 'var(--cth-font-display)', fontSize: 12, flex: 1, minWidth: 0 }}>
+                      {s.name}
                     </span>
                     <Chip text={s.category} />
                     <Chip text={s.owner} />
@@ -332,7 +332,7 @@ export function SkillsTab({ agentCwd }: { agentCwd?: string }) {
                       style={actionBtn('quiet')}
                     >{t('skillsTab.learnMore')}</button>
                     {action[s.url]?.error && (
-                      <span style={{ fontSize: 11, color: 'var(--cth-coral)', flex: 1, minWidth: 0 }}>
+                      <span style={{ fontSize: 12, color: 'var(--cth-coral)', flex: 1, minWidth: 0 }}>
                         {action[s.url]?.error}
                       </span>
                     )}

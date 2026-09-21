@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 /**
  * Image tab body for the IDE.
  *
@@ -34,6 +35,7 @@ export interface ImagePreviewProps {
 }
 
 export function ImagePreview({ root, rel, onCopyPath, onViewSource }: ImagePreviewProps) {
+  useUiLanguage();
   const { t } = useTranslation();
   const img = useWorkspaceImage(root, rel);
   // Fit is the default because the common case is a full-screen screenshot that
@@ -55,7 +57,7 @@ export function ImagePreview({ root, rel, onCopyPath, onViewSource }: ImagePrevi
         {/* Facts about the file, in the same muted register as the diff bar's
             HEAD → working tree label. Dimensions only exist once the image has
             actually decoded, so this stays honest about what is known. */}
-        <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 11, color: 'var(--cth-ink-500)', whiteSpace: 'nowrap' }}>
+        <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 12, color: 'var(--cth-ink-500)', whiteSpace: 'nowrap' }}>
           {dims ? `${dims.w}×${dims.h}` : '—'}
           {img.status === 'ready' ? ` · ${formatBytes(img.size)}` : ''}
         </span>
@@ -80,7 +82,7 @@ export function ImagePreview({ root, rel, onCopyPath, onViewSource }: ImagePrevi
             {t('imagePreview.viewSource')}
           </button>
         )}
-        <button onClick={onCopyPath} title="Copy absolute path" style={ideTextBtn}>copy path</button>
+        <button onClick={onCopyPath} title={uiText("Copy_absolute_path_b96d42")} style={ideTextBtn}>{uiText("copy_path_9a303d")}</button>
       </div>
 
       <div style={{
@@ -131,6 +133,7 @@ export function ImagePreview({ root, rel, onCopyPath, onViewSource }: ImagePrevi
 }
 
 function Centered({ children, tone }: { children: React.ReactNode; tone?: 'error' }) {
+  useUiLanguage();
   return (
     <div style={{
       margin: 'auto', padding: 16, textAlign: 'center',

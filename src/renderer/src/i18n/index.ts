@@ -30,7 +30,7 @@ import ptPT from './locales/pt-PT.json';
  */
 export const LANGUAGES = [
   { code: 'en', label: 'English', dir: 'ltr' },
-  { code: 'pt-PT', label: 'Português', dir: 'ltr' },
+  { code: 'pt-PT', label: 'Português (Portugal)', dir: 'ltr' },
   { code: 'zh-CN', label: '简体中文', dir: 'ltr' },
   { code: 'ar', label: 'العربية', dir: 'rtl' }
 ] as const;

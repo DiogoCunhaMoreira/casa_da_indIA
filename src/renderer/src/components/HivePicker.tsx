@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useState } from 'react';
 import { PixelPanel } from './PixelPanel';
 import { PixelButton } from './PixelButton';
@@ -28,6 +29,7 @@ function folderName(path: string): string {
  * every switch is a clean process restart (cheap here, before any work is live).
  */
 export function HivePicker({ config, onOpenCurrent }: HivePickerProps) {
+  useUiLanguage();
   const current = config.harnessHome;
   const recents = (config.recentHives ?? []).filter((h) => h && h !== current);
   const [busy, setBusy] = useState<string | undefined>();
@@ -46,7 +48,7 @@ export function HivePicker({ config, onOpenCurrent }: HivePickerProps) {
       // Success never returns (the process relaunches). A return means an error.
       if (!res.ok) {
         window.localStorage.removeItem(SKIP_KEY);
-        setError(res.error ?? 'Could not open that folder.');
+        setError(res.error ?? uiText("Could_not_open_that_folder_94e448"));
         setBusy(undefined);
       }
     } catch (e) {
@@ -74,38 +76,30 @@ export function HivePicker({ config, onOpenCurrent }: HivePickerProps) {
       padding: 32
     }}>
       <div style={{ width: 560, maxWidth: '94vw' }}>
-        <PixelPanel variant="dialog" title="SELECT A HARNESS CONFIG" noPadding>
+        <PixelPanel variant="dialog" title={uiText("SELECT_A_HARNESS_CONFIG_391f5d")} noPadding>
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
             <p style={{ margin: 0, fontSize: 12, lineHeight: '19px', color: 'var(--cth-ink-700)' }}>
-              A <strong>harness config</strong> is the folder where the app keeps everything for one
-              workspace — its settings, your agents and their memory, tasks, triggers, and history.
-              Each config is separate and self-contained, so you can run different setups side by side.
-              Open the one you were working in, switch to another, or start a new one.
-            </p>
+              A <strong>{uiText("harness_config_780292")}</strong> {uiText("is_the_folder_where_the_app_keeps_everything__472e14")} </p>
 
             {/* CURRENT — the last-used home, the one-click default. */}
             {current && (
               <div>
-                <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 9, color: 'var(--cth-ink-500)', marginBottom: 4 }}>
-                  CURRENT
-                </div>
+                <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 12, color: 'var(--cth-ink-500)', marginBottom: 4 }}> {uiText("CURRENT_e6303c")} </div>
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
                   background: 'var(--cth-mint-light)', boxShadow: 'inset 0 0 0 2px var(--cth-mint)'
                 }}>
                   <Icon name="folder" />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 11, lineHeight: '15px' }}>
+                    <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px' }}>
                       {folderName(current)}
                     </div>
                     <div style={{
-                      fontFamily: 'var(--cth-font-mono)', fontSize: 11, color: 'var(--cth-ink-500)',
+                      fontFamily: 'var(--cth-font-mono)', fontSize: 12, color: 'var(--cth-ink-500)',
                       whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', direction: 'rtl', textAlign: 'left'
                     }}>{current}</div>
                   </div>
-                  <PixelButton variant="primary" size="md" onClick={onOpenCurrent} disabled={!!busy}>
-                    open
-                  </PixelButton>
+                  <PixelButton variant="primary" size="md" onClick={onOpenCurrent} disabled={!!busy}> {uiText("open_5fc7e3")} </PixelButton>
                 </div>
               </div>
             )}
@@ -113,16 +107,14 @@ export function HivePicker({ config, onOpenCurrent }: HivePickerProps) {
             {/* RECENTS — other homes this install has opened before. */}
             {recents.length > 0 && (
               <div>
-                <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 9, color: 'var(--cth-ink-500)', marginBottom: 4 }}>
-                  RECENT
-                </div>
+                <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 12, color: 'var(--cth-ink-500)', marginBottom: 4 }}> {uiText("RECENT_a3c0b9")} </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto' }}>
                   {recents.map((h) => (
                     <button
                       key={h}
                       onClick={() => openHive(h)}
                       disabled={!!busy}
-                      title={`Switch to ${h} (reloads the app)`}
+                      title={uiText('dynamic2', { v0: h })}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
                         background: 'var(--cth-paper-100)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)',
@@ -136,11 +128,11 @@ export function HivePicker({ config, onOpenCurrent }: HivePickerProps) {
                           {folderName(h)}
                         </div>
                         <div style={{
-                          fontFamily: 'var(--cth-font-mono)', fontSize: 11, color: 'var(--cth-ink-500)',
+                          fontFamily: 'var(--cth-font-mono)', fontSize: 12, color: 'var(--cth-ink-500)',
                           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', direction: 'rtl', textAlign: 'left'
                         }}>{h}</div>
                       </div>
-                      <span style={{ fontSize: 11, color: 'var(--cth-ink-500)', flexShrink: 0 }}>
+                      <span style={{ fontSize: 12, color: 'var(--cth-ink-500)', flexShrink: 0 }}>
                         {busy === h ? 'opening…' : 'switch →'}
                       </span>
                     </button>
@@ -157,9 +149,7 @@ export function HivePicker({ config, onOpenCurrent }: HivePickerProps) {
             )}
 
             {busy && (
-              <div style={{ fontSize: 12, color: 'var(--cth-ink-500)' }}>
-                Opening {folderName(busy)} — the app will reload…
-              </div>
+              <div style={{ fontSize: 12, color: 'var(--cth-ink-500)' }}> {uiText("Opening_56e440")} {folderName(busy)} {uiText("the_app_will_reload_242a21")} </div>
             )}
 
             {/* OPEN / CREATE — both browse to a folder; "fresh" mode re-points at it
@@ -167,13 +157,11 @@ export function HivePicker({ config, onOpenCurrent }: HivePickerProps) {
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
               <PixelButton variant="secondary" size="md" onClick={browse} disabled={!!busy}>
                 <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
-                  <Icon name="folder" /> open existing config…
-                </span>
+                  <Icon name="folder" /> {uiText("open_existing_config_26a833")} </span>
               </PixelButton>
               <PixelButton variant="secondary" size="md" onClick={browse} disabled={!!busy}>
                 <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
-                  <Icon name="plus" /> create new config…
-                </span>
+                  <Icon name="plus" /> {uiText("create_new_config_b4cd2b")} </span>
               </PixelButton>
             </div>
           </div>

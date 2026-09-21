@@ -185,9 +185,9 @@ export function AgentStrip({ config }: AgentStripProps) {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{
-                      fontFamily: 'var(--cth-font-display)', fontSize: 8, lineHeight: '12px',
+                      fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
                       color: 'var(--cth-ink-500)'
-                    }}>{t('agentStrip.privateNote', { name: a.name.toUpperCase() })}</span>
+                    }}>{t('agentStrip.privateNote', { name: a.name })}</span>
                     <button
                       onClick={() => setNoteEditId(null)}
                       title={t('agentStrip.done')}
@@ -195,7 +195,7 @@ export function AgentStrip({ config }: AgentStripProps) {
                       style={{
                         flexShrink: 0, width: 18, height: 18, padding: 0, lineHeight: 1,
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        fontFamily: 'var(--cth-font-ui)', fontSize: 11,
+                        fontFamily: 'var(--cth-font-ui)', fontSize: 12,
                         color: 'var(--cth-ink-500)', background: 'transparent',
                         border: 'none', cursor: 'pointer'
                       }}
@@ -222,7 +222,7 @@ export function AgentStrip({ config }: AgentStripProps) {
                       lineHeight: '18px', color: 'var(--cth-ink-900)'
                     }}
                   />
-                  <span style={{ fontSize: 10, color: 'var(--cth-ink-500)' }}>
+                  <span style={{ fontSize: 12, color: 'var(--cth-ink-500)' }}>
                     {t('agentStrip.oneLineOneBullet')}
                   </span>
                 </div>
@@ -283,8 +283,8 @@ export function AgentStrip({ config }: AgentStripProps) {
             fontFamily: 'var(--cth-font-ui)'
           }}>
             <span style={{
-              fontFamily: 'var(--cth-font-display)', fontSize: 8, lineHeight: '12px',
-              color: 'var(--cth-ink-500)', textTransform: 'uppercase'
+              fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
+              color: 'var(--cth-ink-500)', textTransform: 'none'
             }}>
               {t('agentStrip.previousSession')}
             </span>
@@ -306,7 +306,7 @@ export function AgentStrip({ config }: AgentStripProps) {
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {a.name}
                 </span>
-                <span style={{ fontSize: 11, color: 'var(--cth-ink-500)', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 12, color: 'var(--cth-ink-500)', whiteSpace: 'nowrap' }}>
                   {a.description ? a.description.slice(0, 24) : ''}
                 </span>
                 <button

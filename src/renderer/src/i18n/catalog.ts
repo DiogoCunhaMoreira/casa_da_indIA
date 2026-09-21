@@ -1,0 +1,58 @@
+import { uiText } from './uiText';
+
+// Only built-in catalog metadata. Never translate user content or terminal output.
+const keys: Record<string, string> = {
+  "strict": "catalog0",
+  "allow all": "catalog1",
+  "communication only": "catalog2",
+  "Ask me before anything reaches the hive.": "catalog3",
+  "Messages, directives and communication all flow.": "catalog4",
+  "Chatter flows; directives need my approval.": "catalog5",
+  "weekly": "catalog6",
+  "off": "catalog7",
+  "INSTALLED": "catalog8",
+  "INSTALLS ON FIRST RUN": "catalog9",
+  "NOT INSTALLED": "catalog10",
+  "Sequential Thinking": "catalog11",
+  "Structured step-by-step reasoning scratchpad. No I/O, no secrets.": "catalog12",
+  "Time": "catalog13",
+  "Current time and timezone conversions.": "catalog14",
+  "Fetch": "catalog15",
+  "Fetch a URL and return its content as markdown (read-only HTTP GET).": "catalog16",
+  "Context7 Docs": "catalog17",
+  "Up-to-date library/framework documentation lookups.": "catalog18",
+  "Filesystem (cwd)": "catalog19",
+  "Read/edit files within the agent workspace only (scoped to cwd at spawn).": "catalog20",
+  "Git (cwd)": "catalog21",
+  "Inspect git status/log/diff for the workspace repo (scoped to cwd at spawn).": "catalog22",
+  "Read/write GitHub issues, PRs, and repos. Requires a personal access token.": "catalog23",
+  "Database": "catalog24",
+  "Query a SQL database. Requires a connection string.": "catalog25",
+  "Email & Calendar": "catalog26",
+  "Read/send mail and read/write calendar events. Requires account credentials.": "catalog27",
+  "Web Search": "catalog28",
+  "Keyed web search. Requires a search-provider API key.": "catalog29",
+  "Installs and runs mempalace. A self-contained Python toolchain — it does not touch any Python you already have.": "catalog30",
+  "MemPalace — semantic memory": "catalog31",
+  "Meaning-based recall across everything your agents have learned. Without it they still keep plain markdown notes, but cannot search them by meaning.": "catalog32",
+  "Worktrees let agents work in parallel without fighting over one checkout, and the hive keeps its own history in git.": "catalog33",
+  "Runs the npm-installed agent engines (OpenCode, and Claude Code on machines without the native build).": "catalog34",
+  "Needs uv first.": "catalog35",
+  "The app installs this for you when an engine needs it — nothing to do by hand.": "catalog36",
+  "http://localhost:11434/v1 (Ollama) — injected as a local provider": "catalog37",
+  "OpenAI-compatible endpoint — used as the proxy upstream": "catalog38",
+  "local models are file-based (models.json); base-URL reserved": "catalog39",
+  "None (public API)": "catalog40",
+  "Bearer token": "catalog41",
+  "Custom header": "catalog42",
+  "Open the .dmg and drag casa_da_indIA onto Applications. Choose Replace when asked.": "catalog43",
+  "Quit this app, open the new one from Applications, and pick the same project.": "catalog44",
+  "Quit this app, then run the downloaded setup .exe. It replaces the installed version.": "catalog45",
+  "Open casa_da_indIA again and pick the same project.": "catalog46",
+  "Make the downloaded .AppImage executable (chmod +x) and move it over the one you run now.": "catalog47",
+  "Quit this app, launch the new AppImage, and pick the same project.": "catalog48"
+};
+
+export function catalogText(source: string): string {
+  return keys[source] ? uiText(keys[source]) : source;
+}

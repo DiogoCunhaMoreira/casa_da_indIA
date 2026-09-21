@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useLayoutEffect, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PixelPanel } from './PixelPanel';
@@ -43,8 +44,8 @@ const ossChip = (active: boolean, accent: AccentColorName): CSSProperties => ({
   color: 'var(--cth-ink-900)', cursor: 'pointer', border: 'none'
 });
 const ossGroupHead: CSSProperties = {
-  fontFamily: 'var(--cth-font-display)', fontSize: 8, lineHeight: '12px',
-  color: 'var(--cth-ink-500)', textTransform: 'uppercase', marginBottom: 4
+  fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
+  color: 'var(--cth-ink-500)', textTransform: 'none', marginBottom: 4
 };
 const ossLink: CSSProperties = { color: 'var(--cth-ink-900)', textDecoration: 'underline', cursor: 'pointer' };
 
@@ -144,6 +145,7 @@ export interface AddAgentModalProps {
 }
 
 export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModalProps) {
+  useUiLanguage();
   const { t: tr } = useTranslation();
   const rtl = useRtl();
   const addAgent = useStore(s => s.addAgent);
@@ -203,7 +205,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
   const [command, setCommand] = useState(
     pendingHire ? hireCommand(pendingHire) : buildSpawnCommand(config, initialModel, initialProvider)
   );
-  const [description, setDescription] = useState(pendingHire?.description ?? 'a fresh harness');
+  const [description, setDescription] = useState(pendingHire?.description ?? uiText("a_fresh_harness_24e449"));
   const [hireMeta, setHireMeta] = useState<HireManifest | null>(pendingHire);
 
   // Picking a model rebuilds the command; the command field stays editable for
@@ -346,7 +348,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
     setProvider(m.provider ?? initialProvider);
     setModel(m.model);
     setCommand(hireCommand(m));
-    setDescription(m.description ?? 'a fresh harness');
+    setDescription(m.description ?? uiText("a_fresh_harness_24e449"));
     setGoal(m.goal ?? '');
     setIsolate(m.isolate ?? false);
     setResumeSessionId('');
@@ -431,7 +433,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
     });
     if (!spawnRes.ok) {
       setBusy(false);
-      setError(spawnRes.error ?? 'spawn failed');
+      setError(spawnRes.error ?? uiText("spawn_failed_24b122"));
       return;
     }
     // #2 — the requested resume session id wasn't found anywhere; main fell back
@@ -456,13 +458,13 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
       name: name.trim(),
       character,
       accent,
-      description: description.trim() || 'a fresh harness',
+      description: description.trim() || uiText("a_fresh_harness_24e449"),
       project: basename(projectCwd),
       tmuxTarget: '',
       cwd: spawnedCwd,
       goal: goal.trim() || undefined,
       status: 'idle',
-      action: resuming && spawnRes.resumeNotFound ? 'session not found — fresh start' : 'starting up',
+      action: resuming && spawnRes.resumeNotFound ? uiText("session_not_found_fresh_start_1ea0b5") : uiText("starting_up_b5ac37"),
       progress: 0,
       currentStation: 'desk',
       ptyId,
@@ -619,7 +621,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
                               color: 'var(--cth-ink-900)'
                             }}>{id}</code>
                           ))}
-                          <span style={{ fontSize: 11, color: 'var(--cth-ink-700)' }}>
+                          <span style={{ fontSize: 12, color: 'var(--cth-ink-700)' }}>
                             {tr('addAgent.mcpEnableInSettings')}
                           </span>
                         </span>
@@ -651,14 +653,14 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
                       }}
                     >
                       <span style={{
-                        fontFamily: 'var(--cth-font-display)', fontSize: 9, lineHeight: '13px',
-                        color: 'var(--cth-ink-900)', textTransform: 'uppercase',
+                        fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '13px',
+                        color: 'var(--cth-ink-900)', textTransform: 'none',
                         display: 'flex', alignItems: 'baseline', gap: 6
                       }}>
                         <span style={{ color: active ? 'var(--cth-ink-900)' : 'var(--cth-ink-500)' }}>{i + 1}</span>
                         {tr(s.labelKey)}
                       </span>
-                      <span style={{ fontFamily: 'var(--cth-font-ui)', fontSize: 11, color: 'var(--cth-ink-500)' }}>
+                      <span style={{ fontFamily: 'var(--cth-font-ui)', fontSize: 12, color: 'var(--cth-ink-500)' }}>
                         {tr(s.hintKey)}
                       </span>
                     </button>
@@ -693,19 +695,19 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
                             title={c.blurb}
                             style={{
                               padding: 4,
-                              background: character === c.name ? `var(--cth-${accent}-light)` : 'var(--cth-cream-100)',
+                              background: character === c.name ? 'var(--cth-action-soft)' : 'var(--cth-cream-100)',
                               boxShadow: character === c.name
                                 ? 'inset 0 0 0 1.5px var(--cth-ink-500)'
                                 : 'inset 0 0 0 1px var(--cth-ink-100)',
                               cursor: 'pointer',
                               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                              border: 'none', width: 56
+                              border: 'none', width: 92, minHeight: 110
                             }}
                           >
                             <div style={{ width: 44, height: 56, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden' }}>
                               <SpritePortrait character={c.name} scale={2} />
                             </div>
-                            <span style={{ fontSize: 11, color: 'var(--cth-ink-700)' }}>{c.displayName}</span>
+                            <span style={{ fontSize: 12, lineHeight: '16px', overflowWrap: 'anywhere', color: character === c.name ? 'var(--cth-action-text)' : 'var(--cth-ink-700)' }}>{c.displayName}</span>
                           </button>
                         ))}
                       </div>
@@ -995,7 +997,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
                     )}
 
                     {(provider === 'opencode' || provider === 'crush' || provider === 'pi' || provider === 'qwen') && (
-                      <div style={{ fontSize: 12, color: 'var(--cth-ink-500)', lineHeight: '16px', margin: '2px 0 6px' }}>
+                      <div style={{ fontSize: 12, color: 'var(--cth-ink-500)', lineHeight: '18px', margin: '2px 0 6px' }}>
                         {tr('addAgent.byokNote')}
                         {' '}
                         <a
@@ -1116,7 +1118,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
               </div>
               {showHirePrompt && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <span style={{ fontSize: 12, color: 'var(--cth-ink-500)', lineHeight: '16px' }}>
+                  <span style={{ fontSize: 12, color: 'var(--cth-ink-500)', lineHeight: '18px' }}>
                     {tr('addAgent.aiPromptHint')}
                   </span>
                   <textarea
@@ -1127,7 +1129,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
                     style={{
                       ...inputStyle,
                       width: '100%',
-                      fontFamily: 'var(--cth-font-mono)', fontSize: 12, lineHeight: '16px',
+                      fontFamily: 'var(--cth-font-mono)', fontSize: 12, lineHeight: '18px',
                       resize: 'vertical', background: 'var(--cth-paper-100)'
                     }}
                   />
@@ -1179,13 +1181,14 @@ const inputStyle: React.CSSProperties = {
 };
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  useUiLanguage();
   return (
     <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <span style={{
         fontFamily: 'var(--cth-font-display)',
-        fontSize: 8, lineHeight: '12px',
+        fontSize: 12, lineHeight: '18px',
         color: 'var(--cth-ink-700)',
-        textTransform: 'uppercase'
+        textTransform: 'none'
       }}>{label}</span>
       {children}
     </label>

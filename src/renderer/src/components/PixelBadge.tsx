@@ -62,7 +62,8 @@ export function PixelBadge({ status, label, style }: PixelBadgeProps) {
         // under the controls beside it instead of holding its own width.
         flexShrink: 0,
         gap: 6,
-        padding: '2px 8px 0',
+        padding: '3px 8px',
+        borderRadius: 'var(--cth-radius)',
         background: 'var(--cth-cream-100)',
         boxShadow: `inset 0 0 0 1px ${colorByStatus[status]}`,
         fontFamily: 'var(--cth-font-ui)',
@@ -75,8 +76,8 @@ export function PixelBadge({ status, label, style }: PixelBadgeProps) {
     >
       <span
         style={{
-          width: 8,
-          height: 8,
+          width: 7,
+          height: 7, borderRadius: '50%', flexShrink: 0,
           background: colorByStatus[status],
           boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)'
         }}

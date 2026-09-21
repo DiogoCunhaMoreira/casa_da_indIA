@@ -1,3 +1,4 @@
+import { catalogText } from '@/i18n/catalog';
 /**
  * PREREQUISITES — the external tools this app needs, and whether you have them.
  *
@@ -33,7 +34,7 @@ function StatusChip({ tool }: { tool: ToolStatus }) {
   const ready = tool.found;
   return (
     <span style={{
-      fontFamily: 'var(--cth-font-display)', fontSize: 9, letterSpacing: 0.5,
+      fontFamily: 'var(--cth-font-display)', fontSize: 12, letterSpacing: 0.5,
       padding: '2px 6px', flexShrink: 0, whiteSpace: 'nowrap',
       background: ready ? 'var(--cth-mint-light)' : 'var(--cth-cream-200)',
       boxShadow: `inset 0 0 0 1px ${ready ? 'var(--cth-mint)' : 'var(--cth-ink-300)'}`,
@@ -59,21 +60,21 @@ function ToolRow({ tool }: { tool: ToolStatus }) {
       background: 'var(--cth-paper-100)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontFamily: 'var(--cth-font-display)', fontSize: 11, flex: 1, minWidth: 0 }}>
-          {tool.label.toUpperCase()}
+        <span style={{ fontFamily: 'var(--cth-font-display)', fontSize: 12, flex: 1, minWidth: 0 }}>
+          {catalogText(tool.label)}
         </span>
         {tool.essential && !tool.found && (
-          <span style={{ fontSize: 10, color: 'var(--cth-ink-500)', flexShrink: 0 }}>{t('setupPanel.recommended')}</span>
+          <span style={{ fontSize: 12, color: 'var(--cth-ink-500)', flexShrink: 0 }}>{t('setupPanel.recommended')}</span>
         )}
         <StatusChip tool={tool} />
       </div>
 
-      <div style={{ fontSize: 12, color: 'var(--cth-ink-700)', lineHeight: 1.5 }}>{tool.why}</div>
+      <div style={{ fontSize: 12, color: 'var(--cth-ink-700)', lineHeight: 1.5 }}>{catalogText(tool.why)}</div>
 
       {/* Found: show WHERE, so a "ready" claim is verifiable rather than trusted. */}
       {tool.found && tool.path && (
         <div style={{
-          fontFamily: 'var(--cth-font-mono)', fontSize: 11, color: 'var(--cth-ink-500)',
+          fontFamily: 'var(--cth-font-mono)', fontSize: 12, color: 'var(--cth-ink-500)',
           wordBreak: 'break-all'
         }}>
           {tool.path}{tool.detail ? ` · ${tool.detail}` : ''}
@@ -84,7 +85,7 @@ function ToolRow({ tool }: { tool: ToolStatus }) {
       {!tool.found && tool.installCommand && (
         <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
           <code style={{
-            flex: 1, minWidth: 0, fontFamily: 'var(--cth-font-mono)', fontSize: 11,
+            flex: 1, minWidth: 0, fontFamily: 'var(--cth-font-mono)', fontSize: 12,
             padding: '4px 6px', background: 'var(--cth-cream-100)',
             boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)',
             color: 'var(--cth-ink-900)', overflowX: 'auto', whiteSpace: 'pre'
@@ -92,7 +93,7 @@ function ToolRow({ tool }: { tool: ToolStatus }) {
           <button
             onClick={copy}
             style={{
-              flexShrink: 0, fontFamily: 'var(--cth-font-ui)', fontSize: 11, padding: '0 8px',
+              flexShrink: 0, fontFamily: 'var(--cth-font-ui)', fontSize: 12, padding: '0 8px',
               background: 'var(--cth-cream-200)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)',
               border: 'none', cursor: 'pointer', color: 'var(--cth-ink-900)'
             }}
@@ -101,8 +102,8 @@ function ToolRow({ tool }: { tool: ToolStatus }) {
       )}
 
       {(tool.note || tool.docsUrl) && (
-        <div style={{ fontSize: 11, color: 'var(--cth-ink-500)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {tool.note && <span>{tool.note}</span>}
+        <div style={{ fontSize: 12, color: 'var(--cth-ink-500)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {tool.note && <span>{catalogText(tool.note)}</span>}
           {tool.docsUrl && (
             <a
               href={tool.docsUrl}
@@ -194,10 +195,10 @@ export function SetupPanel({ onDone }: { onDone?: () => void } = {}) {
         return (
           <div key={section.kind} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{
-              fontFamily: 'var(--cth-font-display)', fontSize: 10, letterSpacing: 0.5,
-              color: 'var(--cth-ink-500)', textTransform: 'uppercase'
+              fontFamily: 'var(--cth-font-display)', fontSize: 12, letterSpacing: 0.5,
+              color: 'var(--cth-ink-500)', textTransform: 'none'
             }}>{t(section.titleKey)}</div>
-            <div style={{ fontSize: 11, color: 'var(--cth-ink-500)', marginTop: -2 }}>{t(section.blurbKey)}</div>
+            <div style={{ fontSize: 12, color: 'var(--cth-ink-500)', marginTop: -2 }}>{t(section.blurbKey)}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {rows.map((t) => <ToolRow key={t.id} tool={t} />)}
             </div>

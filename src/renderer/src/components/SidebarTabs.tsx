@@ -23,9 +23,9 @@ export function SidebarTabs({ current, accent, onChange }: SidebarTabsProps) {
   return (
     <div style={{
       display: 'flex',
-      gap: 0,
+      gap: 4, padding: '6px', flexWrap: 'wrap',
       background: 'var(--cth-cream-200)',
-      boxShadow: 'inset 0 -2px 0 var(--cth-ink-900)',
+      boxShadow: 'inset 0 -1px 0 var(--cth-ink-100)',
       flexShrink: 0
     }}>
       {TABS.map(tab => {
@@ -33,28 +33,30 @@ export function SidebarTabs({ current, accent, onChange }: SidebarTabsProps) {
         return (
           <button
             key={tab.key}
+            aria-pressed={active}
             onClick={() => onChange(tab.key)}
             style={{
-              flex: 1,
+              flex: '1 0 auto',
               height: 36,
               padding: '0 10px',
               border: 'none',
               cursor: 'pointer',
-              background: active ? 'var(--cth-cream-100)' : 'transparent',
+              background: active ? 'var(--cth-action-soft)' : 'transparent',
               boxShadow: active
-                ? `inset 0 -3px 0 var(--cth-${accent}), inset 1px 0 0 var(--cth-ink-900), inset -1px 0 0 var(--cth-ink-900)`
+                ? 'inset 0 -2px 0 var(--cth-action)'
                 : 'inset 0 0 0 0',
               fontFamily: 'var(--cth-font-display)',
-              fontSize: 10,
-              lineHeight: '14px',
-              color: active ? 'var(--cth-ink-900)' : 'var(--cth-ink-500)',
+              fontSize: 12,
+              lineHeight: '18px',
+              fontWeight: active ? 600 : 500,
+              color: active ? 'var(--cth-action-text)' : 'var(--cth-ink-500)',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 6
             }}
           >
-            <Icon name={tab.icon} /> {t(tab.labelKey).toUpperCase()}
+            <Icon name={tab.icon} /> {t(tab.labelKey)}
           </button>
         );
       })}

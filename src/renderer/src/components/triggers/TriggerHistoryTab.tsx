@@ -1,3 +1,4 @@
+import { uiText as translateUi, useUiLanguage } from '@/i18n/uiText';
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -131,7 +132,7 @@ function clampBody(body: string): { text: string; clipped: boolean } {
 /* ───────────────────────────────── styles ────────────────────────────────── */
 
 const tinyCaps: CSSProperties = {
-  fontFamily: 'var(--cth-font-display)', fontSize: 9, lineHeight: '12px',
+  fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
   color: 'var(--cth-ink-500)'
 };
 const uiText: CSSProperties = {
@@ -161,23 +162,25 @@ const bodyBox: CSSProperties = {
 };
 const linkButton: CSSProperties = {
   background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-  fontFamily: 'var(--cth-font-ui)', fontSize: 11, lineHeight: '16px',
+  fontFamily: 'var(--cth-font-ui)', fontSize: 12, lineHeight: '18px',
   color: 'var(--cth-ink-700)', textDecoration: 'underline', textAlign: 'left'
 };
 
 function badgeStyle(fill: string, line: string): CSSProperties {
   return {
-    fontFamily: 'var(--cth-font-display)', fontSize: 9, lineHeight: '12px',
+    fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
     padding: '3px 5px 2px', background: fill, boxShadow: `inset 0 0 0 1px ${line}`,
     color: 'var(--cth-ink-900)', flexShrink: 0
   };
 }
 
 function Badge({ fill, line, children }: { fill: string; line: string; children: string }) {
+  useUiLanguage();
   return <span style={badgeStyle(fill, line)}>{children}</span>;
 }
 
 function KindBadge({ kind }: { kind: TriggerHistoryEntry['kind'] }) {
+  useUiLanguage();
   const { t } = useTranslation();
   return kind === 'directive'
     ? <Badge fill="var(--cth-lemon-light)" line="var(--cth-lemon)">{t('triggerHistory.kindDirective')}</Badge>
@@ -185,6 +188,7 @@ function KindBadge({ kind }: { kind: TriggerHistoryEntry['kind'] }) {
 }
 
 function DecisionBadge({ decision }: { decision: NonNullable<TriggerHistoryEntry['decision']> }) {
+  useUiLanguage();
   const { t } = useTranslation();
   switch (decision) {
     case 'pending':
@@ -211,6 +215,7 @@ function MessageBlock({
   expanded: boolean;
   onToggle: () => void;
 }) {
+  useUiLanguage();
   const { t } = useTranslation();
   const rtl = useRtl();
   const body = msg.body ?? '';
@@ -246,8 +251,9 @@ function ExchangeCard({
   busy: Record<string, boolean>;
   onDecide: (id: string, decision: 'approved' | 'rejected') => void;
 }) {
+  useUiLanguage();
   const { t } = useTranslation();
-  const godName = useStore((s) => s.agents.find((a) => a.isGod)?.name) ?? 'the orchestrator';
+  const godName = useStore((s) => s.agents.find((a) => a.isGod)?.name) ?? translateUi("the_orchestrator_fc0fec");
   const head = ex.head;
   const hasInbound = ex.msgs.some((m) => m.direction === 'inbound');
   const decision = head.decision;
@@ -280,7 +286,7 @@ function ExchangeCard({
           </span>
           <span style={{ ...tinyCaps, flexShrink: 0 }}>{relTime(Date.now() - ex.latestAt, t)}</span>
         </div>
-        <div style={{ ...muted, ...ellipsis, fontSize: 11 }} title={head.peer}>
+        <div style={{ ...muted, ...ellipsis, fontSize: 12 }} title={head.peer}>
           {hasInbound ? t('triggerHistory.from') : t('triggerHistory.to')} {head.peer || t('triggerHistory.unknown')}
         </div>
         {head.title && (
@@ -307,7 +313,7 @@ function ExchangeCard({
 
       {pending && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div style={{ ...uiText, fontSize: 11, lineHeight: '16px', color: 'var(--cth-ink-700)' }}>
+          <div style={{ ...uiText, fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-700)' }}>
             {pending.kind === 'directive'
               ? t('triggerHistory.pendingDirectiveDesc', { godName })
               : t('triggerHistory.pendingDesc', { godName })}
@@ -335,7 +341,7 @@ function ExchangeCard({
         </div>
       )}
 
-      {tail && <div style={{ ...muted, fontSize: 11 }}>{tail}</div>}
+      {tail && <div style={{ ...muted, fontSize: 12 }}>{tail}</div>}
 
       {taskId && (
         <div style={{ ...tinyCaps, ...ellipsis }} title={taskId}>{t('triggerHistory.task', { id: taskId })}</div>
@@ -347,10 +353,11 @@ function ExchangeCard({
 /* ───────────────────────────── empty states ──────────────────────────────── */
 
 function EmptyState({ title, body }: { title: string; body: string }) {
+  useUiLanguage();
   return (
     <div style={{ ...cardStyle, gap: 4 }}>
       <div style={uiText}>{title}</div>
-      <div style={{ ...muted, fontSize: 11, lineHeight: '16px' }}>{body}</div>
+      <div style={{ ...muted, fontSize: 12, lineHeight: '18px' }}>{body}</div>
     </div>
   );
 }
@@ -371,8 +378,9 @@ const SECTIONS: { key: Source; labelKey: string; blurbKey: string }[] = [
 /* ──────────────────────────────── the tab ────────────────────────────────── */
 
 export function TriggerHistoryTab() {
+  useUiLanguage();
   const { t } = useTranslation();
-  const godName = useStore((s) => s.agents.find((a) => a.isGod)?.name) ?? 'the orchestrator';
+  const godName = useStore((s) => s.agents.find((a) => a.isGod)?.name) ?? translateUi("the_orchestrator_fc0fec");
   const [entries, setEntries] = useState<TriggerHistoryEntry[]>([]);
   const [source, setSource] = useState<Source>('webhook');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -470,13 +478,13 @@ export function TriggerHistoryTab() {
                 flex: 1, height: 32, padding: '0 8px', border: 'none', cursor: 'pointer',
                 background: active ? 'var(--cth-paper-200)' : 'transparent',
                 boxShadow: active ? 'inset 0 -2px 0 var(--cth-ink-900)' : 'none',
-                fontFamily: 'var(--cth-font-display)', fontSize: 9, lineHeight: '12px',
+                fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
                 color: active ? 'var(--cth-ink-900)' : 'var(--cth-ink-500)',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4,
                 minWidth: 0
               }}
             >
-              <span style={ellipsis}>{t(s.labelKey).toUpperCase()}</span>
+              <span style={ellipsis}>{t(s.labelKey)}</span>
               {p > 0 && (
                 <span style={{
                   ...badgeStyle('var(--cth-lemon-light)', 'var(--cth-lemon)'),
@@ -492,12 +500,12 @@ export function TriggerHistoryTab() {
         flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden',
         padding: 8, display: 'flex', flexDirection: 'column', gap: 8
       }}>
-        <div style={{ ...muted, fontSize: 11, lineHeight: '16px' }}>{t(section.blurbKey, { godName })}</div>
+        <div style={{ ...muted, fontSize: 12, lineHeight: '18px' }}>{t(section.blurbKey, { godName })}</div>
 
         {pendingCount > 0 && (
           <div style={{
             background: 'var(--cth-lemon-light)', boxShadow: 'inset 0 0 0 1px var(--cth-lemon)',
-            padding: '6px 8px', ...uiText, fontSize: 11, lineHeight: '16px'
+            padding: '6px 8px', ...uiText, fontSize: 12, lineHeight: '18px'
           }}>
             {pendingCount === 1
               ? t('triggerHistory.heldOne')
@@ -508,7 +516,7 @@ export function TriggerHistoryTab() {
         {error && (
           <div style={{
             background: 'var(--cth-coral-light)', boxShadow: 'inset 0 0 0 1px var(--cth-coral)',
-            padding: '6px 8px', ...uiText, fontSize: 11, lineHeight: '16px'
+            padding: '6px 8px', ...uiText, fontSize: 12, lineHeight: '18px'
           }}>{error}</div>
         )}
 
@@ -541,7 +549,7 @@ export function TriggerHistoryTab() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
             {confirmClear ? (
               <>
-                <div style={{ ...muted, fontSize: 11, lineHeight: '16px' }}>
+                <div style={{ ...muted, fontSize: 12, lineHeight: '18px' }}>
                   {t('triggerHistory.clearConfirm', { count: counts[source].total })}
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>

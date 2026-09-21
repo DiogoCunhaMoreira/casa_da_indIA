@@ -1,5 +1,8 @@
+import { uiPalette } from '@/design/uiPalette';
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import type { ITheme } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
 import { Icon } from './Icon';
 import { acquireTerminal, attachTerminal, detachTerminal, reflowTerminal } from './terminalPool';
@@ -25,8 +28,8 @@ const MAX_FONT_SIZE = MAX_TERMINAL_FONT_SIZE;
 type PtyTheme = 'light' | 'dark';
 
 const zoomBtnStyle: CSSProperties = {
-  width: 18,
-  height: 18,
+  width: 32,
+  height: 32,
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -50,13 +53,13 @@ const zoomBtnStyle: CSSProperties = {
 // values are tuned so the colours stay recognisable and read well natively. The
 // green/yellow are kept deep enough to read as text on cream (the brighter
 // variants are the lighter shades, per terminal convention).
-const lightTheme = {
-  background: '#FCFAF0',
-  foreground: '#1A1320',
+const lightTheme: ITheme & Record<string, string> = {
+  background: uiPalette.light.paper,
+  foreground: uiPalette.light.ink,
   cursor: '#D96A62',
-  cursorAccent: '#FCFAF0',
-  selectionBackground: '#FFEC99',
-  selectionForeground: '#1A1320',
+  cursorAccent: uiPalette.light.paper,
+  selectionBackground: uiPalette.light.selection,
+  selectionForeground: uiPalette.light.ink,
   black:        '#1A1320',
   red:          '#D1453B',
   green:        '#20904B',    // deep green → readable as text on cream
@@ -83,9 +86,9 @@ const lightTheme = {
 // a softer ground, which would have left every terminal sitting a visible step
 // apart from the panel holding it. Muted-professional ANSI: recognizable hues, no
 // fluorescing on the dark ground; brights are one legible step up, not pastels.
-const darkTheme = {
-  background: '#1A1A1F',        // = --cth-paper-100
-  foreground: '#DEDBD6',        // = --cth-ink-900
+const darkTheme: ITheme & Record<string, string> = {
+  background: uiPalette.dark.paper,        // = --cth-paper-100
+  foreground: uiPalette.dark.ink,        // = --cth-ink-900
   cursor: '#E08C82',
   cursorAccent: '#1A1A1F',
   selectionBackground: '#37363F',
@@ -125,6 +128,7 @@ export interface PtyTerminalViewProps {
 }
 
 export function PtyTerminalView({ ptyId, onStreamData, onUserPrompt, onToggleFullscreen, fullscreen, embedded }: PtyTerminalViewProps) {
+  useUiLanguage();
   const hostRef = useRef<HTMLDivElement | null>(null);
   const onStreamDataRef = useRef(onStreamData);
   onStreamDataRef.current = onStreamData;
@@ -376,8 +380,7 @@ export function PtyTerminalView({ ptyId, onStreamData, onUserPrompt, onToggleFul
           width: 8, height: 8, background: 'var(--cth-mint)',
           boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)',
           animation: 'cth-pulse 1200ms steps(2, end) infinite'
-        }} />
-        live · pty {ptyId}
+        }} /> {uiText("live_pty_7a5069")} {ptyId}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
           {/* v0.3.4: the theme + enter-fullscreen buttons moved to the TITLE BAR
               (top right) — more accessible, and the theme now darkens the whole
@@ -385,24 +388,24 @@ export function PtyTerminalView({ ptyId, onStreamData, onUserPrompt, onToggleFul
           <button
             onClick={() => zoom(-1)}
             disabled={fontSize <= MIN_FONT_SIZE}
-            title="Zoom out (Cmd -)"
+            title={uiText("Zoom_out_Cmd_f03aad")}
             style={zoomBtnStyle}
           >−</button>
           <button
             onClick={resetZoom}
-            title="Reset zoom (Cmd 0)"
+            title={uiText("Reset_zoom_Cmd_0_32b162")}
             style={{ ...zoomBtnStyle, width: 'auto', padding: '0 4px', minWidth: 28 }}
           >{fontSize}px</button>
           <button
             onClick={() => zoom(1)}
             disabled={fontSize >= MAX_FONT_SIZE}
-            title="Zoom in (Cmd +)"
+            title={uiText("Zoom_in_Cmd_b583e9")}
             style={zoomBtnStyle}
           >+</button>
           {fullscreen && onToggleFullscreen && (
             <button
               onClick={onToggleFullscreen}
-              title="Exit focus mode (Esc)"
+              title={uiText("Exit_focus_mode_Esc_dea8d7")}
               style={{ ...zoomBtnStyle, width: 22, height: 22, marginLeft: 4 }}
             >
               <Icon name="minimize" />

@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 /**
  * Realtime Michael — microphone & speaker device picker (card rt-8, Phase 1).
  *
@@ -45,10 +46,10 @@ async function listDevices(kind: 'audioinput' | 'audiooutput'): Promise<AudioDev
 
 const labelStyle: React.CSSProperties = {
   fontFamily: 'var(--cth-font-display)',
-  fontSize: 8,
-  lineHeight: '12px',
+  fontSize: 12,
+  lineHeight: '18px',
   color: 'var(--cth-ink-500)',
-  textTransform: 'uppercase'
+  textTransform: 'none'
 };
 const selectStyle: React.CSSProperties = {
   fontFamily: 'var(--cth-font-mono)',
@@ -60,9 +61,10 @@ const selectStyle: React.CSSProperties = {
 };
 
 export function RealtimeDevicePicker(): React.ReactElement {
+  useUiLanguage();
   const { t } = useTranslation();
   const { deviceId, setDeviceId, outputDeviceId, setOutputDeviceId } = useRealtimeMichael();
-  const godName = useStore((s) => s.agents.find((a) => a.isGod)?.name) ?? 'the orchestrator';
+  const godName = useStore((s) => s.agents.find((a) => a.isGod)?.name) ?? uiText("the_orchestrator_fc0fec");
   const [mics, setMics] = useState<AudioDevice[]>([]);
   const [speakers, setSpeakers] = useState<AudioDevice[]>([]);
   /** True once at least one device exposes a real label ⇒ mic permission granted. */
@@ -125,7 +127,7 @@ export function RealtimeDevicePicker(): React.ReactElement {
       )}
 
       {!labelled && (
-        <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+        <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
           {t('devicePicker.namesHint')}
         </span>
       )}

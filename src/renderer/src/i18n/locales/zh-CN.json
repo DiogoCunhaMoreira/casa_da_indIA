@@ -173,7 +173,11 @@
     "foundersWallTitle": "在 Founders' Wall 上吗？",
     "foundersWallBody": "免费获得一个月的 casa_da_indIA Pro，此后年度套餐享 5 折。仅限前 100 位上榜用户。",
     "seeTheWall": "查看榜单",
-    "joinDiscord": "加入 Discord"
+    "joinDiscord": "加入 Discord",
+    "local": "本地工作区",
+    "localDescription": "在同一处协调智能体、任务和记忆。项目和会话保存在你的电脑上。",
+    "repository": "代码仓库",
+    "credits": "基于 Chaitanya Giri 开发的 Munder Difflin，为 Casa da Índia 改编。"
   },
   "settings": {
     "title": "设置",

@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useTypewriter } from '@/hooks/useTypewriter';
 import type { AccentColorName } from '@/design/tokens';
 
@@ -13,6 +14,7 @@ export interface RecentTextProps {
  * uses while it's still composing — and disappears only when text is empty.
  */
 export function RecentText({ accent, text, seed }: RecentTextProps) {
+  useUiLanguage();
   const { shown, done } = useTypewriter(text, seed);
   if (!text) return null;
   return (
@@ -27,11 +29,11 @@ export function RecentText({ accent, text, seed }: RecentTextProps) {
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         fontFamily: 'var(--cth-font-display)',
-        fontSize: 8, lineHeight: '12px',
+        fontSize: 12, lineHeight: '18px',
         color: 'var(--cth-ink-700)',
-        textTransform: 'uppercase'
+        textTransform: 'none'
       }}>
-        <span>recent</span>
+        <span>{uiText("recent_7a7d1b")}</span>
         <span style={{
           display: 'inline-flex', alignItems: 'center', gap: 4,
           color: done ? 'var(--cth-ink-500)' : `var(--cth-${accent})`

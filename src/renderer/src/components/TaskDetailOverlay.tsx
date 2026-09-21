@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useStore } from '@/store/store';
 import { TaskDetail, parseTasks, type HiveTask } from './TasksKanban';
@@ -12,6 +13,7 @@ import { TaskDetail, parseTasks, type HiveTask } from './TasksKanban';
 const POLL_MS = 5000;
 
 export function TaskDetailOverlay() {
+  useUiLanguage();
   const taskDetailId = useStore((s) => s.taskDetailId);
   const closeTaskDetail = useStore((s) => s.closeTaskDetail);
   const agents = useStore((s) => s.agents);
@@ -61,7 +63,7 @@ export function TaskDetailOverlay() {
     const st = useStore.getState();
     const god = st.agents.find((a) => a.isGod);
     if (god) st.select(god.id);
-    const desc = task.description?.trim() ? task.description.trim() : '(no description)';
+    const desc = task.description?.trim() ? task.description.trim() : uiText("no_description_2e6305");
     st.requestDispatchSeed(`Task: ${task.title}\nContext: ${desc}\n`);
     st.requestCommandCenterTab('floor');
     closeTaskDetail();

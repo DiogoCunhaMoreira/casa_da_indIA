@@ -1,8 +1,10 @@
+import { uiText, uiLocale } from '@/i18n/uiText';
+import { catalogText } from '@/i18n/catalog';
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TRIGGER_MODES, type TriggerMode } from '@shared/triggers';
 import {
-  WEEKDAY_INITIALS, WEEKDAY_LABELS, formatMinute, normalizeWeekly,
+  formatMinute, normalizeWeekly,
   type WeeklySchedule
 } from '@shared/weeklySchedule';
 
@@ -45,13 +47,13 @@ export const selectStyle: CSSProperties = {
 /* ───────────────────────────── text helpers ──────────────────────────────── */
 
 export function Muted({ children }: { children: ReactNode }) {
-  return <div style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>{children}</div>;
+  return <div style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>{children}</div>;
 }
 
 /** One line of explanation under a control. Smaller than Muted, never a tooltip —
  *  a sidebar hides tooltips behind the window edge half the time. */
 export function Hint({ children }: { children: ReactNode }) {
-  return <div style={{ fontSize: 11, lineHeight: '15px', color: 'var(--cth-ink-500)', marginTop: 3 }}>{children}</div>;
+  return <div style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)', marginTop: 3 }}>{children}</div>;
 }
 
 export function Chip({ children, tone = 'plain' }: { children: ReactNode; tone?: 'plain' | 'on' | 'off' }) {
@@ -60,8 +62,8 @@ export function Chip({ children, tone = 'plain' }: { children: ReactNode; tone?:
   return (
     <span style={{
       flexShrink: 0, padding: '2px 5px 1px',
-      fontFamily: 'var(--cth-font-display)', fontSize: 8, lineHeight: '12px',
-      background: bg, boxShadow: `inset 0 0 0 1px ${line}`, color: 'var(--cth-ink-900)'
+      fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
+      background: bg, boxShadow: `inset 0 0 0 1px ${line}`, color: tone === 'on' ? 'var(--cth-on-accent)' : 'var(--cth-ink-900)'
     }}>{children}</span>
   );
 }
@@ -71,7 +73,7 @@ export function Callout({ children, tone = 'warn' }: { children: ReactNode; tone
   return (
     <div style={{
       marginTop: 6, padding: '6px 8px',
-      fontSize: 11, lineHeight: '15px', color: 'var(--cth-ink-900)',
+      fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-900)',
       background: warn ? 'var(--cth-coral-light)' : 'var(--cth-cream-200)',
       boxShadow: `inset 0 0 0 1px ${warn ? 'var(--cth-coral)' : 'var(--cth-ink-100)'}`
     }}>{children}</div>
@@ -91,7 +93,7 @@ export function Toggle({ on, onClick, onLabel, offLabel }: {
         padding: '2px 8px 1px', border: 'none', cursor: 'pointer', flexShrink: 0,
         background: on ? 'var(--cth-lemon)' : 'var(--cth-cream-200)',
         boxShadow: `inset 0 0 0 1px ${on ? 'var(--cth-ink-900)' : 'var(--cth-ink-700)'}`,
-        fontFamily: 'var(--cth-font-ui)', fontSize: 12, color: 'var(--cth-ink-900)'
+        fontFamily: 'var(--cth-font-ui)', fontSize: 12, color: on ? 'var(--cth-on-accent)' : 'var(--cth-ink-900)'
       }}
     >{on ? (onLabel ?? t('common.on')) : (offLabel ?? t('common.off'))}</button>
   );
@@ -109,8 +111,8 @@ export function MiniButton({ children, onClick, tone = 'plain', disabled }: {
         cursor: disabled ? 'default' : 'pointer',
         background: tone === 'good' ? 'var(--cth-mint)' : 'var(--cth-cream-200)',
         boxShadow: 'inset 0 0 0 1px var(--cth-ink-100)',
-        fontFamily: 'var(--cth-font-ui)', fontSize: 11,
-        color: disabled ? 'var(--cth-ink-300)' : tone === 'danger' ? 'var(--cth-coral)' : 'var(--cth-ink-900)'
+        fontFamily: 'var(--cth-font-ui)', fontSize: 12,
+        color: disabled ? 'var(--cth-ink-300)' : tone === 'danger' ? 'var(--cth-coral)' : tone === 'good' ? 'var(--cth-on-accent)' : 'var(--cth-ink-900)'
       }}
     >{children}</button>
   );
@@ -134,7 +136,7 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   return (
     <div style={{ marginTop: 8 }}>
       <div style={{
-        fontFamily: 'var(--cth-font-display)', fontSize: 8, lineHeight: '12px',
+        fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
         color: 'var(--cth-ink-500)', marginBottom: 4
       }}>{label}</div>
       {children}
@@ -176,15 +178,15 @@ export function TriggerCard({ title, blurb, summary, defaultOpen = false, childr
           background: 'var(--cth-cream-200)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-100)'
         }}
       >
-        <span style={{ flexShrink: 0, width: 8, fontSize: 11, lineHeight: '13px', color: 'var(--cth-ink-500)' }}>
+        <span style={{ flexShrink: 0, width: 8, fontSize: 12, lineHeight: '13px', color: 'var(--cth-ink-500)' }}>
           {open ? '▾' : '▸'}
         </span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{
-            display: 'block', fontFamily: 'var(--cth-font-display)', fontSize: 9, lineHeight: '13px',
+            display: 'block', fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '13px',
             color: 'var(--cth-ink-900)'
           }}>{title}</span>
-          <span style={{ display: 'block', fontFamily: 'var(--cth-font-ui)', fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)', marginTop: 2 }}>
+          <span style={{ display: 'block', fontFamily: 'var(--cth-font-ui)', fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)', marginTop: 2 }}>
             {blurb}
           </span>
         </span>
@@ -218,15 +220,15 @@ export function SubHeader({ open, onToggle, title, sub, right }: {
           padding: 0, border: 'none', background: 'transparent', cursor: 'pointer'
         }}
       >
-        <span style={{ flexShrink: 0, width: 8, fontSize: 11, color: 'var(--cth-ink-500)' }}>{open ? '▾' : '▸'}</span>
+        <span style={{ flexShrink: 0, width: 8, fontSize: 12, color: 'var(--cth-ink-500)' }}>{open ? '▾' : '▸'}</span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{
-            display: 'block', fontFamily: 'var(--cth-font-ui)', fontSize: 12, lineHeight: '16px',
+            display: 'block', fontFamily: 'var(--cth-font-ui)', fontSize: 12, lineHeight: '18px',
             color: 'var(--cth-ink-900)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
           }}>{title}</span>
           {sub !== undefined && (
             <span style={{
-              display: 'block', fontSize: 11, lineHeight: '15px', color: 'var(--cth-ink-500)',
+              display: 'block', fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
             }}>{sub}</span>
           )}
@@ -242,13 +244,14 @@ export function SubHeader({ open, onToggle, title, sub, right }: {
 /** The shared `strict / allow-all / communication-only` gate. Labels and blurbs
  *  come from `TRIGGER_MODES` so webhooks and org can never drift apart. */
 export function ModePicker({ value, onChange }: { value: TriggerMode; onChange: (m: TriggerMode) => void }) {
+  useTranslation();
   const current = TRIGGER_MODES.find((m) => m.value === value) ?? TRIGGER_MODES[0];
   return (
     <>
       <Select value={value} onChange={(v) => onChange(v as TriggerMode)} style={{ width: '100%' }}>
-        {TRIGGER_MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+        {TRIGGER_MODES.map((m) => <option key={m.value} value={m.value}>{catalogText(m.label)}</option>)}
       </Select>
-      <Hint>{current.blurb}</Hint>
+      <Hint>{catalogText(current.blurb)}</Hint>
     </>
   );
 }
@@ -275,9 +278,9 @@ export const INTERVAL_OPTS: { ms: number; label: string }[] = [
  *  persist now, so the label is computed rather than looked up — a select that
  *  falls back to the nearest preset would quietly lie about the stored value. */
 export function fmtInterval(ms: number): string {
-  if (!Number.isFinite(ms) || ms <= 0) return 'off';
-  if (ms === WEEK) return 'weekly';
-  if (ms % WEEK === 0) return `${ms / WEEK}w`;
+  if (!Number.isFinite(ms) || ms <= 0) return catalogText('off');
+  if (ms === WEEK) return catalogText('weekly');
+  if (ms % WEEK === 0) return uiText('weekCount', { count: ms / WEEK });
   if (ms % DAY === 0) return `${ms / DAY}d`;
   if (ms % HOUR === 0) return `${ms / HOUR}h`;
   if (ms % MINUTE === 0) return `${ms / MINUTE}m`;
@@ -312,7 +315,7 @@ export function IntervalPicker({ value, onChange, minMs = MINUTE, maxMs = Number
         }}
       >
         {!preset && <option value={CUSTOM}>{fmtInterval(value)} ({t('triggersUi.custom')})</option>}
-        {opts.map((o) => <option key={o.ms} value={String(o.ms)}>{o.label}</option>)}
+        {opts.map((o) => <option key={o.ms} value={String(o.ms)}>{catalogText(o.label)}</option>)}
         {preset && <option value={CUSTOM}>{t('triggersUi.customEllipsis')}</option>}
       </Select>
       {showCustom && (
@@ -328,7 +331,7 @@ export function IntervalPicker({ value, onChange, minMs = MINUTE, maxMs = Number
             }}
             style={{ ...monoInputStyle, width: 68, padding: '3px 5px' }}
           />
-          <span style={{ fontSize: 11, color: 'var(--cth-ink-500)' }}>{t('triggersUi.min')}</span>
+          <span style={{ fontSize: 12, color: 'var(--cth-ink-500)' }}>{t('triggersUi.min')}</span>
         </span>
       )}
     </div>
@@ -352,7 +355,7 @@ export function PctField({ value, onChange }: { value: number; onChange: (pct: n
         }}
         style={{ ...monoInputStyle, width: 60, padding: '3px 5px' }}
       />
-      <span style={{ fontSize: 11, color: 'var(--cth-ink-500)' }}>%</span>
+      <span style={{ fontSize: 12, color: 'var(--cth-ink-500)' }}>%</span>
       <div style={{
         flex: 1, minWidth: 40, height: 8,
         background: 'var(--cth-cream-200)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-100)'
@@ -433,30 +436,34 @@ export function WeeklyPicker({ value, onChange }: {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-        {WEEKDAY_INITIALS.map((initial, d) => {
+        {(uiLocale() === 'pt-PT' ? [1, 2, 3, 4, 5, 6, 0] : [0, 1, 2, 3, 4, 5, 6]).map(d => {
+          const date = new Date(Date.UTC(2024, 0, 7 + d));
+          const initial = new Intl.DateTimeFormat(uiLocale(), { weekday: 'short', timeZone: 'UTC' }).format(date);
+          const dayName = new Intl.DateTimeFormat(uiLocale(), { weekday: 'long', timeZone: 'UTC' }).format(date);
           const on = value.days.includes(d);
           return (
             <button
               key={d}
               type="button"
               onClick={() => toggle(d)}
-              title={WEEKDAY_LABELS[d]}
+              title={dayName}
+              aria-label={dayName}
               aria-pressed={on}
               style={{
-                width: 26, height: 24, border: 'none', cursor: 'pointer',
+                minWidth: 38, height: 32, border: 'none', cursor: 'pointer',
                 background: on ? 'var(--cth-mint)' : 'var(--cth-cream-200)',
                 boxShadow: on
                   ? 'inset 0 0 0 1.5px var(--cth-ink-500)'
                   : 'inset 0 0 0 1px var(--cth-ink-100)',
-                fontFamily: 'var(--cth-font-ui)', fontSize: 11,
-                color: on ? 'var(--cth-ink-900)' : 'var(--cth-ink-500)'
+                fontFamily: 'var(--cth-font-ui)', fontSize: 12,
+                color: on ? 'var(--cth-on-accent)' : 'var(--cth-ink-500)'
               }}
             >{initial}</button>
           );
         })}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 11, color: 'var(--cth-ink-500)' }}>{t('triggersUi.at')}</span>
+        <span style={{ fontSize: 12, color: 'var(--cth-ink-500)' }}>{t('triggersUi.at')}</span>
         {/* A native time field, so typing 0930 works and the value is already
             the HH:MM the schedule stores. Minute granularity, not 5-minute
             steps: "09:47 on Tuesdays" is a legitimate thing to want. */}
@@ -497,7 +504,7 @@ export function SchedulePicker({ intervalMs, weekly, onInterval, onWeekly }: {
     padding: '3px 10px 2px', border: 'none', cursor: 'pointer',
     background: active ? 'var(--cth-cream-100)' : 'transparent',
     boxShadow: active ? 'inset 0 0 0 1.5px var(--cth-ink-500)' : 'inset 0 0 0 1px var(--cth-ink-100)',
-    fontFamily: 'var(--cth-font-ui)', fontSize: 11,
+    fontFamily: 'var(--cth-font-ui)', fontSize: 12,
     color: active ? 'var(--cth-ink-900)' : 'var(--cth-ink-500)'
   });
   return (

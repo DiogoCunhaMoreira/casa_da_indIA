@@ -171,7 +171,7 @@ export function AgentCard({
             boxShadow: 'inset 0 0 0 1px var(--cth-ink-300), 1px 2px 0 rgba(26,19,32,0.18)',
             transform: 'rotate(4deg)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'var(--cth-font-display)', fontSize: 8, color: 'var(--cth-ink-900)',
+            fontFamily: 'var(--cth-font-display)', fontSize: 12, color: 'var(--cth-ink-900)',
             cursor: 'pointer'
           }}
         >
@@ -214,7 +214,7 @@ export function AgentCard({
                     color: 'var(--cth-ink-900)',
                     flex: 1, minWidth: 0,
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                  }}>{name.toUpperCase()}</span>
+                  }}>{name}</span>
                 )}
                 {isGod && (
                   <span style={{
@@ -234,7 +234,7 @@ export function AgentCard({
             <div
               title={`${project}${action && status !== 'idle' ? ` — ${action}` : ''}`}
               style={{
-                fontSize: 11, lineHeight: '14px',
+                fontSize: 12, lineHeight: '18px',
                 color: 'var(--cth-ink-500)',
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
               }}
@@ -267,7 +267,7 @@ export function AgentCard({
                   <span
                     title={note}
                     style={{
-                      flex: 1, minWidth: 0, fontSize: 10.5, lineHeight: '14px',
+                      flex: 1, minWidth: 0, fontSize: 12, lineHeight: '18px',
                       color: 'var(--cth-ink-500)', fontStyle: 'italic',
                       whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
                     }}
@@ -286,7 +286,7 @@ export function AgentCard({
                     style={{
                       flexShrink: 0, width: 15, height: 14,
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 10, lineHeight: 1, cursor: 'pointer',
+                      fontSize: 12, lineHeight: 1, cursor: 'pointer',
                       // Quiet until the card is hovered — discoverable, not noisy.
                       color: hover ? 'var(--cth-ink-500)' : 'var(--cth-ink-300)'
                     }}

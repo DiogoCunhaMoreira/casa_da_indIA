@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore, type Agent } from '@/store/store';
@@ -94,6 +95,7 @@ function pickIdeTarget(): IdeTarget {
 }
 
 export function IdePanel() {
+  useUiLanguage();
   const { t } = useTranslation();
   const setIdeOpen = useStore((s) => s.setIdeOpen);
   const [target] = useState<IdeTarget>(pickIdeTarget);
@@ -173,7 +175,7 @@ export function IdePanel() {
     setDiffData((p) => ({ ...p, [rel]: { status: 'loading', head: '', working: '' } }));
     window.cth.gitDiff(root, rel).then((res) => {
       if (!('ok' in res) || res.ok !== true) {
-        const error = 'error' in res && typeof res.error === 'string' ? res.error : 'diff failed';
+        const error = 'error' in res && typeof res.error === 'string' ? res.error : uiText("diff_failed_f1e156");
         setDiffData((p) => ({ ...p, [rel]: { status: 'error', head: '', working: '', error } }));
         return;
       }
@@ -224,7 +226,7 @@ export function IdePanel() {
       window.cth.gitShowFile(repo, revB, rel)
     ]).then(([a, b]) => {
       if (!a.ok || !b.ok) {
-        const error = (!a.ok ? a.error : !b.ok ? (b as { error: string }).error : 'diff failed');
+        const error = (!a.ok ? a.error : !b.ok ? (b as { error: string }).error : uiText("diff_failed_f1e156"));
         setDiffData((p) => ({ ...p, [key]: { status: 'error', head: '', working: '', error } }));
         return;
       }
@@ -374,9 +376,7 @@ export function IdePanel() {
       >
         <span style={{
           fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '20px', color: 'var(--cth-ink-900)'
-        }}>
-          CASA DA ÍNDIA · IDE
-        </span>
+        }}> {uiText("CASA_DA_INDIA_IDE_1b4f61")} </span>
         {/* WHOSE workspace this is. The folder name alone was ambiguous the
             moment two agents shared a repo (worktrees named for the branch, not
             the agent) or an agent worked in a generically-named directory —
@@ -399,12 +399,12 @@ export function IdePanel() {
               <span style={{
                 fontFamily: 'var(--cth-font-display)', fontSize: 7, padding: '1px 3px',
                 background: 'var(--cth-lilac-light)', color: 'var(--cth-ink-900)'
-              }}>god</span>
+              }}>{uiText("god_21298d")}</span>
             )}
             {target.inferred && (
               // Never assert a name we had to guess at. One quiet word is enough
               // to stop someone trusting the wrong agent's directory.
-              <span style={{ fontFamily: 'var(--cth-font-ui)', fontSize: 11, color: 'var(--cth-ink-500)' }}>
+              <span style={{ fontFamily: 'var(--cth-font-ui)', fontSize: 12, color: 'var(--cth-ink-500)' }}>
                 ({t('idePanel.assumed')})
               </span>
             )}
@@ -443,9 +443,7 @@ export function IdePanel() {
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
           textAlign: 'center', color: 'var(--cth-ink-500)', fontFamily: 'var(--cth-font-ui)', fontSize: 16
-        }}>
-          No workspace available.<br />Spawn an agent first — the IDE opens on its working directory.
-        </div>
+        }}> {uiText("No_workspace_available_072750")}<br />{uiText("Spawn_an_agent_first_the_IDE_opens_on_its_wor_2f2cae")} </div>
       ) : (
         <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
           {/* ── Left: changes + file tree ── */}
@@ -475,7 +473,7 @@ export function IdePanel() {
                   // folds, and together they are a bigger hit target than the
                   // caret alone was.
                   display: 'flex', alignItems: 'center', gap: 3, width: 'auto', padding: '0 3px',
-                  fontFamily: 'var(--cth-font-mono)', fontSize: 10, lineHeight: '14px',
+                  fontFamily: 'var(--cth-font-mono)', fontSize: 12, lineHeight: '18px',
                   color: 'var(--cth-ink-700)'
                 }}
               >
@@ -490,8 +488,8 @@ export function IdePanel() {
                   onClick={() => { setRailTab(k); if (gitCollapsed) toggleGitRail(); }}
                   style={{
                     padding: '1px 8px', border: 'none', cursor: 'pointer',
-                    fontFamily: 'var(--cth-font-display)', fontSize: 8, lineHeight: '14px',
-                    textTransform: 'uppercase', color: 'var(--cth-ink-700)',
+                    fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
+                    textTransform: 'none', color: 'var(--cth-ink-700)',
                     background: railTab === k && !gitCollapsed ? 'var(--cth-sky-light)' : 'transparent',
                     boxShadow: railTab === k && !gitCollapsed ? 'inset 0 0 0 1px var(--cth-ink-300)' : 'none'
                   }}
@@ -588,7 +586,7 @@ export function IdePanel() {
                       fontFamily: 'var(--cth-font-ui)', fontSize: 12, color: 'var(--cth-ink-900)'
                     }}
                   >
-                    {tab.mode !== 'edit' && (
+                    {tab.mode !== uiText("edit_9ead47") && (
                       <span style={{
                         fontFamily: 'var(--cth-font-display)', fontSize: 7, padding: '1px 3px',
                         background: tab.mode === 'revdiff' ? 'var(--cth-lilac-light)'
@@ -621,12 +619,10 @@ export function IdePanel() {
                 }}>
                   <Icon name="code" size={2} />
                   <div style={{
-                    fontFamily: 'var(--cth-font-display)', fontSize: 8, textTransform: 'uppercase',
+                    fontFamily: 'var(--cth-font-display)', fontSize: 12, textTransform: 'none',
                     letterSpacing: 1, color: 'var(--cth-ink-700)'
-                  }}>nothing open</div>
-                  <div style={{ fontFamily: 'var(--cth-font-ui)', fontSize: 13 }}>
-                    Pick a file from the tree to edit, or a changed file to diff.
-                  </div>
+                  }}>{uiText("nothing_open_5f1fc3")}</div>
+                  <div style={{ fontFamily: 'var(--cth-font-ui)', fontSize: 13 }}> {uiText("Pick_a_file_from_the_tree_to_edit_or_a_change_773a67")} </div>
                   <ShortcutHint />
                 </div>
               )}
@@ -643,9 +639,9 @@ export function IdePanel() {
                 />
               )}
 
-              {activeTab?.mode === 'edit' && (() => {
+              {activeTab?.mode === uiText("edit_9ead47") && (() => {
                 const buf = editBuffers[activeTab.rel];
-                if (!buf || buf.status === 'loading') return <Centered>loading…</Centered>;
+                if (!buf || buf.status === 'loading') return <Centered>{uiText("loading_fd3e3d")}</Centered>;
                 if (buf.status === 'error') return <Centered tone="error">{buf.error}</Centered>;
                 const md = isMarkdown(activeTab.rel);
                 const view: MdView = md ? (mdViews[activeTab.rel] ?? defaultMdView()) : 'code';
@@ -755,10 +751,11 @@ export function IdePanel() {
 }
 
 function SectionHeader({ title, right }: { title: string; right?: React.ReactNode }) {
+  useUiLanguage();
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px 4px',
-      fontFamily: 'var(--cth-font-display)', fontSize: 8, lineHeight: '12px', textTransform: 'uppercase',
+      fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px', textTransform: 'none',
       color: 'var(--cth-ink-700)', background: 'var(--cth-cream-50)', borderBottom: '1px solid var(--cth-ink-100)'
     }}>
       <span style={{ flex: 1 }}>{title}</span>
@@ -774,6 +771,7 @@ function EditorBar({ rel, dirty, saveState, onSave, onCopy, mdView, onMdView, on
   /** Set only for files that are ALSO images (SVG) — jumps back to the picture. */
   onViewImage?: () => void;
 }) {
+  useUiLanguage();
   const { t } = useTranslation();
   return (
     <div style={ideBarStyle}>
@@ -815,6 +813,7 @@ function EditorBar({ rel, dirty, saveState, onSave, onCopy, mdView, onMdView, on
 function MdPane({ rel, root, source, split, onOpenMarkdownLink }: {
   rel: string; root: string; source: string; split: boolean; onOpenMarkdownLink: (rel: string) => void;
 }) {
+  useUiLanguage();
   const deferred = useDeferredValue(source);
   return (
     <div style={{
@@ -844,10 +843,11 @@ function MdPane({ rel, root, source, split, onOpenMarkdownLink }: {
  * moment the pane has nothing to say, and it must not compete with an open file.
  */
 function ShortcutHint() {
+  useUiLanguage();
   return (
     <div style={{
       marginTop: 10, display: 'grid', gap: 2, justifyItems: 'center',
-      fontFamily: 'var(--cth-font-ui)', fontSize: 11, color: 'var(--cth-ink-300)'
+      fontFamily: 'var(--cth-font-ui)', fontSize: 12, color: 'var(--cth-ink-300)'
     }}>
       {EDITOR_SHORTCUTS.map(([keys, label]) => (
         <div key={label} style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
@@ -881,6 +881,7 @@ const EDITOR_SHORTCUTS: ReadonlyArray<readonly [string, string]> = IS_MAC
     ];
 
 function Centered({ children, tone }: { children: React.ReactNode; tone?: 'error' }) {
+  useUiLanguage();
   return (
     <div style={{
       height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',

@@ -173,7 +173,11 @@
     "foundersWallTitle": "على حائط المؤسِّسين؟",
     "foundersWallBody": "شهر مجاني من casa_da_indIA Pro، ثم خصم 50% على الخطة السنوية. لأول 100 شخص على الحائط.",
     "seeTheWall": "شاهد الحائط",
-    "joinDiscord": "انضم إلى Discord"
+    "joinDiscord": "انضم إلى Discord",
+    "local": "مساحة عمل محلية",
+    "localDescription": "نسّق الوكلاء والمهام والذاكرة في مكان واحد. تبقى المشاريع والجلسات على جهازك.",
+    "repository": "المستودع",
+    "credits": "نسخة معدّلة من Munder Difflin، من تطوير Chaitanya Giri، لتطبيق Casa da Índia."
   },
   "settings": {
     "title": "الإعدادات",

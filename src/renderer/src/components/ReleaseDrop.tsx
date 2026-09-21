@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 /**
  * The release drop: a centered, full-bleed "what's new" moment.
  *
@@ -46,12 +47,12 @@ export interface ReleaseDropProps {
 // Legacy release palette. Restated here because the modal is
 // app chrome and cannot reach the site's stylesheet; kept in one place so the
 // frame's tokens in shared/releaseDrop.ts and this chrome never drift apart.
-const PAPER = '#FFFDF7';
-const INK = '#1B1B1B';
-const INK_FAINT = '#8A867A';
-const YELLOW = '#FFCA54';
-const SKY = '#72C2DF';
-const MAROON = '#B23A4E';
+const PAPER = 'var(--cth-paper-100)';
+const INK = 'var(--cth-ink-900)';
+const INK_FAINT = 'var(--cth-ink-500)';
+const YELLOW = 'var(--cth-brass)';
+const SKY = 'var(--cth-action)';
+const MAROON = 'var(--cth-action-text)';
 const MONO = '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace';
 
 // How long the loader may cover the frame before it is revealed regardless.
@@ -67,6 +68,7 @@ const MONO = '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monosp
 const REVEAL_TIMEOUT_MS = 2500;
 
 export function ReleaseDrop({ version, html, onDismiss }: ReleaseDropProps) {
+  useUiLanguage();
   const srcDoc = useMemo(() => buildDropSrcDoc(html), [html]);
 
   // The loader covers the frame until it is ready to be seen. `revealed` latches
@@ -110,7 +112,7 @@ export function ReleaseDrop({ version, html, onDismiss }: ReleaseDropProps) {
     >
       <div
         role="dialog"
-        aria-label={`What's new in casa_da_indIA ${version}`}
+        aria-label={uiText('dynamic18', { v0: version })}
         onClick={(e) => e.stopPropagation()}
         style={{
           margin: 'auto',
@@ -124,9 +126,9 @@ export function ReleaseDrop({ version, html, onDismiss }: ReleaseDropProps) {
           background: PAPER,
           // The neo-brutalist window: square, 3px ink border, hard 10px offset
           // shadow with no blur. Depth comes from the offset, not elevation.
-          border: `3px solid ${INK}`,
-          borderRadius: 0,
-          boxShadow: `12px 12px 0 ${INK}`,
+          border: '1px solid var(--cth-ink-300)',
+          borderRadius: 'var(--cth-radius-panel)',
+          boxShadow: 'var(--cth-dialog-shadow)',
           overflow: 'hidden',
           fontFamily: MONO
         }}
@@ -140,33 +142,31 @@ export function ReleaseDrop({ version, html, onDismiss }: ReleaseDropProps) {
         }}>
           <span aria-hidden style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
             <i style={{ width: 10, height: 10, background: YELLOW, display: 'block' }} />
-            <i style={{ width: 10, height: 10, background: '#72C2DF', display: 'block' }} />
-            <i style={{ width: 10, height: 10, background: '#B23A4E', display: 'block' }} />
+            <i style={{ width: 10, height: 10, background: 'var(--cth-action)', display: 'block' }} />
+            <i style={{ width: 10, height: 10, background: 'var(--cth-action-text)', display: 'block' }} />
           </span>
           <span style={{
             flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700, letterSpacing: '.08em',
-            textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden',
+            textTransform: 'none', whiteSpace: 'nowrap', overflow: 'hidden',
             textOverflow: 'ellipsis'
           }}>
             casa_da_indIA <span style={{ color: YELLOW }}>v{version.replace(/^v/, '')}</span>
-            <span style={{ color: INK_FAINT, fontWeight: 500, marginLeft: 10, letterSpacing: '.12em' }}>
-              / release notes
-            </span>
+            <span style={{ color: INK_FAINT, fontWeight: 500, marginLeft: 10, letterSpacing: '.12em' }}> {uiText("release_notes_840e11")} </span>
           </span>
           <span aria-hidden style={{
-            flexShrink: 0, fontSize: 11, fontWeight: 500, letterSpacing: '.12em',
-            color: INK_FAINT, textTransform: 'uppercase'
+            flexShrink: 0, fontSize: 12, fontWeight: 500, letterSpacing: '.12em',
+            color: INK_FAINT, textTransform: 'none'
           }}>
             esc
           </span>
           <button
             onClick={onDismiss}
-            aria-label="Close release notes"
-            title="Close (Esc)"
+            aria-label={uiText("Close_release_notes_5779da")}
+            title={uiText("Close_Esc_6ae84e")}
             style={{
               flexShrink: 0, width: 26, height: 26, padding: 0,
               background: PAPER, color: INK, border: `2px solid ${PAPER}`,
-              borderRadius: 0, cursor: 'pointer',
+              borderRadius: 'var(--cth-radius-panel)', cursor: 'pointer',
               fontFamily: MONO, fontSize: 13, fontWeight: 700, lineHeight: 1,
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}
@@ -208,6 +208,7 @@ export function ReleaseDrop({ version, html, onDismiss }: ReleaseDropProps) {
  *  chrome — it carries no control; dismissal stays Esc / close / backdrop. It is
  *  removed the instant the frame is revealed, so it is only ever seen briefly. */
 function DropLoader() {
+  useUiLanguage();
   return (
     <div
       // aria-hidden: the dialog's own label already announces the drop, and a
@@ -244,11 +245,9 @@ function DropLoader() {
         ))}
       </span>
       <span style={{
-        fontFamily: MONO, fontSize: 11, fontWeight: 500, letterSpacing: '.18em',
-        textTransform: 'uppercase', color: INK_FAINT
-      }}>
-        Loading
-      </span>
+        fontFamily: MONO, fontSize: 12, fontWeight: 500, letterSpacing: '.18em',
+        textTransform: 'none', color: INK_FAINT
+      }}> {uiText("Loading_8f26c6")} </span>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { uiText } from '@/i18n/uiText';
 /**
  * Free Flow recorder — a single shared push-to-talk capture engine for the whole
  * renderer. Both entry points use it, so only ONE recording can run at a time:
@@ -89,9 +90,9 @@ function deliverTranscript(agentId: string, text: string): void {
  *  a friendly error if the mic can't be opened. */
 async function start(agentId: string): Promise<void> {
   if (state.status !== 'idle' || opening) return;
-  if (!agentId) { setState({ error: 'no agent selected' }); return; }
+  if (!agentId) { setState({ error: uiText("no_agent_selected_519ead") }); return; }
   if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-    setState({ error: 'microphone not available' });
+    setState({ error: uiText("microphone_not_available_5288b8") });
     return;
   }
   wantActive = true;
@@ -106,7 +107,7 @@ async function start(agentId: string): Promise<void> {
     const name = e instanceof DOMException ? e.name : '';
     setState({
       status: 'idle',
-      error: name === 'NotAllowedError' ? 'microphone permission denied' : 'could not open microphone'
+      error: name === 'NotAllowedError' ? uiText("microphone_permission_denied_13ad5a") : uiText("could_not_open_microphone_b810e2")
     });
     return;
   }
@@ -124,7 +125,7 @@ async function start(agentId: string): Promise<void> {
   } catch {
     teardownStream();
     wantActive = false;
-    setState({ status: 'idle', error: 'recording not supported' });
+    setState({ status: 'idle', error: uiText("recording_not_supported_d82045") });
     return;
   }
   recorder.ondataavailable = (ev: BlobEvent) => { if (ev.data && ev.data.size > 0) chunks.push(ev.data); };
@@ -150,7 +151,7 @@ async function finish(agentId: string): Promise<void> {
   const blob = new Blob(chunks, { type });
   chunks = [];
   if (blob.size === 0) {
-    setState({ status: 'idle', error: 'nothing recorded' });
+    setState({ status: 'idle', error: uiText("nothing_recorded_8214a7") });
     return;
   }
   setState({ status: 'transcribing', error: null });
@@ -166,10 +167,10 @@ async function finish(agentId: string): Promise<void> {
       deliverTranscript(agentId, res.text);
       setState({ status: 'idle', error: null });
     } else {
-      setState({ status: 'idle', error: res.error || 'transcription failed' });
+      setState({ status: 'idle', error: res.error || uiText("transcription_failed_f741ae") });
     }
   } catch (e) {
-    setState({ status: 'idle', error: e instanceof Error ? e.message : 'transcription failed' });
+    setState({ status: 'idle', error: e instanceof Error ? e.message : uiText("transcription_failed_f741ae") });
   }
 }
 

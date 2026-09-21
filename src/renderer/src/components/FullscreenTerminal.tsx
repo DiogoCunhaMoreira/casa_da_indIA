@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -148,6 +149,7 @@ export interface FullscreenTerminalProps {
 }
 
 export function FullscreenTerminal({ config }: FullscreenTerminalProps) {
+  useUiLanguage();
   const { t } = useTranslation();
   const agents = useStore(s => s.agents);
   const restorableAgents = useStore(s => s.restorableAgents);
@@ -308,7 +310,7 @@ export function FullscreenTerminal({ config }: FullscreenTerminalProps) {
         <span style={{
           fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '20px',
           color: 'var(--cth-ink-900)'
-        }}>CASA DA ÍNDIA · FOCUS MODE</span>
+        }}>{uiText("CASA_DA_INDIA_FOCUS_MODE_6c3969")}</span>
         {/* Same top-right controls as the main title bar — fullscreen covers
             it, so theme / exit-fullscreen / IDE must live here too. */}
         <div className="cth-titlebar-nodrag" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -359,8 +361,8 @@ export function FullscreenTerminal({ config }: FullscreenTerminalProps) {
           <button
             className="cth-settings-btn"
             onClick={() => window.dispatchEvent(new CustomEvent('cth:open-settings'))}
-            title="Settings"
-            aria-label="Settings"
+            title={uiText("Settings_c7f73b")}
+            aria-label={uiText("Settings_c7f73b")}
             style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               width: 28, height: 28, padding: 0,
@@ -472,7 +474,7 @@ export function FullscreenTerminal({ config }: FullscreenTerminalProps) {
                   <span style={{
                     minWidth: 0,
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                  }}>{label.toUpperCase()}</span>
+                  }}>{label}</span>
                 </div>
                 {members.map(a => (
                   <SidebarRow
@@ -502,13 +504,12 @@ export function FullscreenTerminal({ config }: FullscreenTerminalProps) {
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '4px 8px',
-                  fontFamily: 'var(--cth-font-ui)', fontSize: 11,
+                  fontFamily: 'var(--cth-font-ui)', fontSize: 12,
                   color: 'var(--cth-ink-900)',
                   background: 'var(--cth-status-working)',
                   boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)'
                 }}>
-                  <Icon name="play" /> restoring your team…
-                </div>
+                  <Icon name="play" /> {uiText("restoring_your_team_5e98e1")} </div>
               )}
               {!autoRestoring && restorableAgents.length > 0 && (
                 <PixelButton
@@ -529,11 +530,11 @@ export function FullscreenTerminal({ config }: FullscreenTerminalProps) {
                   {restorableAgents.map((a: Agent) => (
                     <span
                       key={a.id}
-                      title={`${a.name} — restorable from last session`}
+                      title={uiText('dynamic3', { v0: a.name })}
                       style={{
                         display: 'inline-flex', alignItems: 'center', gap: 2,
                         height: 20, padding: '0 2px 0 6px',
-                        fontFamily: 'var(--cth-font-ui)', fontSize: 11,
+                        fontFamily: 'var(--cth-font-ui)', fontSize: 12,
                         color: 'var(--cth-ink-700)', background: 'var(--cth-paper-100)',
                         boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)'
                       }}
@@ -541,12 +542,12 @@ export function FullscreenTerminal({ config }: FullscreenTerminalProps) {
                       {a.name}
                       <button
                         onClick={() => useStore.getState().removeRestorableAgent(a.id)}
-                        title={`Dismiss ${a.name} — remove permanently from the restore list`}
-                        aria-label={`Dismiss ${a.name}`}
+                        title={uiText('dynamic4', { v0: a.name })}
+                        aria-label={uiText('dynamic5', { v0: a.name })}
                         style={{
                           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                           width: 14, height: 14, padding: 0, lineHeight: 1,
-                          fontFamily: 'var(--cth-font-ui)', fontSize: 11,
+                          fontFamily: 'var(--cth-font-ui)', fontSize: 12,
                           color: 'var(--cth-ink-500)', background: 'transparent',
                           border: 'none', cursor: 'pointer'
                         }}
@@ -629,6 +630,7 @@ function shortModel(model?: string): string | null {
 /** Context fullness as a 3px rail. Colour tracks pressure rather than identity —
  *  an agent at 85% is about to compact, and that matters more than its accent. */
 function ContextBar({ tokens, limit, accent }: { tokens?: number; limit?: number; accent: string }) {
+  useUiLanguage();
   const { t } = useTranslation();
   if (tokens === undefined || !limit) return null;
   const pct = Math.max(0, Math.min(100, Math.round((tokens / limit) * 100)));
@@ -645,7 +647,7 @@ function ContextBar({ tokens, limit, accent }: { tokens?: number; limit?: number
       }}>
         <span style={{ display: 'block', width: `${pct}%`, height: '100%', background: color }} />
       </span>
-      <span style={{ flexShrink: 0, fontSize: 9, color: 'var(--cth-ink-500)' }}>{pct}%</span>
+      <span style={{ flexShrink: 0, fontSize: 12, color: 'var(--cth-ink-500)' }}>{pct}%</span>
     </div>
   );
 }
@@ -665,6 +667,7 @@ function SidebarRow({
   drag: RowDrag;
   scale: ReturnType<typeof rosterScale>;
 }) {
+  useUiLanguage();
   const { t } = useTranslation();
   const rtl = useRtl();
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -763,7 +766,7 @@ function SidebarRow({
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               fontFamily: 'var(--cth-font-display)',
               fontSize: scale.name, lineHeight: 1.5
-            }}>{agent.name.toUpperCase()}</span>
+            }}>{agent.name}</span>
             {/* Your unsent text outranks the agent's own state here: an idle
                 agent with a draft on its prompt is not idle-and-free, it is
                 idle-and-held, and nothing else on screen said so. */}
@@ -840,7 +843,7 @@ function SidebarRow({
               <span style={{
                 fontSize: scale.note, lineHeight: 1.35,
                 color: 'var(--cth-ink-300)', fontStyle: 'italic'
-              }}>no note</span>
+              }}>{uiText("no_note_b13a31")}</span>
             )}
           </div>
         </div>
@@ -873,7 +876,7 @@ function SidebarRow({
             fontSize: noteLabelSize,
             lineHeight: `${Math.round(noteLabelSize * 1.5)}px`,
             color: 'var(--cth-ink-700)'
-          }}>PRIVATE NOTE</div>
+          }}>{uiText("PRIVATE_NOTE_168b8d")}</div>
           {/* A textarea, not an input: the note is a bullet list, so Enter has
               to make a new line rather than doing nothing. autoFocus is safe
               now that opening is an explicit click, not a pointer fly-by. */}
@@ -908,8 +911,8 @@ function SidebarRow({
             }}
           />
           <div style={{
-            marginTop: 5, fontSize: 10, color: 'var(--cth-ink-500)'
-          }}>one line = one bullet · esc to close</div>
+            marginTop: 5, fontSize: 12, color: 'var(--cth-ink-500)'
+          }}>{uiText("one_line_one_bullet_esc_to_close_7d7ad8")}</div>
         </div>
         </>,
         document.body
@@ -919,6 +922,7 @@ function SidebarRow({
 }
 
 function Header({ agent, onEdit }: { agent: Agent; onEdit: () => void }) {
+  useUiLanguage();
   const { t } = useTranslation();
   const typing = useHasTerminalDraft(agent.ptyId);
   const archiveAgent = useStore((st) => st.archiveAgent);
@@ -959,9 +963,9 @@ function Header({ agent, onEdit }: { agent: Agent; onEdit: () => void }) {
       boxShadow: 'inset 0 0 0 1px var(--cth-ink-100)'
     }}>
       <span style={{
-        fontFamily: 'var(--cth-font-display)', fontSize: 10, lineHeight: '16px',
+        fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
         color: 'var(--cth-ink-900)'
-      }}>{agent.name.toUpperCase()}</span>
+      }}>{agent.name}</span>
       {/* Edit belongs with the NAME, not with the action cluster on the right:
           it changes who this agent is, and the right-hand group is things you do
           with the agent. Icon-only because it sits inside the identity line —
@@ -971,8 +975,8 @@ function Header({ agent, onEdit }: { agent: Agent; onEdit: () => void }) {
         <PixelButton variant="secondary" size="sm" onClick={onEdit}>
           <span
             className="cth-tip cth-tip-left cth-tip-wrap"
-            data-tip={`Edit ${agent.name}: their name and face, which engine they run on, and the briefing that tells them what they are for.`}
-            aria-label={`Edit ${agent.name}`}
+            data-tip={uiText('dynamic0', { v0: agent.name })}
+            aria-label={uiText('dynamic1', { v0: agent.name })}
             style={{ display: 'inline-flex', alignItems: 'center', lineHeight: 0 }}
           >
             <Icon name="edit" />

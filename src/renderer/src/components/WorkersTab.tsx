@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PixelButton } from './PixelButton';
@@ -41,20 +42,21 @@ const card: React.CSSProperties = {
 };
 const metaRow: React.CSSProperties = {
   display: 'flex', flexWrap: 'wrap', gap: '4px 14px', fontFamily: 'var(--cth-font-mono)',
-  fontSize: 11, color: 'var(--cth-ink-700)'
+  fontSize: 12, color: 'var(--cth-ink-700)'
 };
 const sectionHead: React.CSSProperties = {
-  fontFamily: 'var(--cth-font-ui)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
+  fontFamily: 'var(--cth-font-ui)', fontSize: 12, fontWeight: 700, textTransform: 'none',
   letterSpacing: 0.5, color: 'var(--cth-ink-900)', margin: '2px 0'
 };
 
 function StatusBadge({ w }: { w: WorkerSnapshot }) {
+  useUiLanguage();
   const { t } = useTranslation();
   const releasing = w.status === 'releasing';
   return (
     <span style={{
-      fontFamily: 'var(--cth-font-mono)', fontSize: 10, padding: '1px 6px',
-      textTransform: 'uppercase', letterSpacing: 0.5,
+      fontFamily: 'var(--cth-font-mono)', fontSize: 12, padding: '1px 6px',
+      textTransform: 'none', letterSpacing: 0.5,
       color: releasing ? 'var(--cth-paper-100)' : 'var(--cth-ink-900)',
       background: releasing ? 'var(--cth-ink-700)' : 'var(--cth-green, #2f8f4e)',
       boxShadow: releasing ? 'none' : 'inset 0 0 0 1px var(--cth-ink-100)'
@@ -65,8 +67,9 @@ function StatusBadge({ w }: { w: WorkerSnapshot }) {
 }
 
 export function WorkersTab() {
+  useUiLanguage();
   const { t } = useTranslation();
-  const godName = useStore((s) => s.agents.find((a) => a.isGod)?.name) ?? 'the orchestrator';
+  const godName = useStore((s) => s.agents.find((a) => a.isGod)?.name) ?? uiText("the_orchestrator_fc0fec");
   const [data, setData] = useState<WorkersData | null>(null);
   const [stopping, setStopping] = useState<Record<string, boolean>>({});
 
@@ -96,11 +99,11 @@ export function WorkersTab() {
       <div>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
           <span style={sectionHead}>{t('workersTab.liveWorkers')}</span>
-          <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 11, color: 'var(--cth-ink-700)' }}>
+          <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 12, color: 'var(--cth-ink-700)' }}>
             {live.length} / {max}
           </span>
         </div>
-        <p style={{ fontFamily: 'var(--cth-font-ui)', fontSize: 11, color: 'var(--cth-ink-700)', margin: '2px 0 8px' }}>
+        <p style={{ fontFamily: 'var(--cth-font-ui)', fontSize: 12, color: 'var(--cth-ink-700)', margin: '2px 0 8px' }}>
           {t('workersTab.liveIntro', { godName })}
         </p>
 
@@ -121,7 +124,7 @@ export function WorkersTab() {
                     }}>{w.name}</span>
                     {w.hasSlack && (
                       <span title={t('workersTab.repliesToSlack')} style={{
-                        fontFamily: 'var(--cth-font-mono)', fontSize: 10, color: 'var(--cth-ink-700)',
+                        fontFamily: 'var(--cth-font-mono)', fontSize: 12, color: 'var(--cth-ink-700)',
                         boxShadow: 'inset 0 0 0 1px var(--cth-ink-100)', padding: '0 5px'
                       }}>slack</span>
                     )}
@@ -153,7 +156,7 @@ export function WorkersTab() {
       {preserved.length > 0 && (
         <div>
           <span style={sectionHead}>{t('workersTab.preserved', { count: preserved.length })}</span>
-          <p style={{ fontFamily: 'var(--cth-font-ui)', fontSize: 11, color: 'var(--cth-ink-700)', margin: '2px 0 8px' }}>
+          <p style={{ fontFamily: 'var(--cth-font-ui)', fontSize: 12, color: 'var(--cth-ink-700)', margin: '2px 0 8px' }}>
             {t('workersTab.preservedIntro')}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

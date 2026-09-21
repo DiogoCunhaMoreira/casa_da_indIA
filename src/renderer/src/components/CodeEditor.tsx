@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { EditorView } from '@codemirror/view';
@@ -17,9 +18,9 @@ import { PixelButton } from './PixelButton';
 const cthEditorTheme = EditorView.theme({
   '&': {
     background: '#FCFAF0',
-    color: '#1A1320',
+    color: 'var(--cth-ink-900)',
     height: '100%',
-    fontFamily: 'VT323, "JetBrains Mono", monospace',
+    fontFamily: '"JetBrains Mono", monospace',
     fontSize: '16px'
   },
   '.cm-content': { caretColor: '#FF6B6B', padding: '8px 0' },
@@ -27,29 +28,29 @@ const cthEditorTheme = EditorView.theme({
   '.cm-scroller': { fontFamily: 'inherit', overflow: 'auto' },
   '.cm-gutters': {
     background: '#F0EAD2',
-    color: '#6B5878',
-    borderRight: '1px solid #D9CFE0'
+    color: 'var(--cth-ink-500)',
+    borderRight: '1px solid var(--cth-ink-100)'
   },
   '.cm-activeLineGutter': { background: '#FFEC99' },
   '.cm-activeLine': { background: 'rgba(255, 217, 61, 0.10)' },
   '.cm-selectionBackground, ::selection': { background: '#FFEC99 !important' },
-  '.cm-searchMatch': { background: '#A8E6E0', outline: '1px solid #1A1320' },
+  '.cm-searchMatch': { background: '#A8E6E0', outline: '1px solid var(--cth-ink-900)' },
   '.cm-searchMatch.cm-searchMatch-selected': { background: '#FFD93D' }
 }, { dark: false });
 
 const cthSyntax = HighlightStyle.define([
   { tag: tags.keyword,        color: '#B197FC' },
-  { tag: tags.operator,       color: '#6B5878' },
+  { tag: tags.operator,       color: 'var(--cth-ink-500)' },
   { tag: [tags.string, tags.regexp], color: '#6BCF7F' },
   { tag: [tags.number, tags.bool, tags.null], color: '#FF6B6B' },
-  { tag: tags.comment,        color: '#6B5878', fontStyle: 'italic' },
-  { tag: tags.variableName,   color: '#1A1320' },
+  { tag: tags.comment,        color: 'var(--cth-ink-500)', fontStyle: 'italic' },
+  { tag: tags.variableName,   color: 'var(--cth-ink-900)' },
   { tag: tags.function(tags.variableName), color: '#FFA07A' },
   { tag: [tags.typeName, tags.className], color: '#4ECDC4' },
   { tag: tags.propertyName,   color: '#3D2E4A' },
-  { tag: tags.heading,        color: '#1A1320', fontWeight: 'bold' as any },
+  { tag: tags.heading,        color: 'var(--cth-ink-900)', fontWeight: 'bold' as any },
   { tag: tags.link,           color: '#4ECDC4', textDecoration: 'underline' as any },
-  { tag: tags.meta,           color: '#6B5878' }
+  { tag: tags.meta,           color: 'var(--cth-ink-500)' }
 ]);
 
 function extensionsFor(filename: string) {
@@ -78,6 +79,7 @@ export interface CodeEditorProps {
 export function CodeEditor({
   root, filePath, onOpenInIde, onCopyPath
 }: CodeEditorProps) {
+  useUiLanguage();
   const [content, setContent] = useState<string>('');
   const [originalContent, setOriginalContent] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -158,18 +160,14 @@ export function CodeEditor({
           <Icon name="code" size={2} />
         </div>
         <div style={{
-          fontFamily: 'var(--cth-font-display)', fontSize: 8, lineHeight: '14px',
-          textTransform: 'uppercase', letterSpacing: 1,
+          fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
+          textTransform: 'none', letterSpacing: 1,
           color: 'var(--cth-ink-700)'
-        }}>
-          No file open
-        </div>
+        }}> {uiText("No_file_open_054aea")} </div>
         <div style={{
           fontFamily: 'var(--cth-font-ui)', fontSize: 13,
           color: 'var(--cth-ink-500)'
-        }}>
-          Pick a file from the tree to view it here.
-        </div>
+        }}> {uiText("Pick_a_file_from_the_tree_to_view_it_here_7ac2fa")} </div>
       </div>
     );
   }
@@ -196,14 +194,14 @@ export function CodeEditor({
         {onCopyPath && (
           <button
             onClick={onCopyPath}
-            title="Copy absolute path"
+            title={uiText("Copy_absolute_path_b96d42")}
             style={editorBtn}
-          >copy path</button>
+          >{uiText("copy_path_9a303d")}</button>
         )}
         <button
           onClick={save}
           disabled={!dirty || saveState === 'saving'}
-          title="Save (Cmd-S)"
+          title={uiText("Save_Cmd_S_f0bb36")}
           style={{ ...editorBtn, opacity: dirty ? 1 : 0.5 }}
         >
           {saveState === 'saving' ? '...' : saveState === 'saved' ? 'saved' : saveState === 'error' ? 'err' : 'save'}
@@ -211,8 +209,8 @@ export function CodeEditor({
         {onOpenInIde && (
           <button
             onClick={onOpenInIde}
-            title="Open in the IDE"
-            aria-label="Open in the IDE"
+            title={uiText("Open_in_the_IDE_6bf5ac")}
+            aria-label={uiText("Open_in_the_IDE_6bf5ac")}
             style={editorBtn}
           >
             <Icon name="code" />
@@ -223,7 +221,7 @@ export function CodeEditor({
       {/* Body */}
       <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ padding: 12, color: 'var(--cth-ink-500)' }}>loading…</div>
+          <div style={{ padding: 12, color: 'var(--cth-ink-500)' }}>{uiText("loading_fd3e3d")}</div>
         ) : error ? (
           <div style={{ padding: 12, color: 'var(--cth-coral)' }}>{error}</div>
         ) : (

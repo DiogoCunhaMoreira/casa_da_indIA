@@ -59,31 +59,47 @@ function defineThemes(m: typeof monaco): void {
     base: 'vs',
     inherit: true,
     rules: [
-      { token: '', foreground: '1A1320', background: 'FCFAF0' },
-      { token: 'comment', foreground: '6B5878', fontStyle: 'italic' },
-      { token: 'keyword', foreground: '8B5CF6' },
+      { token: '', foreground: '252C32', background: 'FFFEFB' },
+      { token: 'comment', foreground: '606970', fontStyle: 'italic' },
+      { token: 'keyword', foreground: '24558A' },
       { token: 'string', foreground: '3FA45B' },
       { token: 'number', foreground: 'D94F4F' },
       { token: 'type', foreground: '2A9D94' },
       { token: 'function', foreground: 'C2603A' },
-      { token: 'variable', foreground: '1A1320' },
-      { token: 'delimiter', foreground: '6B5878' }
+      { token: 'variable', foreground: '252C32' },
+      { token: 'delimiter', foreground: '606970' }
     ],
     colors: {
-      'editor.background': '#FCFAF0',
-      'editor.foreground': '#1A1320',
-      'editorLineNumber.foreground': '#A899B5',
-      'editorLineNumber.activeForeground': '#3D2E4A',
-      'editor.selectionBackground': '#FFEC99',
-      'editor.lineHighlightBackground': '#FFF8E7',
+      'editor.background': '#FFFEFB',
+      'editor.foreground': '#252C32',
+      'editorLineNumber.foreground': '#89918F',
+      'editorLineNumber.activeForeground': '#46515A',
+      'editor.selectionBackground': '#D4E4F4',
+      'editor.lineHighlightBackground': '#F5F1E8',
       'editorCursor.foreground': '#FF6B6B',
-      'editorGutter.background': '#F0EAD2',
-      'editorWidget.background': '#FFF8E7',
-      'editorIndentGuide.background1': '#E8D9A0',
+      'editorGutter.background': '#F0EADF',
+      'editorWidget.background': '#F5F1E8',
+      'editorIndentGuide.background1': '#D6D4CB',
       'diffEditor.insertedTextBackground': '#6BCF7F33',
       'diffEditor.removedTextBackground': '#FF6B6B33',
       'diffEditor.insertedLineBackground': '#6BCF7F22',
       'diffEditor.removedLineBackground': '#FF6B6B22'
+    }
+  });
+  m.editor.defineTheme('cth-dark', {
+    base: 'vs-dark', inherit: true,
+    rules: [
+      { token: 'comment', foreground: 'A5AFB5', fontStyle: 'italic' },
+      { token: 'keyword', foreground: '99BEE5' },
+      { token: 'string', foreground: '91C6A5' },
+      { token: 'number', foreground: 'E0B883' }
+    ],
+    colors: {
+      'editor.background': '#242E36', 'editor.foreground': '#EEE9DE',
+      'editorLineNumber.foreground': '#A5AFB5', 'editorLineNumber.activeForeground': '#EEE9DE',
+      'editor.selectionBackground': '#365674', 'editor.lineHighlightBackground': '#29343D',
+      'editorCursor.foreground': '#99BEE5', 'editorGutter.background': '#242E36',
+      'editorWidget.background': '#29343D', 'editorIndentGuide.background1': '#495963'
     }
   });
 }

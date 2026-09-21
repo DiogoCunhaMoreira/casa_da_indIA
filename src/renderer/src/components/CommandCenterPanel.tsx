@@ -1,3 +1,5 @@
+import { uiLocale } from '@/i18n/uiText';
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PixelPanel } from './PixelPanel';
@@ -84,6 +86,7 @@ const TABS: { key: CCTab; labelKey: string; icon: Parameters<typeof Icon>[0]['na
  *  fullscreen" placeholder instead — two live xterms on one pty fight over its
  *  cols/rows and corrupt the display. */
 export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent; fullscreen?: boolean }) {
+  useUiLanguage();
   const { t } = useTranslation();
   const [tab, setTab] = useState<CCTab>('terminal');
   // The trigger-history ledger has nothing to say until an outside party can
@@ -155,10 +158,10 @@ export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent
       style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 0, overflow: 'hidden' }}
     >
       {/* Header */}
-      <div style={{
+      <div className="cth-agent-header" style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        padding: '6px 8px', background: 'var(--cth-cream-100)',
-        borderBottom: '1px solid var(--cth-ink-700)', flexShrink: 0
+        padding: '12px', background: 'var(--cth-cream-100)',
+        borderBottom: '1px solid var(--cth-ink-100)', flexShrink: 0
       }}>
         <div style={{
           width: 32, height: 32, background: `var(--cth-${agent.accent}-light)`,
@@ -173,7 +176,7 @@ export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent
             wide buttons — everything here is single-line by construction. */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontFamily: 'var(--cth-font-display)', fontSize: 10, lineHeight: '14px', color: 'var(--cth-ink-900)',
+            fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-900)',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
           }}>{t('commandCenter.title')}</div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 1, minWidth: 0 }}>
@@ -257,12 +260,13 @@ export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent
         // global.css already hides that scrollbar.
         flexWrap: fullscreen ? 'nowrap' : 'wrap',
         overflowX: fullscreen ? 'auto' : 'visible',
-        padding: '6px 8px', background: 'var(--cth-cream-100)',
-        borderBottom: '1px solid var(--cth-ink-700)', flexShrink: 0
+        padding: '12px', background: 'var(--cth-cream-100)',
+        borderBottom: '1px solid var(--cth-ink-100)', flexShrink: 0
       }}>
         {visibleTabs.map((tabDef) => (
           <button
             key={tabDef.key}
+            aria-pressed={tab === tabDef.key}
             onClick={() => setTab(tabDef.key)}
             style={{
               whiteSpace: 'nowrap',
@@ -272,12 +276,12 @@ export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent
               flex: '1 0 auto',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
               padding: '4px 8px 3px', border: 'none', cursor: 'pointer',
-              background: tab === tabDef.key ? `var(--cth-${agent.accent})` : 'var(--cth-cream-200)',
+              background: tab === tabDef.key ? 'var(--cth-action-soft)' : 'var(--cth-paper-100)',
               // The selected tab is filled with the agent's accent, which is a
               // LIGHT colour in both themes. ink-900 flips to near-white in dark
               // mode, so the active tab's label was pale-on-pale — the one tab
               // you most need to read. On-accent text is dark in both themes.
-              color: tab === tabDef.key ? 'var(--cth-on-accent)' : 'var(--cth-ink-900)',
+              color: tab === tabDef.key ? 'var(--cth-action-text)' : 'var(--cth-ink-900)',
               boxShadow: tab === tabDef.key
                 ? 'inset 0 0 0 1px var(--cth-ink-300)'
                 : 'inset 0 0 0 1px var(--cth-ink-100)',
@@ -344,10 +348,11 @@ export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent
 // ─── Floor tab — roster, model, dispatch, dirs, assistant ────────────────────
 
 function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
+  useUiLanguage();
   const { t } = useTranslation();
   const rtl = useRtl();
   const agents = useStore((s) => s.agents);
-  const godName = agents.find((a) => a.isGod)?.name ?? 'the orchestrator';
+  const godName = agents.find((a) => a.isGod)?.name ?? uiText("the_orchestrator_fc0fec");
   const select = useStore((s) => s.select);
   const updateAgent = useStore((s) => s.updateAgent);
   const toolCounts = useStore((s) => s.toolCounts);
@@ -428,7 +433,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
       const provider = opts.provider ?? previousProvider;
       let resume = opts.resume === true && provider === previousProvider;
       if (opts.resume && !resume && !opts.resumeOptional) {
-        throw new Error('Cannot resume a session through a different provider.');
+        throw new Error(uiText("Cannot_resume_a_session_through_a_different_p_ea167b"));
       }
       let resumeSessionId: string | undefined;
       if (resume) {
@@ -442,9 +447,9 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
         const registry = await window.cth.hiveRegistry();
         resumeSessionId = registry.agents[a.id]?.sessionId;
         if (!resumeSessionId) {
-          giveUpOnResume('No recorded session ID; current process was left running.');
+          giveUpOnResume(uiText("No_recorded_session_ID_current_process_was_le_dc7d57"));
         } else if (provider === 'claude' && !(await window.cth.resolveSessionCwd(resumeSessionId))) {
-          giveUpOnResume('Session transcript not found; current process was left running.');
+          giveUpOnResume(uiText("Session_transcript_not_found_current_process__c348de"));
         }
       }
       // Capture the live grid before replacing anything. Restart & Continue
@@ -467,7 +472,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
       // `no pty: <id>`. Treating that as fatal aborted before the respawn and
       // turned the one situation the button exists for into a dead end.
       if (!killed.ok && !/^no pty:/.test(killed.error ?? '')) {
-        throw new Error(killed.error ?? 'Could not stop the current process.');
+        throw new Error(killed.error ?? uiText("Could_not_stop_the_current_process_36d806"));
       }
       if (resume) {
         // A blank xterm can retain corrupt renderer/DOM/subscription state even
@@ -479,7 +484,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
         updateAgent(a.id, {
           terminalGeneration: (a.terminalGeneration ?? 0) + 1,
           status: 'idle',
-          action: 'recreating terminal…'
+          action: uiText("recreating_terminal_f433b1")
         });
       } else {
         resetTerminal(a.ptyId);
@@ -508,9 +513,9 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
         resumeSessionId,
         requireResume: resume
       });
-      if (!res.ok) throw new Error(res.error ?? 'Restart failed.');
+      if (!res.ok) throw new Error(res.error ?? uiText("Restart_failed_5d4996"));
       if (resume && res.resumed !== true) {
-        throw new Error('Resume was refused; no replacement session was accepted.');
+        throw new Error(uiText("Resume_was_refused_no_replacement_session_was_e2204c"));
       }
       if (res.ok) {
         // Record the model even on a resume. A same-provider model change now
@@ -533,7 +538,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
               provider,
               model,
               status: 'idle' as const,
-              action: provider === previousProvider ? 'restarting…' : `switching to ${providerPreset(provider).label}…`
+              action: provider === previousProvider ? 'restarting…' : uiText('dynamic19', { v0: providerPreset(provider).label })
             };
         updateAgent(a.id, patch);
       }
@@ -574,7 +579,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
 
   const fetchIssues = async () => {
     const repo = issueRepo || repos[0];
-    if (!repo) { setIssuesError('No repo selected.'); return; }
+    if (!repo) { setIssuesError(uiText("No_repo_selected_f18fbc")); return; }
     setIssuesLoading(true);
     setIssuesError(null);
     try {
@@ -583,7 +588,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
         setIssues((res.issues ?? []).slice(0, 10));
       } else {
         setIssues([]);
-        setIssuesError(res.error ?? 'Failed to fetch issues.');
+        setIssuesError(res.error ?? uiText("Failed_to_fetch_issues_d069da"));
       }
     } catch (e) {
       setIssues([]);
@@ -638,9 +643,9 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
 
   return (
     <Scroll>
-      <Section title={t('commandCenter.dispatchViaMichael', { godName: godName.toUpperCase() })}>
+      <Section title={t('commandCenter.dispatchViaMichael', { godName: godName })}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-          <span style={{ fontFamily: 'var(--cth-font-display)', fontSize: 8, color: 'var(--cth-ink-500)', flexShrink: 0 }}>
+          <span style={{ fontFamily: 'var(--cth-font-display)', fontSize: 12, color: 'var(--cth-ink-500)', flexShrink: 0 }}>
             {t('commandCenter.suggestedOwner')}
           </span>
           <Select value={dispatchTo} onChange={setDispatchTo}>
@@ -709,17 +714,17 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
               >{a.name}{a.isGod ? t('commandCenter.godTag') : ''}</button>
               <PixelBadge status={armed ? 'looping' : a.status} />
               {armed && <span title={breaker?.reason} style={{ color: 'var(--cth-coral)', fontSize: 12 }}>⚠</span>}
-              <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--cth-ink-500)' }}>
+              <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--cth-ink-500)' }}>
                 {t('commandCenter.toolCalls', { count: toolCounts[a.id] ?? 0 })}
               </span>
               <TokenLimitEditor value={agentCap} onSet={(t) => setAgentCap(a.id, t)} />
             </div>
-            <div style={{ fontSize: 11, color: 'var(--cth-ink-500)', wordBreak: 'break-all' }}>{a.cwd}</div>
+            <div style={{ fontSize: 12, color: 'var(--cth-ink-500)', wordBreak: 'break-all' }}>{a.cwd}</div>
             {/* Live telemetry (folded in from the old Fleet tab) */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               {hasSpark ? (
                 <span style={{ flex: 1, minWidth: 0, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 10, color: 'var(--cth-ink-500)', flexShrink: 0 }}>{rateLabel}</span>
+                  <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 12, color: 'var(--cth-ink-500)', flexShrink: 0 }}>{rateLabel}</span>
                   <Sparkline series={sparkSeries} />
                 </span>
               ) : (
@@ -727,23 +732,23 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
               )}
               {lastTool[a.id] && (
                 <span style={{
-                  fontSize: 10, lineHeight: '14px', padding: '0 5px', flexShrink: 0,
+                  fontSize: 12, lineHeight: '18px', padding: '0 5px', flexShrink: 0,
                   background: 'var(--cth-paper-200)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)', color: 'var(--cth-ink-700)'
                 }}>{lastTool[a.id]}</span>
               )}
-              <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 10, color: 'var(--cth-ink-300)', flexShrink: 0 }}>{t('commandCenter.budget')}</span>
-              <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 11, color: 'var(--cth-ink-900)', width: 56, textAlign: 'right' }}>{fmtTokens(tokens)}</span>
+              <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 12, color: 'var(--cth-ink-300)', flexShrink: 0 }}>{t('commandCenter.budget')}</span>
+              <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 12, color: 'var(--cth-ink-900)', width: 56, textAlign: 'right' }}>{fmtTokens(tokens)}</span>
               <div
                 title={t('commandCenter.meterTitle', {
-                  used: tokens.toLocaleString(),
-                  limit: denom.toLocaleString(),
+                  used: tokens.toLocaleString(uiLocale()),
+                  limit: denom.toLocaleString(uiLocale()),
                   note: agentCap ? t('commandCenter.agentLimit') : t('commandCenter.floorBudget')
                 })}
                 style={{ width: 96, height: 8, background: 'var(--cth-cream-200)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)', flexShrink: 0 }}
               >
                 <div style={{ width: `${pct}%`, height: '100%', background: meterColor }} />
               </div>
-              <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 11, color: 'var(--cth-ink-500)', width: 30, textAlign: 'right' }}>{pct}%</span>
+              <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 12, color: 'var(--cth-ink-500)', width: 30, textAlign: 'right' }}>{pct}%</span>
             </div>
             {/* Context window — the SAME exact statusLine-fed numbers as the
                 avatar-card gauge (tokens currently in the window vs the real
@@ -752,30 +757,30 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
                 spend, this one is headroom before compaction. */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ flex: 1 }} />
-              <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 10, color: 'var(--cth-ink-300)', flexShrink: 0 }}>{t('commandCenter.ctx')}</span>
+              <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 12, color: 'var(--cth-ink-300)', flexShrink: 0 }}>{t('commandCenter.ctx')}</span>
               {a.contextTokens !== undefined && a.contextLimit ? (() => {
                 const cpct = Math.min(100, Math.round((a.contextTokens! / a.contextLimit!) * 100));
                 const ccolor = cpct >= 88 ? 'var(--cth-coral)' : cpct >= 75 ? 'var(--cth-lemon)' : `var(--cth-${a.accent})`;
                 return (
                   <>
-                    <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 11, color: 'var(--cth-ink-900)', width: 56, textAlign: 'right' }}>
+                    <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 12, color: 'var(--cth-ink-900)', width: 56, textAlign: 'right' }}>
                       {fmtTokens(a.contextTokens!)}
                     </span>
                     <div
                       title={t('commandCenter.contextTitle', {
-                        used: a.contextTokens!.toLocaleString(),
-                        limit: a.contextLimit!.toLocaleString(),
+                        used: a.contextTokens!.toLocaleString(uiLocale()),
+                        limit: a.contextLimit!.toLocaleString(uiLocale()),
                         pct: cpct
                       })}
                       style={{ width: 96, height: 8, background: 'var(--cth-cream-200)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)', flexShrink: 0 }}
                     >
                       <div style={{ width: `${cpct}%`, height: '100%', background: ccolor }} />
                     </div>
-                    <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 11, color: 'var(--cth-ink-500)', width: 30, textAlign: 'right' }}>{cpct}%</span>
+                    <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 12, color: 'var(--cth-ink-500)', width: 30, textAlign: 'right' }}>{cpct}%</span>
                   </>
                 );
               })() : (
-                <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 11, color: 'var(--cth-ink-300)' }}>
+                <span style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 12, color: 'var(--cth-ink-300)' }}>
                   {t('commandCenter.noStatusTick')}
                 </span>
               )}
@@ -830,7 +835,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
                   </optgroup>
                 ))}
               </Select>
-              <span style={{ fontSize: 11, color: 'var(--cth-ink-500)' }}>
+              <span style={{ fontSize: 12, color: 'var(--cth-ink-500)' }}>
                 {restarting === a.id
                   ? t('common.restarting')
                   : t('commandCenter.modelRestarts', { provider: agentPreset.label })}
@@ -855,13 +860,13 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
             </div>
             )}
             {restartErrors[a.id] && (
-              <div style={{ fontSize: 11, color: 'var(--cth-coral)' }}>
+              <div style={{ fontSize: 12, color: 'var(--cth-coral)' }}>
                 {restartErrors[a.id]}
               </div>
             )}
             {a.isGod && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 11, color: 'var(--cth-ink-500)', flexShrink: 0 }}>{t('commandCenter.engine')}</span>
+                <span style={{ fontSize: 12, color: 'var(--cth-ink-500)', flexShrink: 0 }}>{t('commandCenter.engine')}</span>
                 <Select
                   value={engineProvider}
                   disabled={restarting === a.id}
@@ -923,11 +928,11 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
         <div style={{
           display: 'flex', gap: 14, marginTop: 2, padding: '6px 8px',
           background: 'var(--cth-cream-200)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-100)',
-          fontFamily: 'var(--cth-font-mono)', fontSize: 11, color: 'var(--cth-ink-900)', flexWrap: 'wrap'
+          fontFamily: 'var(--cth-font-mono)', fontSize: 12, color: 'var(--cth-ink-900)', flexWrap: 'wrap'
         }}>
           <span>Σ <strong>{fmtTokens(sumTokens)}</strong> {t('costHud.tok')}</span>
           <span style={{ color: 'var(--cth-ink-700)' }}>{t('commandCenter.fleetInputs', { value: fmtTokens(sumInput), pct: fleetCachePct })}</span>
-          <span style={{ color: 'var(--cth-ink-700)' }}>{t('commandCenter.fleetRate', { value: Math.round(sumRate).toLocaleString() })}</span>
+          <span style={{ color: 'var(--cth-ink-700)' }}>{t('commandCenter.fleetRate', { value: Math.round(sumRate).toLocaleString(uiLocale()) })}</span>
         </div>
         <div style={{ marginTop: 6 }}>
           <Muted>
@@ -994,7 +999,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                     {issue.labels.map((label) => (
                       <span key={label} style={{
-                        fontSize: 10, lineHeight: '14px', padding: '0 5px',
+                        fontSize: 12, lineHeight: '18px', padding: '0 5px',
                         background: 'var(--cth-cream-200)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)',
                         color: 'var(--cth-ink-700)'
                       }}>{label}</span>
@@ -1013,6 +1018,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
 // ─── Archived agents — retained + flagged, kept off the floor ────────────────
 
 function ArchivedSection() {
+  useUiLanguage();
   const { t } = useTranslation();
   const archivedAgents = useStore((s) => s.archivedAgents);
   const removeArchivedAgent = useStore((s) => s.removeArchivedAgent);
@@ -1045,7 +1051,7 @@ function ArchivedSection() {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: 'var(--cth-font-ui)', fontSize: 12, color: 'var(--cth-ink-700)' }}>{a.name}</div>
-            <div style={{ fontSize: 11, color: 'var(--cth-ink-500)', wordBreak: 'break-all' }}>{a.cwd}</div>
+            <div style={{ fontSize: 12, color: 'var(--cth-ink-500)', wordBreak: 'break-all' }}>{a.cwd}</div>
           </div>
           <button
             onClick={() => removeArchivedAgent(a.id)}
@@ -1060,6 +1066,7 @@ function ArchivedSection() {
 // ─── Memory tab ──────────────────────────────────────────────────────────────
 
 function MemoryTab({ godId, who: controlledWho, onWho }: { godId: string; who?: string; onWho?: (id: string) => void }) {
+  useUiLanguage();
   const { t } = useTranslation();
   const agents = useStore((s) => s.agents);
   // Selection is controllable from the graph tab; falls back to local state.
@@ -1118,7 +1125,7 @@ function MemoryTab({ godId, who: controlledWho, onWho }: { godId: string; who?: 
           <div style={{ marginTop: 6 }}>
             {textResults.map((r, i) => (
               <div key={i} style={{ marginBottom: 4 }}>
-                <div style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 11, color: 'var(--cth-ink-500)' }}>{r.source}</div>
+                <div style={{ fontFamily: 'var(--cth-font-mono)', fontSize: 12, color: 'var(--cth-ink-500)' }}>{r.source}</div>
                 <Pre>{r.excerpt}</Pre>
               </div>
             ))}
@@ -1157,13 +1164,14 @@ function MemoryTab({ godId, who: controlledWho, onWho }: { godId: string; who?: 
 
 /** Block-character sparkline of recent token deltas — neo-brutalist mono. */
 function Sparkline({ series }: { series: number[] }) {
+  useUiLanguage();
   const blocks = '▁▂▃▄▅▆▇█';
   const max = Math.max(1, ...series);
   const text = series.length
     ? series.map((v) => blocks[Math.min(blocks.length - 1, Math.round((v / max) * (blocks.length - 1)))]).join('')
     : '▁▁▁▁▁▁';
   return (
-    <span style={{ flex: 1, fontFamily: 'var(--cth-font-mono)', fontSize: 12, lineHeight: '12px', color: 'var(--cth-sky)', whiteSpace: 'nowrap', overflow: 'hidden', minWidth: 0 }}>
+    <span style={{ flex: 1, fontFamily: 'var(--cth-font-mono)', fontSize: 12, lineHeight: '18px', color: 'var(--cth-sky)', whiteSpace: 'nowrap', overflow: 'hidden', minWidth: 0 }}>
       {text}
     </span>
   );
@@ -1181,6 +1189,7 @@ function fmtTokens(n: number): string {
  *  current limit as a lemon chip, or "set limit"; click to edit a token number.
  *  Enter / ✓ / blur commit; Escape cancels. */
 function TokenLimitEditor({ value, onSet }: { value?: number; onSet: (tokens: number | undefined) => void }) {
+  useUiLanguage();
   const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(value != null ? String(value) : '');
@@ -1200,7 +1209,7 @@ function TokenLimitEditor({ value, onSet }: { value?: number; onSet: (tokens: nu
           flexShrink: 0, padding: '1px 6px', border: 'none', cursor: 'pointer',
           background: value && value > 0 ? 'var(--cth-lemon)' : 'var(--cth-cream-200)',
           boxShadow: `inset 0 0 0 1px ${value && value > 0 ? 'var(--cth-ink-900)' : 'var(--cth-ink-700)'}`,
-          fontFamily: 'var(--cth-font-ui)', fontSize: 11, color: 'var(--cth-ink-900)'
+          fontFamily: 'var(--cth-font-ui)', fontSize: 12, color: 'var(--cth-ink-900)'
         }}
       >{value && value > 0
         ? <>{t('commandCenter.tokenLimit', { value: fmtTokens(value) })}</>
@@ -1222,12 +1231,12 @@ function TokenLimitEditor({ value, onSet }: { value?: number; onSet: (tokens: nu
         style={{
           width: 84, padding: '2px 4px', background: 'var(--cth-paper-100)', border: 'none',
           boxShadow: 'inset 0 0 0 1px var(--cth-ink-100)', fontFamily: 'var(--cth-font-mono)',
-          fontSize: 11, color: 'var(--cth-ink-900)', outline: 'none'
+          fontSize: 12, color: 'var(--cth-ink-900)', outline: 'none'
         }}
       />
       <button
         onMouseDown={(e) => e.preventDefault()} onClick={commit} title={t('commandCenter.saveLimit')}
-        style={{ flexShrink: 0, padding: '1px 5px', border: 'none', cursor: 'pointer', background: 'var(--cth-mint)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)', fontSize: 11, color: 'var(--cth-ink-900)' }}
+        style={{ flexShrink: 0, padding: '1px 5px', border: 'none', cursor: 'pointer', background: 'var(--cth-mint)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)', fontSize: 12, color: 'var(--cth-ink-900)' }}
       >✓</button>
     </span>
   );
@@ -1238,6 +1247,7 @@ function TokenLimitEditor({ value, onSet }: { value?: number; onSet: (tokens: nu
 interface LogEntry { ts?: number; kind?: string; [k: string]: unknown }
 
 function ActivityTab() {
+  useUiLanguage();
   const { t } = useTranslation();
   const [log, setLog] = useState<LogEntry[]>([]);
   const [board, setBoard] = useState('');
@@ -1287,6 +1297,7 @@ function ActivityTab() {
 // ─── small shared bits ───────────────────────────────────────────────────────
 
 function Scroll({ children }: { children: React.ReactNode }) {
+  useUiLanguage();
   // minWidth:0 + overflowX:hidden keep wide children (native selects, long paths,
   // budget rows) from forcing a horizontal scrollbar in the narrow sidebar — they
   // wrap/shrink instead. Vertical scroll stays.
@@ -1294,15 +1305,17 @@ function Scroll({ children }: { children: React.ReactNode }) {
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  useUiLanguage();
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 9, lineHeight: '12px', color: 'var(--cth-ink-500)', marginBottom: 6 }}>{title}</div>
+      <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)', marginBottom: 6 }}>{title}</div>
       {children}
     </div>
   );
 }
 
 function Centered({ children }: { children: React.ReactNode }) {
+  useUiLanguage();
   return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, textAlign: 'center', color: 'var(--cth-ink-700)', fontSize: 13, background: 'var(--cth-paper-200)' }}>
       {children}
@@ -1311,16 +1324,18 @@ function Centered({ children }: { children: React.ReactNode }) {
 }
 
 function Muted({ children }: { children: React.ReactNode }) {
+  useUiLanguage();
   return <div style={{ fontSize: 12, color: 'var(--cth-ink-500)' }}>{children}</div>;
 }
 
 function Pre({ children }: { children: React.ReactNode }) {
+  useUiLanguage();
   const rtl = useRtl();
   return (
     <pre style={{
       margin: '6px 0 0', padding: 8, maxHeight: 200, overflow: 'auto',
       background: 'var(--cth-paper-100)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)',
-      fontFamily: 'var(--cth-font-mono)', fontSize: 12, lineHeight: '16px',
+      fontFamily: 'var(--cth-font-mono)', fontSize: 12, lineHeight: '18px',
       color: 'var(--cth-ink-900)', whiteSpace: 'pre-wrap', wordBreak: 'break-word'
     }} dir={rtl ? 'auto' : undefined}>{children}</pre>
   );
@@ -1337,6 +1352,7 @@ const textareaStyle: React.CSSProperties = {
 function Select({ value, onChange, disabled, children }: {
   value: string; onChange: (v: string) => void; disabled?: boolean; children: React.ReactNode;
 }) {
+  useUiLanguage();
   return (
     <select
       value={value}

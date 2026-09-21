@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useState } from 'react';
 import { useStore, selectedAgent } from '@/store/store';
 import { startMockLoop, stopMockLoop } from '@/store/mockEvents';
@@ -38,6 +39,7 @@ import brandLogo from '@brand/logo.png?url';
 declare const __APP_VERSION__: string;
 
 export function App() {
+  useUiLanguage();
   // Point every {{godName}} string at the orchestrator's real, renameable name.
   useGodNameSync();
   // Mirror the document only for a user who has picked an RTL app language.
@@ -287,8 +289,8 @@ export function App() {
       <div
         className="cth-titlebar-drag"
         style={{
-          height: 36, minHeight: 36,
-          background: 'linear-gradient(180deg, var(--cth-cream-100) 0%, var(--cth-cream-200) 100%)',
+          height: 48, minHeight: 48,
+          background: 'var(--cth-paper-100)',
           borderBottom: '1px solid var(--cth-ink-300)',
           display: 'flex',
           alignItems: 'center',
@@ -305,13 +307,14 @@ export function App() {
         />
         {/* v0.3.7: the version is no longer inert text — it doubles as the
             update control (check / download / restart to update). */}
+        <span className="cth-shell-title">Casa da Índia</span>
         <UpdateBadge />
         <span style={{
           fontFamily: 'var(--cth-font-ui)',
           fontSize: 13,
           color: 'var(--cth-ink-500)'
         }}>
-          {config.autoMode ? 'auto mode on' : 'auto mode off'}
+          {config.autoMode ? uiText("auto_mode_on_8318a9") : uiText("auto_mode_off_4ce3b7")}
         </span>
         {/* v0.3.4: theme + fullscreen live HERE (top right), not buried in the
             terminal header — and the theme darkens the whole app, terminals
@@ -333,12 +336,12 @@ export function App() {
             // harness agents — the user's global Claude theme is never touched.
             void window.cth.updateConfig({ terminalTheme: next });
           }}
-          data-tip={appThemeNow === 'dark' ? 'Light theme' : 'Dark theme'}
-          aria-label="Toggle dark mode"
+          data-tip={appThemeNow === 'dark' ? uiText("Light_theme_9e5ba0") : uiText("Dark_theme_d51c59")}
+          aria-label={uiText("Toggle_dark_mode_2dda3c")}
           style={{
             marginLeft: 'auto',
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            width: 28, height: 28, padding: 0,
+            width: 32, height: 32, padding: 0,
             background: 'var(--cth-paper-100)',
             boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)',
             border: 'none', borderRadius: 2, cursor: 'pointer',
@@ -352,11 +355,11 @@ export function App() {
         <button
           className="cth-titlebar-nodrag cth-settings-btn cth-tip"
           onClick={() => { setSettingsSection(undefined); setSettingsOpen(true); }}
-          data-tip="Settings"
-          aria-label="Settings"
+          data-tip={uiText("Settings_c7f73b")}
+          aria-label={uiText("Settings_c7f73b")}
           style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            width: 28, height: 28, padding: 0,
+            width: 32, height: 32, padding: 0,
             background: 'var(--cth-paper-100)',
             boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)',
             border: 'none', borderRadius: 2, cursor: 'pointer',
@@ -379,11 +382,11 @@ export function App() {
               ?? all.find((x) => x.ptyId);
             if (target) useStore.getState().setFullscreen(target.id);
           }}
-          data-tip={fullscreenAgentId ? 'Exit focus mode (Esc)' : 'Focus mode'}
-          aria-label="Toggle focus mode"
+          data-tip={fullscreenAgentId ? uiText("Exit_focus_mode_Esc_dea8d7") : uiText("Focus_mode_9a2af5")}
+          aria-label={uiText("Toggle_focus_mode_fab6c7")}
           style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            width: 28, height: 28, padding: 0,
+            width: 32, height: 32, padding: 0,
             background: 'var(--cth-paper-100)',
             boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)',
             border: 'none', borderRadius: 2, cursor: 'pointer',
@@ -412,15 +415,12 @@ export function App() {
               pointerEvents: 'none'
             }}>
               <div style={{ pointerEvents: 'auto', width: 360 }}>
-                <PixelPanel variant="dialog" title="A CASA ESTÁ PRONTA" noPadding>
+                <PixelPanel variant="dialog" title={uiText("A_CASA_ESTA_PRONTA_c92b20")} noPadding>
                   <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <p style={{ margin: 0, fontSize: 13, lineHeight: '20px' }}>
-                      Adiciona um agente para começar a trabalhar e acompanhar o seu terminal.
-                    </p>
+                    <p style={{ margin: 0, fontSize: 13, lineHeight: '20px' }}> {uiText("Adiciona_um_agente_para_comecar_a_trabalhar_e_4c2b13")} </p>
                     <PixelButton variant="primary" size="md" onClick={() => setAddAgentOpen(true)}>
                       <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
-                        <Icon name="plus" /> Adicionar agente
-                      </span>
+                        <Icon name="plus" /> {uiText("Adicionar_agente_389bb0")} </span>
                     </PixelButton>
                   </div>
                 </PixelPanel>
@@ -451,11 +451,9 @@ export function App() {
               <div style={{
                 fontFamily: 'var(--cth-font-display)', fontSize: 10, lineHeight: '14px',
                 color: 'var(--cth-ink-500)'
-              }}>WAKING THE FLOOR</div>
+              }}>{uiText("WAKING_THE_FLOOR_33e06c")}</div>
               <p style={{ margin: 0, fontSize: 13, textAlign: 'center', color: 'var(--cth-ink-700)' }}>
-                {bootingGodName} is clocking in.<br />
-                The terminal will land here once he's seated.
-              </p>
+                {bootingGodName} {uiText("is_clocking_in_73aef5")}<br /> {uiText("The_terminal_will_land_here_once_he_s_seated_f8a52e")} </p>
             </PixelPanel>
           ) : (
             <PixelPanel variant="default" noPadding style={{
@@ -466,15 +464,11 @@ export function App() {
               <div style={{
                 fontFamily: 'var(--cth-font-display)', fontSize: 10, lineHeight: '14px',
                 color: 'var(--cth-ink-500)'
-              }}>NO AGENT SELECTED</div>
-              <p style={{ margin: 0, fontSize: 13, textAlign: 'center', color: 'var(--cth-ink-700)' }}>
-                Spawn an agent from the strip below.<br />
-                The terminal and command bar will land here.
-              </p>
+              }}>{uiText("NO_AGENT_SELECTED_ac6c0d")}</div>
+              <p style={{ margin: 0, fontSize: 13, textAlign: 'center', color: 'var(--cth-ink-700)' }}> {uiText("Spawn_an_agent_from_the_strip_below_38f9e6")}<br /> {uiText("The_terminal_and_command_bar_will_land_here_4de943")} </p>
               <PixelButton variant="secondary" size="md" onClick={() => setAddAgentOpen(true)}>
                 <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
-                  <Icon name="plus" /> Adicionar agente
-                </span>
+                  <Icon name="plus" /> {uiText("Adicionar_agente_389bb0")} </span>
               </PixelButton>
             </PixelPanel>
           )}
@@ -528,6 +522,7 @@ export function App() {
    beside the OS traffic lights, which is the one place that identity reads as a
    blurry asset rather than a decision. */
 function Glyph({ children }: { children: React.ReactNode }) {
+  useUiLanguage();
   return (
     <svg
       width="16" height="16" viewBox="0 0 16 16" fill="none"
@@ -540,6 +535,7 @@ function Glyph({ children }: { children: React.ReactNode }) {
 
 /** Four outward corner brackets — enter fullscreen. */
 function ExpandGlyph() {
+  useUiLanguage();
   return (
     <Glyph>
       <path d="M6.2 3H3v3.2M9.8 3H13v3.2M6.2 13H3V9.8M9.8 13H13V9.8" />
@@ -549,6 +545,7 @@ function ExpandGlyph() {
 
 /** The same brackets turned inward — leave fullscreen. */
 function CollapseGlyph() {
+  useUiLanguage();
   return (
     <Glyph>
       <path d="M3 6.2h3.2V3M13 6.2H9.8V3M3 9.8h3.2V13M13 9.8H9.8V13" />
@@ -562,6 +559,7 @@ function CollapseGlyph() {
  *  without competing with its neighbour. Drawn on a 24 box for curve headroom
  *  and rendered at 16. */
 function GearGlyph() {
+  useUiLanguage();
   return (
     <svg
       width="16" height="16" viewBox="0 0 24 24" fill="none"

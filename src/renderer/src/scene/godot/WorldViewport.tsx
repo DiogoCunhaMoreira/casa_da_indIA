@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/store/store';
 import { ELENCO } from '@/scene/office/casadaindia/elenco';
@@ -6,6 +7,7 @@ import { allocateWorldSeats, isWorldRequest, WORLD_ORIGIN, WORLD_ROOMS, type Wor
 const read = (key: string) => { try { return localStorage.getItem(key); } catch { return null; } };
 const save = (key: string, value: string) => { try { localStorage.setItem(key, value); } catch { /* session still works */ } };
 export function WorldViewport() {
+  useUiLanguage();
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
   const [summary, setSummary] = useState<{ todo: number; doing: number; done: number; blocked: number; questions: number } | null>(null);
@@ -46,7 +48,7 @@ export function WorldViewport() {
     };
     publish.current = snapshot;
     const handshake = setInterval(() => { if (!connected) post({ type: 'hello' }); }, 500);
-    const timeout = setTimeout(() => { if (alive && !connected) setError('O cenário não respondeu. Tenta carregar novamente. Os agentes continuam disponíveis.'); }, 60000);
+    const timeout = setTimeout(() => { if (alive && !connected) setError(uiText('worldTimeout')); }, 60000);
     const receive = (event: MessageEvent) => {
       if (event.source !== frame.current?.contentWindow || event.origin !== WORLD_ORIGIN || !isWorldRequest(event.data)) return;
       const message = event.data;
@@ -101,24 +103,24 @@ export function WorldViewport() {
     return () => { alive = false; offMessage?.(); clearInterval(taskTimer); clearInterval(handshake); clearTimeout(timeout); clearTimeout(pending); unsubscribe(); window.removeEventListener('message', receive); document.removeEventListener('visibilitychange', snapshot); };
   }, [generation]);
   return <div style={{ height: '100%', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '6px 10px', background: 'var(--cth-paper-100)' }}>
+    <div className="cth-world-toolbar" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '6px 10px', background: 'var(--cth-paper-100)' }}>
       <strong>Casa da Índia</strong>
-      <select aria-label="Sala" value={view} onChange={e => { room.current = e.target.value as WorldRoom; setView(room.current); save('casa.world.room', room.current); publish.current(); }}>
-        {WORLD_ROOMS.map((r, i) => <option key={r} value={r}>{['Planta geral', 'Gabinete', 'Escrivães', 'Conselho', 'Cartografia', 'Tesouraria', 'Refeitório'][i]}</option>)}
-      </select><button aria-label="Aproximar" onClick={() => control('zoom_in')}>+</button><button aria-label="Afastar" onClick={() => control('zoom_out')}>−</button><button onClick={() => control('walls')}>Paredes</button>
-      {!ready && !error && <span role="status">A carregar o cenário…</span>}
+      <select aria-label={uiText("Sala_985f15")} value={view} onChange={e => { room.current = e.target.value as WorldRoom; setView(room.current); save('casa.world.room', room.current); publish.current(); }}>
+        {WORLD_ROOMS.map((r, i) => <option key={r} value={r}>{uiText(['roomOverview', 'roomOffice', 'roomScribes', 'roomCouncil', 'roomMaps', 'roomTreasury', 'roomDining'][i])}</option>)}
+      </select><button aria-label={uiText("Aproximar_e85804")} onClick={() => control('zoom_in')}>+</button><button aria-label={uiText("Afastar_36cff4")} onClick={() => control('zoom_out')}>−</button><button onClick={() => control('walls')}>{uiText("Paredes_6b367e")}</button>
+      {!ready && !error && <span role="status">{uiText("A_carregar_o_cenario_362adc")}</span>}
     </div>
-    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '6px 10px', background: 'var(--cth-paper-100)', fontSize: 12 }}>
-      <button onClick={() => openPanel('tasks')}>{summary ? `${summary.todo} por fazer · ${summary.doing} em curso · ${summary.done} concluídas · ${summary.blocked} bloqueadas` : 'Tarefas'}</button>
-      <button onClick={() => openPanel('human')}>Perguntas{summary ? ` · ${summary.questions}` : ''}</button>
-      <span style={{ marginLeft: 'auto' }}>Arrasta para mover · roda ou pinça para aproximar</span>
+    <div className="cth-world-toolbar" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '6px 10px', background: 'var(--cth-paper-100)', fontSize: 12 }}>
+      <button onClick={() => openPanel('tasks')}>{summary ? uiText('dynamic20', { v0: summary.todo, v1: summary.doing, v2: summary.done, v3: summary.blocked }) : uiText('worldTasks')}</button>
+      <button onClick={() => openPanel('human')}>{uiText("Perguntas_820953")}{summary ? ` · ${summary.questions}` : ''}</button>
+      <span style={{ marginLeft: 'auto' }}>{uiText("Arrasta_para_mover_roda_ou_pinca_para_aproxim_cccb54")}</span>
     </div>
     <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
-      <iframe key={generation} ref={frame} title="Casa da Índia — mundo 3D" src={`${WORLD_ORIGIN}/index.html`}
+      <iframe key={generation} ref={frame} title={uiText("Casa_da_India_mundo_3D_fb0926")} src={`${WORLD_ORIGIN}/index.html`}
         sandbox="allow-scripts allow-same-origin" allow="fullscreen" style={{ width: '100%', height: '100%', border: 0 }} />
       {error && <div role="alert" style={{ position: 'absolute', inset: 20, background: 'var(--cth-paper-100)', padding: 24 }}>
-        <p>{error}</p><p>Os agentes e terminais continuam disponíveis.</p>
-        <button onClick={() => setGeneration(g => g + 1)}>Tentar novamente</button>
+        <p>{error}</p><p>{uiText("Os_agentes_e_terminais_continuam_disponiveis_2af835")}</p>
+        <button onClick={() => setGeneration(g => g + 1)}>{uiText("Tentar_novamente_04fc24")}</button>
       </div>}
     </div>
   </div>;

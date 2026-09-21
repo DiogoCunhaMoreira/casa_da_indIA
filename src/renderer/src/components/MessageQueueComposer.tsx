@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { ClipboardEvent, DragEvent, KeyboardEvent, type MouseEvent as ReactMouseEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +32,7 @@ export interface MessageQueueComposerProps {
  * TUI one-by-one as soon as it goes idle (see useHive's flush loop).
  */
 export function MessageQueueComposer({ agent }: MessageQueueComposerProps) {
+  useUiLanguage();
   const { t } = useTranslation();
   const rtl = useRtl();
   const queue = useStore((s) => s.messageQueues[agent.id]) ?? EMPTY_QUEUE;
@@ -205,7 +207,7 @@ export function MessageQueueComposer({ agent }: MessageQueueComposerProps) {
       }}>
       {dragOver && (
         <span style={{
-          fontFamily: 'var(--cth-font-display)', fontSize: 9, lineHeight: '12px',
+          fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
           color: 'var(--cth-ink-700)', textAlign: 'center'
         }}>{t('queueComposer.dropToAttach')}</span>
       )}
@@ -213,12 +215,12 @@ export function MessageQueueComposer({ agent }: MessageQueueComposerProps) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{
           fontFamily: 'var(--cth-font-display)',
-          fontSize: 9, lineHeight: '12px',
+          fontSize: 12, lineHeight: '18px',
           color: 'var(--cth-ink-700)'
         }}>{t('queueComposer.queue')}</span>
         {queue.length > 0 && (
           <span style={{
-            fontSize: 11, padding: '1px 6px 0',
+            fontSize: 12, padding: '1px 6px 0',
             background: 'var(--cth-cream-200)',
             boxShadow: 'inset 0 0 0 1px var(--cth-ink-100)',
             fontFamily: 'var(--cth-font-ui)', color: 'var(--cth-ink-900)'
@@ -251,8 +253,8 @@ export function MessageQueueComposer({ agent }: MessageQueueComposerProps) {
               if (discarded.trim()) setText(text ? `${text}\n${discarded}` : discarded);
             }}
             title={block === 'picker'
-              ? "Close the picker this agent has open so queued messages can be delivered"
-              : "Move the leftover text on this agent's prompt into this box so queued messages can be delivered"}
+              ? uiText("Close_the_picker_this_agent_has_open_so_queue_0f5c37")
+              : uiText("Move_the_leftover_text_on_this_agent_s_prompt_6283a9")}
             style={{
               border: 'none', background: 'transparent', cursor: 'pointer', padding: 0,
               fontFamily: 'var(--cth-font-ui)', fontSize: 12,
@@ -296,7 +298,7 @@ export function MessageQueueComposer({ agent }: MessageQueueComposerProps) {
       {/* Free Flow recording / transcription status (entry point A) */}
       {ffHint && (
         <span style={{
-          fontSize: 12, lineHeight: '16px',
+          fontSize: 12, lineHeight: '18px',
           color: ff.error && !(ffMine && ff.status !== 'idle') ? 'var(--cth-coral)' : 'var(--cth-ink-500)',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
         }}>{ffHint}</span>
@@ -315,7 +317,7 @@ export function MessageQueueComposer({ agent }: MessageQueueComposerProps) {
                 padding: '2px 4px 2px 6px',
                 background: 'var(--cth-cream-200)',
                 boxShadow: 'inset 0 0 0 1px var(--cth-ink-100)',
-                fontFamily: 'var(--cth-font-mono)', fontSize: 12, lineHeight: '16px',
+                fontFamily: 'var(--cth-font-mono)', fontSize: 12, lineHeight: '18px',
                 color: 'var(--cth-ink-900)'
               }}
             >
@@ -446,6 +448,7 @@ function QueuedMessageRow(
     onRemove: () => void;
   }
 ) {
+  useUiLanguage();
   const { t } = useTranslation();
   const rtl = useRtl();
   const [expanded, setExpanded] = useState(false);
@@ -506,7 +509,7 @@ function QueuedMessageRow(
                 title={expanded ? t('queueComposer.collapse') : t('queueComposer.showFull')}
                 style={{
                   border: 'none', background: 'transparent', cursor: 'pointer', padding: 0,
-                  fontFamily: 'var(--cth-font-ui)', fontSize: 12, lineHeight: '16px',
+                  fontFamily: 'var(--cth-font-ui)', fontSize: 12, lineHeight: '18px',
                   color: 'var(--cth-ink-500)', textDecoration: 'underline'
                 }}
               >{expanded ? t('queueComposer.seeLess') : t('queueComposer.seeMore')}</button>
@@ -517,13 +520,13 @@ function QueuedMessageRow(
                 title={t('queueComposer.sendNowTitle')}
                 style={{
                   border: 'none', background: 'transparent', cursor: 'pointer', padding: 0,
-                  fontFamily: 'var(--cth-font-ui)', fontSize: 12, lineHeight: '16px',
+                  fontFamily: 'var(--cth-font-ui)', fontSize: 12, lineHeight: '18px',
                   color: 'var(--cth-ink-900)', textDecoration: 'underline'
                 }}
               >{t('queueComposer.sendNow')}</button>
             )}
             {paused && message.manual && (
-              <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+              <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                 {t('queueComposer.sendingWhenFree')}
               </span>
             )}
@@ -559,6 +562,7 @@ function QueuedMessageRow(
  * guarantee). `hasGroqKey` is boolean presence only; the key value never gets here.
  */
 function FreeFlowButton({ agentId, hasGroqKey }: { agentId: string; hasGroqKey: boolean }) {
+  useUiLanguage();
   const { t } = useTranslation();
   const ff = useFreeflow();
   const mine = ff.targetAgentId === agentId;
@@ -678,13 +682,13 @@ function FreeFlowButton({ agentId, hasGroqKey }: { agentId: string; hasGroqKey: 
                 display: 'flex', flexDirection: 'column', gap: 7,
                 background: 'var(--cth-paper-100)',
                 boxShadow: 'inset 0 0 0 1.5px var(--cth-ink-500), 4px 4px 0 rgba(26,19,32,0.25)',
-                fontFamily: 'var(--cth-font-ui)', fontSize: 11, lineHeight: '15px',
+                fontFamily: 'var(--cth-font-ui)', fontSize: 12, lineHeight: '18px',
                 color: 'var(--cth-ink-900)', textAlign: 'left', whiteSpace: 'normal'
               }}
             >
               <span style={{
-                fontFamily: 'var(--cth-font-display)', fontSize: 9, letterSpacing: 0.5,
-                textTransform: 'uppercase', color: 'var(--cth-ink-500)'
+                fontFamily: 'var(--cth-font-display)', fontSize: 12, letterSpacing: 0.5,
+                textTransform: 'none', color: 'var(--cth-ink-500)'
               }}>{t('queueComposer.ffSetupTitle')}</span>
 
               {/* Lead with the cost, because "add an API key" reads as "this will
@@ -716,7 +720,7 @@ function FreeFlowButton({ agentId, hasGroqKey }: { agentId: string; hasGroqKey: 
                 style={{
                   border: 'none', background: 'none', padding: 0, cursor: 'pointer',
                   alignSelf: 'flex-start',
-                  fontFamily: 'var(--cth-font-ui)', fontSize: 11, lineHeight: '15px',
+                  fontFamily: 'var(--cth-font-ui)', fontSize: 12, lineHeight: '18px',
                   color: 'var(--cth-ink-900)', textDecoration: 'underline'
                 }}
               >				{t('realtimeToggle.setItUpNow')}</button>

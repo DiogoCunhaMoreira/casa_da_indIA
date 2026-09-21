@@ -36,7 +36,10 @@ const pathsOf = (o) => new Map(leaves(o));
 /** Source with comments removed, for assertions about what the CODE does. */
 const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 
-const en = locale('en');
+// Newly extracted interface strings were previously hardcoded English.
+// Their pt-PT translation is complete; other locales deliberately use i18next's
+// English fallback until translated. Keep the original locale coverage strict.
+const { interface: extractedInterface, ...en } = locale('en');
 const ar = locale('ar');
 const zh = locale('zh-CN');
 
@@ -268,4 +271,19 @@ test('the terminal setting still explains its performance cost, in every locale'
   }
   // en names the two renderers explicitly; that is the substance of the note.
   assert.match(en.settings.general.arabicTerminalDesc, /GPU/);
+});
+
+ test('new interface messages resolve through the English fallback in ar and zh-CN', async () => {
+  const instance = require('i18next').createInstance();
+  await instance.init({ lng: 'ar', fallbackLng: 'en', resources: {
+    en: { translation: locale('en') }, ar: { translation: ar }, 'zh-CN': { translation: zh }
+  } });
+  for (const lng of ['ar', 'zh-CN']) {
+    await instance.changeLanguage(lng);
+    for (const key of Object.keys(extractedInterface)) {
+      const result = instance.t(`interface.${key}`, { returnDetails: true });
+      assert.equal(result.usedLng, 'en', `${lng}: ${key} must resolve via fallback`);
+      assert.notEqual(result.res, `interface.${key}`);
+    }
+  }
 });

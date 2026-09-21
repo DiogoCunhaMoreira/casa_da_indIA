@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PixelButton } from './PixelButton';
@@ -45,6 +46,7 @@ function dependentsTree(id: string, all: HiveTask[], seen = new Set<string>()): 
 }
 
 export function AskMeTab() {
+  useUiLanguage();
   const { t: translate } = useTranslation();
   const rtl = useRtl();
   const agents = useStore((s) => s.agents);
@@ -114,7 +116,7 @@ export function AskMeTab() {
       const result = updated
         ? await window.cth.hivePatchTask(task.id, { humanQA: updated.humanQA })
         : { ok: false };
-      if (!result.ok) throw new Error('task changed before answer could be saved');
+      if (!result.ok) throw new Error(uiText("task_changed_before_answer_could_be_saved_e7c6e1"));
       setTasks(next);
       // 2) Tell the god, so the card gets unblocked and work continues.
       await window.cth.hiveSend({
@@ -156,7 +158,7 @@ export function AskMeTab() {
       const result = updated
         ? await window.cth.hivePatchTask(task.id, { humanQA: updated.humanQA })
         : { ok: false };
-      if (!result.ok) throw new Error('task changed before ask could be dismissed');
+      if (!result.ok) throw new Error(uiText("task_changed_before_ask_could_be_dismissed_c0ea99"));
     } catch {
       setTasks(tasks); // restore on failure so the user can retry
     }
@@ -170,7 +172,7 @@ export function AskMeTab() {
       {waiting.length === 0 && (
         <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--cth-ink-500)', fontSize: 12 }}>
           {translate('askMe.emptyTitle')}<br />
-          <span style={{ fontSize: 11, color: 'var(--cth-ink-300)' }}>
+          <span style={{ fontSize: 12, color: 'var(--cth-ink-300)' }}>
             {translate('askMe.emptySub')}
           </span>
         </div>
@@ -260,7 +262,7 @@ export function AskMeTab() {
                     title={translate('askMe.viewAnswersHistory')}
                     style={{
                       border: 'none', background: 'transparent', cursor: 'pointer', padding: 0,
-                      fontSize: 10, color: 'var(--cth-ink-700)', fontFamily: 'var(--cth-font-display)',
+                      fontSize: 12, color: 'var(--cth-ink-700)', fontFamily: 'var(--cth-font-display)',
                       textDecoration: 'underline'
                     }}
                   >
@@ -277,7 +279,7 @@ export function AskMeTab() {
               {/* the cascade: what's stuck behind this answer */}
               {stuck.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 8, color: 'var(--cth-coral)' }}>
+                  <div style={{ fontFamily: 'var(--cth-font-display)', fontSize: 12, color: 'var(--cth-coral)' }}>
                     {stuck.length === 1
                       ? translate('askMe.blockingDownstream', { count: stuck.length })
                       : translate('askMe.blockingDownstreamPlural', { count: stuck.length })}
@@ -291,11 +293,11 @@ export function AskMeTab() {
                       <span style={{ color: 'var(--cth-ink-300)' }}>└</span>
                       <span style={{ width: 7, height: 7, flexShrink: 0, background: d.status === 'blocked' ? 'var(--cth-coral)' : 'var(--cth-sky)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)' }} />
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.title}</span>
-                      {nameFor(d.assignee) && <span style={{ fontSize: 10, color: 'var(--cth-ink-500)' }}>({nameFor(d.assignee)})</span>}
+                      {nameFor(d.assignee) && <span style={{ fontSize: 12, color: 'var(--cth-ink-500)' }}>({nameFor(d.assignee)})</span>}
                     </div>
                   ))}
                   {stuck.length > 6 && (
-                    <div style={{ paddingLeft: 14, fontSize: 11, color: 'var(--cth-ink-300)' }}>{translate('askMe.more', { count: stuck.length - 6 })}</div>
+                    <div style={{ paddingLeft: 14, fontSize: 12, color: 'var(--cth-ink-300)' }}>{translate('askMe.more', { count: stuck.length - 6 })}</div>
                   )}
                 </div>
               )}

@@ -1,3 +1,6 @@
+import { uiPalette } from '@/design/uiPalette';
+import { useAppTheme } from '@/design/theme';
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useRef } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
@@ -39,6 +42,8 @@ export interface TerminalViewProps {
 }
 
 export function TerminalView({ initialLines = [], feed = [] }: TerminalViewProps) {
+  useUiLanguage();
+  const appTheme = useAppTheme();
   const hostRef = useRef<HTMLDivElement | null>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
@@ -47,7 +52,7 @@ export function TerminalView({ initialLines = [], feed = [] }: TerminalViewProps
   useEffect(() => {
     if (!hostRef.current) return;
     const term = new Terminal({
-      theme,
+      theme: { ...theme, background: uiPalette[appTheme].paper, foreground: uiPalette[appTheme].ink },
       fontFamily: '"JetBrains Mono", "SF Mono", Menlo, monospace',
       fontSize: 13,
       lineHeight: 1.0,
@@ -79,6 +84,14 @@ export function TerminalView({ initialLines = [], feed = [] }: TerminalViewProps
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (termRef.current) termRef.current.options.theme = { ...theme,
+      background: uiPalette[appTheme].paper, foreground: uiPalette[appTheme].ink,
+      cursor: uiPalette[appTheme].ink, cursorAccent: uiPalette[appTheme].paper,
+      selectionBackground: uiPalette[appTheme].selection, selectionForeground: uiPalette[appTheme].ink
+    };
+  }, [appTheme]);
 
   useEffect(() => {
     const term = termRef.current;
@@ -117,9 +130,7 @@ export function TerminalView({ initialLines = [], feed = [] }: TerminalViewProps
         <span style={{
           width: 8, height: 8, background: 'var(--cth-coral)',
           boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)'
-        }} />
-        live · pipe-pane
-      </div>
+        }} /> {uiText("live_pipe_pane_4e6723")} </div>
       <div ref={hostRef} style={{ flex: 1, minHeight: 0 }} />
     </div>
   );

@@ -73,9 +73,9 @@ test('every per-agent string has a call site that actually passes a name', () =>
   }
 });
 
-test('en and zh-CN carry exactly the same keys', () => {
-  const en = Object.keys(flatten(locale('en'))).sort();
-  const zh = Object.keys(flatten(locale('zh-CN'))).sort();
+test('en and zh-CN retain the same translated keys outside the new fallback interface', () => {
+  const en = Object.keys(flatten(locale('en'))).filter(k => !k.startsWith('interface.')).sort();
+  const zh = Object.keys(flatten(locale('zh-CN'))).filter(k => !k.startsWith('interface.')).sort();
   assert.deepEqual(zh, en);
 });
 
@@ -85,6 +85,7 @@ test('every {{placeholder}} in en has the same placeholders in zh-CN', () => {
   const zh = flatten(locale('zh-CN'));
   const vars = (v) => [...new Set((text(v).match(/\{\{(\w+)\}\}/g) || []))].sort();
   const drift = Object.keys(en)
+    .filter((k) => !k.startsWith('interface.')) // new extracted strings use the tested English fallback
     .filter((k) => JSON.stringify(vars(en[k])) !== JSON.stringify(vars(zh[k])))
     .map((k) => `${k}: en=${vars(en[k])} zh=${vars(zh[k])}`);
   assert.deepEqual(drift, [], `placeholder drift:\n  ${drift.join('\n  ')}`);

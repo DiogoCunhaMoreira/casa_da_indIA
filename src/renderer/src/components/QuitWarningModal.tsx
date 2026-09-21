@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useState } from 'react';
 import { PixelPanel } from './PixelPanel';
 import { PixelButton } from './PixelButton';
@@ -24,6 +25,7 @@ export interface QuitWarningModalProps {
 }
 
 export function QuitWarningModal({ ptyCount, closing, onCancel, onConfirm, onClosingTime }: QuitWarningModalProps) {
+  useUiLanguage();
   const [busy, setBusy] = useState(false);
 
   const confirm = async () => {
@@ -54,7 +56,7 @@ export function QuitWarningModal({ ptyCount, closing, onCancel, onConfirm, onClo
         onClick={(e) => e.stopPropagation()}
         style={{ width: 480, maxWidth: '92vw' }}
       >
-        <PixelPanel variant="dialog" title={inClosingTime ? 'CLOSING TIME' : 'QUITTING NOW?'} noPadding>
+        <PixelPanel variant="dialog" title={inClosingTime ? uiText("CLOSING_TIME_d37520") : uiText("QUITTING_NOW_290ddb")} noPadding>
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
             {inClosingTime ? (
               <>
@@ -77,19 +79,16 @@ export function QuitWarningModal({ ptyCount, closing, onCancel, onConfirm, onClo
                       marginBottom: 4
                     }}>
                       {closing!.phase === 'complete'
-                        ? 'FLOOR SAVED — SEE YOU TOMORROW'
+                        ? uiText("FLOOR_SAVED_SEE_YOU_TOMORROW_d6d116")
                         : closing!.phase === 'timeout'
-                          ? 'STILL WRAPPING UP…'
-                          : 'WRAPPING UP THE FLOOR'}
+                          ? uiText("STILL_WRAPPING_UP_52c557")
+                          : uiText("WRAPPING_UP_THE_FLOOR_4dc0c5")}
                     </div>
                     <div style={{ fontSize: 15, lineHeight: '22px', color: 'var(--cth-ink-700)' }}>
                       {closing!.phase === 'complete' ? (
-                        <>Every agent saved its memory and the orchestrator confirmed the
-                        shutdown. The harness closes itself in a moment.</>
+                        <>{uiText("Every_agent_saved_its_memory_and_the_orchestr_794187")}</>
                       ) : (
-                        <>The orchestrator broadcast closing time. Every worker parks its
-                        work, saves its memory, and reports back — the app closes only
-                        after the orchestrator confirms nothing will be lost.</>
+                        <>{uiText("The_orchestrator_broadcast_closing_time_Every_ce6b7c")}</>
                       )}
                     </div>
                   </div>
@@ -105,24 +104,19 @@ export function QuitWarningModal({ ptyCount, closing, onCancel, onConfirm, onClo
                   fontFamily: 'var(--cth-font-display)'
                 }}>
                   {closing!.total > 0
-                    ? `${closing!.acked} / ${closing!.total} WORKERS CONFIRMED${closing!.acked >= closing!.total ? ' — WAITING FOR THE ORCHESTRATOR' : ''}`
-                    : 'NO WORKERS ON THE FLOOR — WAITING FOR THE ORCHESTRATOR'}
+                    ? uiText('dynamic13', { v0: closing!.acked, v1: closing!.total, v2: closing!.acked >= closing!.total ? uiText("WAITING_FOR_THE_ORCHESTRATOR_4375d1") : '' })
+                    : uiText("NO_WORKERS_ON_THE_FLOOR_WAITING_FOR_THE_ORCHE_bb5c3c")}
                   {closing!.phase === 'timeout' && (
-                    <div style={{ marginTop: 6, fontFamily: 'var(--cth-font-body, inherit)' }}>
-                      This is taking a while (an agent may be mid-compaction or deep in a
-                      tool call). Keep waiting, or force quit and accept the data loss.
-                    </div>
+                    <div style={{ marginTop: 6, fontFamily: 'var(--cth-font-body, inherit)' }}> {uiText("This_is_taking_a_while_an_agent_may_be_mid_co_ce56e1")} </div>
                   )}
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                   {closing!.phase !== 'complete' && (
                     <>
-                      <PixelButton variant="secondary" size="md" onClick={onCancel} disabled={busy}>
-                        cancel — back to work
-                      </PixelButton>
+                      <PixelButton variant="secondary" size="md" onClick={onCancel} disabled={busy}> {uiText("cancel_back_to_work_5ba905")} </PixelButton>
                       <PixelButton variant="destructive" size="md" onClick={confirm} disabled={busy}>
-                        {busy ? 'killing...' : 'force quit now'}
+                        {busy ? 'killing...' : uiText("force_quit_now_50f1e1")}
                       </PixelButton>
                     </>
                   )}
@@ -148,14 +142,9 @@ export function QuitWarningModal({ ptyCount, closing, onCancel, onConfirm, onClo
                       color: 'var(--cth-ink-900)',
                       marginBottom: 4
                     }}>
-                      {ptyCount} {ptyCount === 1 ? 'AGENT' : 'AGENTS'} STILL RUNNING
-                    </div>
-                    <div style={{ fontSize: 15, lineHeight: '22px', color: 'var(--cth-ink-700)' }}>
-                      Closing the harness will terminate{' '}
-                      {ptyCount === 1 ? 'the running claude session' : `all ${ptyCount} running claude sessions`}{' '}
-                      and discard any unsaved progress they were holding in memory. The conversation
-                      history inside each session is lost when the PTY exits.
-                    </div>
+                      {ptyCount} {ptyCount === 1 ? 'AGENT' : 'AGENTS'} {uiText("STILL_RUNNING_e090ce")} </div>
+                    <div style={{ fontSize: 15, lineHeight: '22px', color: 'var(--cth-ink-700)' }}> {uiText("Closing_the_harness_will_terminate_ecce91")}{' '}
+                      {ptyCount === 1 ? uiText("the_running_claude_session_e3cb9d") : uiText('dynamic14', { v0: ptyCount })}{' '} {uiText("and_discard_any_unsaved_progress_they_were_ho_fa02c6")} </div>
                   </div>
                 </div>
 
@@ -165,11 +154,7 @@ export function QuitWarningModal({ ptyCount, closing, onCancel, onConfirm, onClo
                   boxShadow: 'inset 0 0 0 1px var(--cth-ink-100)',
                   fontSize: 12, lineHeight: '18px',
                   color: 'var(--cth-ink-700)'
-                }}>
-                  Tip: <strong>closing time</strong> is the safe way out — the orchestrator has
-                  every agent commit its work and save its memory, and the app closes itself
-                  once the whole floor has confirmed. No data loss.
-                </div>
+                }}> {uiText("Tip_2ee750")} <strong>{uiText("closing_time_e26779")}</strong> {uiText("is_the_safe_way_out_the_orchestrator_has_ever_ed536b")} </div>
 
                 {closing?.phase === 'error' && (
                   <div style={{
@@ -179,23 +164,20 @@ export function QuitWarningModal({ ptyCount, closing, onCancel, onConfirm, onClo
                     fontSize: 12, lineHeight: '18px',
                     color: 'var(--cth-ink-900)'
                   }}>
-                    {closing.error ?? 'Closing time could not start.'}
+                    {closing.error ?? uiText("Closing_time_could_not_start_717545")}
                   </div>
                 )}
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
-                  <PixelButton variant="secondary" size="md" onClick={onCancel} disabled={busy}>
-                    keep them running
-                  </PixelButton>
+                  <PixelButton variant="secondary" size="md" onClick={onCancel} disabled={busy}> {uiText("keep_them_running_2bd540")} </PixelButton>
                   {onClosingTime && (
                     <PixelButton variant="primary" size="md" onClick={onClosingTime} disabled={busy}>
                       <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
-                        <Icon name="clock" /> closing time
-                      </span>
+                        <Icon name="clock" /> {uiText("closing_time_e26779")} </span>
                     </PixelButton>
                   )}
                   <PixelButton variant="destructive" size="md" onClick={confirm} disabled={busy}>
-                    {busy ? 'killing...' : `kill ${ptyCount === 1 ? 'it' : 'all'} & quit`}
+                    {busy ? uiText('quitting') : uiText('forceQuit')}
                   </PixelButton>
                 </div>
               </>

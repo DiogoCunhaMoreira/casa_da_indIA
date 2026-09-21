@@ -14,7 +14,7 @@ export interface PixelButtonProps {
   title?: string;
 }
 
-const heightBySize: Record<Size, number> = { sm: 24, md: 32, lg: 40 };
+const heightBySize: Record<Size, number> = { sm: 32, md: 36, lg: 40 };
 const padBySize: Record<Size, string> = { sm: '0 8px', md: '0 12px', lg: '0 16px' };
 
 export function PixelButton({
@@ -49,10 +49,10 @@ export function PixelButton({
     switch (variant) {
       case 'primary':
         return {
-          fill:    disabled ? 'var(--cth-cream-300)' : (hover ? 'var(--cth-ink-700)' : 'var(--cth-ink-900)'),
-          text:    disabled ? disabledText : 'var(--cth-cream-50)',
-          border:  'var(--cth-ink-900)',
-          shadow:  'var(--cth-ink-900)'
+          fill:    disabled ? 'var(--cth-cream-300)' : (hover ? 'var(--cth-action-hover)' : 'var(--cth-action)'),
+          text:    disabled ? disabledText : 'var(--cth-on-action)',
+          border:  'var(--cth-action)',
+          shadow:  'transparent'
         };
       case 'secondary':
         return {
@@ -70,8 +70,8 @@ export function PixelButton({
         };
       case 'destructive':
         return {
-          fill:    disabled ? 'var(--cth-cream-300)' : (hover ? 'var(--cth-coral-light)' : 'var(--cth-coral)'),
-          text:    disabled ? disabledText : 'var(--cth-ink-900)',
+          fill:    disabled ? 'var(--cth-cream-300)' : 'var(--cth-coral)',
+          text:    disabled ? disabledText : 'var(--cth-on-accent)',
           border:  'var(--cth-ink-500)',
           shadow:  'var(--cth-ink-300)'
         };
@@ -80,6 +80,7 @@ export function PixelButton({
 
   return (
     <button
+      type="button"
       title={title}
       onClick={disabled ? undefined : onClick}
       onMouseDown={() => setPressed(true)}
@@ -117,6 +118,8 @@ export function PixelButton({
         background: palette.fill,
         color: palette.text,
         border: 'none',
+        borderRadius: 'var(--cth-radius)',
+        fontWeight: 600,
         // v0.3.4: 1px hairline + 1px lift — the 2px chrome read as heavy boxes
         boxShadow: pressed && !disabled
           ? `inset 0 0 0 1px ${palette.border}`

@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -27,6 +28,7 @@ export function MemoryGraphPanel({
   godId: string;
   onJumpToMemory: (agentId: string) => void;
 }) {
+  useUiLanguage();
   const { t } = useTranslation();
   const agents = useStore((s) => s.agents);
 
@@ -195,7 +197,7 @@ export function MemoryGraphPanel({
         </button>
         <div style={{ flex: 1 }} />
         {showTopics && (
-          <span style={{ fontSize: 11, color: 'var(--cth-ink-500)' }}>
+          <span style={{ fontSize: 12, color: 'var(--cth-ink-500)' }}>
             {loadingTopics ? t('memoryGraph.readingMemory') : t('memoryGraph.topicsShown', { shown: graph.topicShown, total: graph.topicTotal })}
           </span>
         )}
@@ -347,7 +349,7 @@ export function MemoryGraphPanel({
           <div style={{
             position: 'absolute', top: 10, left: 0, right: 0, textAlign: 'center',
             fontSize: 12, color: 'var(--cth-ink-500)', pointerEvents: 'none'
-          }}>No messages logged yet — the hive is quiet. Agents shown as roster.</div>
+          }}>{uiText("No_messages_logged_yet_the_hive_is_quiet_Agen_1dc6e0")}</div>
         )}
 
         {/* tooltip */}
@@ -369,6 +371,7 @@ export function MemoryGraphPanel({
 // ─── tooltip bodies ──────────────────────────────────────────────────────────
 
 function NodeTip({ node, memories }: { node: GraphNode; memories: Record<string, string> }) {
+  useUiLanguage();
   const { t } = useTranslation();
   if (node.kind === 'agent') {
     const mem = memories[node.id];
@@ -378,7 +381,7 @@ function NodeTip({ node, memories }: { node: GraphNode; memories: Record<string,
         <div style={tipTitle}>{node.label}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '2px 0 4px' }}>
           <PixelBadge status={node.status} />
-          <span style={{ fontSize: 11, color: 'var(--cth-ink-500)' }}>{t('memoryGraph.messageLinks', { count: node.degree })}</span>
+          <span style={{ fontSize: 12, color: 'var(--cth-ink-500)' }}>{t('memoryGraph.messageLinks', { count: node.degree })}</span>
         </div>
         <div style={tipBody}>{snippet}</div>
       </>
@@ -388,19 +391,20 @@ function NodeTip({ node, memories }: { node: GraphNode; memories: Record<string,
     return (
       <>
         <div style={tipTitle}>{node.label}</div>
-        <div style={tipBody}>shared by {node.weight} agents</div>
+        <div style={tipBody}>{uiText("shared_by_372e03")} {node.weight} {uiText("agents_e7052a")}</div>
       </>
     );
   }
   return (
     <>
       <div style={tipTitle}>{node.label}</div>
-      <div style={tipBody}>{node.id === 'human' ? 'escalations to the human' : 'broadcast to everyone'}</div>
+      <div style={tipBody}>{node.id === 'human' ? uiText("escalations_to_the_human_21128d") : uiText("broadcast_to_everyone_84275c")}</div>
     </>
   );
 }
 
 function EdgeTip({ edge, nodeById }: { edge: GraphEdge; nodeById: Map<string, GraphNode> }) {
+  useUiLanguage();
   const { t } = useTranslation();
   const a = nodeById.get(edge.source)?.label ?? edge.source;
   const b = nodeById.get(edge.target)?.label ?? edge.target;
@@ -411,7 +415,7 @@ function EdgeTip({ edge, nodeById }: { edge: GraphEdge; nodeById: Map<string, Gr
   return (
     <>
       <div style={tipTitle}>{a} {arrow} {b}</div>
-      <div style={{ fontSize: 11, color: 'var(--cth-ink-500)', margin: '2px 0' }}>
+      <div style={{ fontSize: 12, color: 'var(--cth-ink-500)', margin: '2px 0' }}>
         {t('memoryGraph.messagesLast', { count: edge.weight, act: edge.lastAct ?? '—' })}
       </div>
       {edge.lastSubject && <div style={tipBody}>{truncate(edge.lastSubject, 80)}</div>}
@@ -420,6 +424,7 @@ function EdgeTip({ edge, nodeById }: { edge: GraphEdge; nodeById: Map<string, Gr
 }
 
 function Legend() {
+  useUiLanguage();
   const { t } = useTranslation();
   const items: { c: string; label: string }[] = [
     { c: actColor('request'), label: t('memoryGraph.legendRequest') },
@@ -436,7 +441,7 @@ function Legend() {
       display: 'flex', flexWrap: 'wrap', gap: '2px 10px', maxWidth: 280, pointerEvents: 'none'
     }}>
       {items.map((it) => (
-        <span key={it.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--cth-ink-700)' }}>
+        <span key={it.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--cth-ink-700)' }}>
           <span style={{ width: 9, height: 3, background: it.c, display: 'inline-block' }} /> {it.label}
         </span>
       ))}
@@ -445,6 +450,7 @@ function Legend() {
 }
 
 function Tooltip({ x, y, wrap, children }: { x: number; y: number; wrap: { w: number; h: number }; children: React.ReactNode }) {
+  useUiLanguage();
   const W = 240;
   const left = Math.min(x + 14, wrap.w - W - 6);
   const flipUp = y > wrap.h - 120;
@@ -459,6 +465,7 @@ function Tooltip({ x, y, wrap, children }: { x: number; y: number; wrap: { w: nu
 }
 
 function Toggle({ on, onClick, label }: { on: boolean; onClick: () => void; label: string }) {
+  useUiLanguage();
   return (
     <button
       onClick={onClick}
@@ -534,8 +541,8 @@ const iconBtn: React.CSSProperties = {
 };
 
 const tipTitle: React.CSSProperties = {
-  fontFamily: 'var(--cth-font-ui)', fontSize: 12, color: 'var(--cth-ink-900)', lineHeight: '16px'
+  fontFamily: 'var(--cth-font-ui)', fontSize: 12, color: 'var(--cth-ink-900)', lineHeight: '18px'
 };
 const tipBody: React.CSSProperties = {
-  fontSize: 11, lineHeight: '15px', color: 'var(--cth-ink-700)'
+  fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-700)'
 };

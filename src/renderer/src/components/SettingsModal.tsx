@@ -1,3 +1,4 @@
+import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useState, useEffect, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AGENT_MODELS, type HarnessConfig } from '@/store/config';
@@ -80,74 +81,22 @@ const slackInputStyle: CSSProperties = {
 
 const slackLabelStyle: CSSProperties = {
   fontFamily: 'var(--cth-font-display)',
-  fontSize: 8,
-  lineHeight: '12px',
+  fontSize: 12,
+  lineHeight: '18px',
   color: 'var(--cth-ink-700)',
-  textTransform: 'uppercase'
+  textTransform: 'none'
 };
 
 /** The exact connect walkthrough shown behind the i icon. Steps 6 & 7 spell out
  *  the both-lists requirement: subscribe to message.channels / message.groups in
  *  BOTH "Subscribe to bot events" AND "Subscribe to events on behalf of users". */
-const SLACK_CONNECT_STEPS = `Connect casa_da_indIA to Slack
 
-1. api.slack.com/apps -> Create New App -> From scratch. Name it
-   "casa_da_indIA" and pick your workspace.
-2. Basic Information -> Signing Secret -> copy it into the
-   "Signing secret" field here.
-3. OAuth & Permissions -> Bot Token Scopes: add
-     chat:write          (office replies in-thread)
-     channels:history    (read public-channel messages)
-     groups:history      (read private-channel messages)
-   Install to workspace, then copy the Bot User OAuth Token
-   (xoxb-...) into the "Bot token" field here.
-4. Press Start (below) to launch the webhook and get your
-   Request URL.
-5. Event Subscriptions -> Enable Events -> Request URL: paste the
-   Request URL from here and wait for Slack's green check (Verified).
-6. Event Subscriptions -> "Subscribe to bot events": add
-     message.channels
-     message.groups
-7. Event Subscriptions -> "Subscribe to events on behalf of users"
-   (add the matching User Token Scope channels:history / groups:history
-   first if Slack asks): add
-     message.channels
-     message.groups
-8. Save Changes, reinstall if Slack prompts, then invite the bot
-   to your channel:  /invite @MunderDifflin`;
 
 /** The request/response contract shown behind the webhook i icon. Every webhook
  *  shares one server and one tunnel and is told apart by its id in the path, so
  *  `<tunnel>` is the public base URL and `<webhookId>` picks the endpoint. The
  *  secret/token go in headers so they stay out of URLs and access logs. */
-const webhookApiDoc = (godName: string): string => `Webhook API
-
-Every webhook has its own URL, its own secret and its own mode. They share one
-server and one tunnel; the id in the path says which one you are calling.
-
-Trigger work (POST <tunnel>/<webhookId>):
-  header  x-md-webhook-secret: <that webhook's secret>
-  body    {"message": "do X for me", "title": "optional short title",
-           "kind": "directive" | "communication", "from": "who is calling"}
-  -> 200  {"ok": true, "token": "<capability token>", "taskId": "<card id>"}
-  -> 202  {"ok": true, "status": "awaiting approval"}
-
-Check status (GET <tunnel>/<webhookId>):
-  header  x-md-webhook-token: <token>     (or  ?token=<token>)
-  -> 200  {"ok": true, "status": "todo|doing|blocked|done",
-           "title": "...", "result": "<summary or null>"}
-
-The mode decides which of the two answers you get:
-  allow all           routes straight through -> 200
-  communication only  chatter routes; a directive gets 202 awaiting approval
-  strict              everything gets 202 awaiting approval
-
-A 202 means the message is parked in Trigger History until you approve it; the
-token you were handed still reads that task once it is routed. The secret
-authorizes new work, the token only reads one task's status. Keep both private.
-
-Each webhook checks bodies against its own JSON schema — edit that in the
-Triggers tab of ${godName}'s Command Center.`;
+const webhookApiDoc = (godName: string): string => uiText('webhookApiDoc', { godName });
 
 /** Clear every renderer-side persisted key so a relaunch starts truly empty. */
 function clearLocalState(): void {
@@ -168,15 +117,15 @@ function clearLocalState(): void {
    seventeen times, in three slightly different forms, which is how a tab ends
    up looking subtly unlike its neighbours. */
 const sectionHead = {
-  fontFamily: 'var(--cth-font-display)', fontSize: 8, lineHeight: '12px',
-  color: 'var(--cth-ink-500)', textTransform: 'uppercase', marginBottom: 10
+  fontFamily: 'var(--cth-font-ui)', fontSize: 14, fontWeight: 600, lineHeight: '22px',
+  color: 'var(--cth-ink-900)', textTransform: 'none', marginBottom: 10
 } as const;
 /** Same heading, tight under a section that supplies its own spacing. */
 const sectionHeadTight = { ...sectionHead, marginBottom: 2 } as const;
 /** Same heading with no bottom margin at all. */
 const sectionHeadFlush = { ...sectionHead, marginBottom: 0 } as const;
 /** The 2px rule between Settings sections. */
-const sectionRule = { height: 2, background: 'var(--cth-ink-300)' } as const;
+const sectionRule = { height: 1, background: 'var(--cth-ink-100)' } as const;
 
 export type Section = 'General' | 'Prerequisites' | 'Agents & Models' | 'Autonomy & Budgets' | 'Connections' | 'Voice' | 'Memory & Knowledge';
 const NAV_SECTIONS: Section[] = ['General', 'Prerequisites', 'Agents & Models', 'Autonomy & Budgets', 'Connections', 'Voice', 'Memory & Knowledge'];
@@ -193,8 +142,9 @@ const NAV_SECTION_KEYS: Record<Section, string> = {
 };
 
 export function SettingsModal({ config, onClose, initialSection }: SettingsModalProps) {
+  useUiLanguage();
   const { t, i18n } = useTranslation();
-  const godName = useStore((s) => s.agents.find((a) => a.isGod)?.name) ?? 'the orchestrator';
+  const godName = useStore((s) => s.agents.find((a) => a.isGod)?.name) ?? uiText("the_orchestrator_fc0fec");
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [activeSection, setActiveSection] = useState<Section>(initialSection ?? 'General');
@@ -459,7 +409,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
       if (!res.ok) { setKgNote(res.error === 'cancelled' ? '' : (res.error ?? 'failed')); return; }
       const added = res.results.filter((r) => r.ok).length;
       const failed = res.results.length - added;
-      setKgNote(`added ${added} document${added === 1 ? '' : 's'}${failed ? `, ${failed} failed` : ''}`);
+      setKgNote(uiText('documentsAdded', { added, failed }));
       await refreshKgStatus();
     } catch (e) { setKgNote(e instanceof Error ? e.message : String(e)); }
     finally { setKgBusy(false); }
@@ -621,9 +571,9 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
         setRunning(true);
         // Keep the last URL if this start returned none (tunnel hiccup) - don't blank it.
         if (res.url) setTunnelUrl(res.url);
-        setSlackNote(res.url ? 'listening' : (res.error ?? 'started, but tunnel unavailable'));
+        setSlackNote(res.url ? 'listening' : (res.error ?? uiText("started_but_tunnel_unavailable_02f4b4")));
       } else {
-        setSlackNote(res.error ?? 'failed to start');
+        setSlackNote(res.error ?? uiText("failed_to_start_02e30f"));
       }
     } catch (e) {
       setSlackNote(e instanceof Error ? e.message : String(e));
@@ -648,7 +598,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
     setWebhookBusy(true); setWebhookNote('');
     try {
       const res = await triggersApi().saveWebhooks(list);
-      if (res && res.ok === false) { setWebhookNote(res.error ?? 'could not save'); return; }
+      if (res && res.ok === false) { setWebhookNote(res.error ?? uiText("could_not_save_7f89c2")); return; }
       setWebhookNote('saved');
       setTimeout(() => setWebhookNote(''), 1500);
     } catch (e) {
@@ -671,7 +621,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
     } catch (e) {
       setWebhookNote(e instanceof Error ? e.message : String(e));
     } finally { setWebhookBusy(false); }
-    if (!secret) { setWebhookNote('could not generate a secret'); return; }
+    if (!secret) { setWebhookNote(uiText("could_not_generate_a_secret_2d0128")); return; }
     const entry: WebhookTrigger = {
       id: newWebhookId(),
       name: `Webhook ${webhookTriggers.length + 1}`,
@@ -696,10 +646,10 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
     } catch (e) {
       setWebhookNote(e instanceof Error ? e.message : String(e));
     } finally { setWebhookBusy(false); }
-    if (!secret) { setWebhookNote('could not generate a secret'); return; }
+    if (!secret) { setWebhookNote(uiText("could_not_generate_a_secret_2d0128")); return; }
     setShownSecrets((s) => ({ ...s, [id]: true }));
     await patchWebhook(id, { secret });
-    setWebhookNote('new secret — copy it now');
+    setWebhookNote(uiText("new_secret_copy_it_now_1b9a2a"));
   };
 
   const removeWebhook = async (id: string) => {
@@ -729,7 +679,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
     setOrgBusy(true); setOrgNote('');
     try {
       const res = await triggersApi().setOrgTrigger(next);
-      if (res && res.ok === false) { setOrgNote(res.error ?? 'could not save'); return; }
+      if (res && res.ok === false) { setOrgNote(res.error ?? uiText("could_not_save_7f89c2")); return; }
       setOrgNote('saved');
       setTimeout(() => setOrgNote(''), 1500);
     } catch (e) {
@@ -796,7 +746,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
     if (changeMode === 'fresh') clearLocalState();
     try {
       const res = await window.cth.changeHome(changeHome, changeMode);
-      if (!res.ok) { setChangeErr(res.error ?? 'Could not change the home folder.'); setChangeBusy(false); }
+      if (!res.ok) { setChangeErr(res.error ?? uiText("Could_not_change_the_home_folder_d51356")); setChangeBusy(false); }
       // ok === true never returns (the process relaunches).
     } catch (e) {
       setChangeErr(e instanceof Error ? e.message : String(e));
@@ -823,9 +773,9 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: 840, maxWidth: '92vw', maxHeight: '88vh',
+          width: 980, maxWidth: '92vw', maxHeight: '88vh',
           display: 'flex', flexDirection: 'column',
-          filter: 'drop-shadow(4px 4px 0 rgba(26, 19, 32, 0.25))'
+          boxShadow: 'var(--cth-dialog-shadow)', borderRadius: 'var(--cth-radius-panel)'
         }}
       >
         <PixelPanel
@@ -871,14 +821,14 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                       }}>
                         {selected ? '◉ ' : '○ '}{title}
                       </span>
-                      <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>{desc}</span>
+                      <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>{desc}</span>
                     </button>
                   );
                 })}
               </div>
 
               {changeErr && (
-                <div style={{ fontSize: 12, lineHeight: '18px', color: '#6E1423' }}>{changeErr}</div>
+                <div style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-danger-text)' }}>{changeErr}</div>
               )}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
@@ -922,13 +872,13 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
           /* === Main two-pane settings layout === */
           ) : (
             <>
-              <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+              <div className="cth-settings-layout" style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
 
                 {/* Left nav */}
-                <div style={{
-                  width: 160, flexShrink: 0,
+                <nav className="cth-settings-nav" aria-label={t('settings.title')} style={{
+                  width: 210, flexShrink: 0,
                   display: 'flex', flexDirection: 'column',
-                  borderRight: '2px solid var(--cth-ink-300)',
+                  borderRight: '1px solid var(--cth-ink-100)',
                   paddingTop: 8, paddingBottom: 8,
                   background: 'var(--cth-cream-200)'
                 }}>
@@ -937,18 +887,19 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                     return (
                       <button
                         key={section}
+                        aria-current={active ? 'page' : undefined}
                         type="button"
                         onClick={() => setActiveSection(section)}
                         style={{
                           display: 'block', width: '100%', textAlign: 'left',
                           padding: '10px 16px 8px',
                           border: 'none',
-                          borderLeft: active ? '3px solid var(--cth-lemon)' : '3px solid transparent',
-                          background: active ? 'var(--cth-ink-900)' : 'transparent',
-                          color: active ? 'var(--cth-cream-50)' : 'var(--cth-ink-700)',
+                          borderLeft: active ? '3px solid var(--cth-action)' : '3px solid transparent',
+                          background: active ? 'var(--cth-action-soft)' : 'transparent',
+                          color: active ? 'var(--cth-action-text)' : 'var(--cth-ink-700)',
                           fontFamily: 'var(--cth-font-display)',
-                          fontSize: 8,
-                          lineHeight: '12px',
+                          fontSize: 13,
+                          lineHeight: '18px',
                           cursor: 'pointer',
                           letterSpacing: 0
                         }}
@@ -957,12 +908,12 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                       </button>
                     );
                   })}
-                </div>
+                </nav>
 
                 {/* Right scrollable content pane. minWidth:0 lets this flex child
                     shrink to the row's width instead of growing to its content's
                     min-content (which would push a horizontal scrollbar). */}
-                <div style={{
+                <div className="cth-settings-content" style={{
                   flex: 1, minWidth: 0, overflowY: 'auto', overflowX: 'hidden',
                   padding: '20px 24px',
                   display: 'flex', flexDirection: 'column', gap: 20
@@ -1012,7 +963,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                               <span style={{ fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-900)' }}>{t('settings.general.keepAwake')}</span>
-                              <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                              <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                                 {t('settings.general.keepAwakeDesc')}
                               </span>
                             </div>
@@ -1023,7 +974,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                               <span style={{ fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-900)' }}>{t('settings.general.simpleMode')}</span>
-                              <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                              <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                                 {t('settings.general.simpleModeDesc')}
                               </span>
                             </div>
@@ -1036,11 +987,11 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                               <span style={{ fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-900)' }}>
                                 {t('settings.general.arabicTerminal')}
                               </span>
-                              <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                              <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                                 {t('settings.general.arabicTerminalDesc')}
                               </span>
                               {arabicFollowsLanguage && (
-                                <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                                <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                                   {t('settings.general.arabicTerminalFollowsLanguage')}
                                 </span>
                               )}
@@ -1074,7 +1025,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             <span style={{ fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-900)' }}>{t('settings.general.language')}</span>
-                            <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                            <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                               {t('settings.general.languageDesc')}
                             </span>
                           </div>
@@ -1103,7 +1054,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                             <span style={{ fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-900)' }}>
                               {t('settings.general.desktopNotifications')}
                             </span>
-                            <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                            <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                               {t('settings.general.desktopNotificationsDesc')}
                             </span>
                           </div>
@@ -1129,7 +1080,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                             <span style={{ fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-900)' }}>
                               {t('settings.general.autoCompact')}
                             </span>
-                            <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                            <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                               {t('settings.general.autoCompactDesc')}
                             </span>
                           </div>
@@ -1147,7 +1098,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                             <span style={{ fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-900)' }}>
                               {t('settings.general.autoUpdate')}
                             </span>
-                            <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                            <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                               {t('settings.general.autoUpdateDesc')}
                             </span>
                           </div>
@@ -1165,7 +1116,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                             <span style={{ fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-900)' }}>
                               {t('settings.general.telemetry')}
                             </span>
-                            <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                            <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                               {t('settings.general.telemetryDesc')}
                             </span>
                           </div>
@@ -1195,7 +1146,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                           {t('settings.agentsModels.defaultModel')}
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                          <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                             {t('settings.agentsModels.defaultModelDesc', { godName })}
                           </span>
                           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -1252,7 +1203,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                             <span style={{ fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-900)' }}>
                               {autoModeOn ? t('settings.autonomy.autoOn') : t('settings.autonomy.autoOff')}
                             </span>
-                            <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                            <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                               {t('settings.autonomy.autoDesc')}
                             </span>
                           </div>
@@ -1267,17 +1218,15 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <span style={{ fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-900)' }}>
-                              Who can add agents
-                            </span>
-                            <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                            <span style={{ fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-900)' }}> {uiText("Who_can_add_agents_1e5f0e")} </span>
+                            <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                               {orchSpawnOn
-                                ? `${godName} can hire on his own. Every agent he starts spends tokens you did not approve.`
-                                : `Only you. ${godName} can still ask, and his request waits in the queue instead of failing.`}
+                                ? uiText('dynamic10', { v0: godName })
+                                : uiText('dynamic11', { v0: godName })}
                             </span>
                           </div>
                           <PixelButton variant={orchSpawnOn ? 'primary' : 'secondary'} size="sm" onClick={toggleOrchSpawn}>
-                            {orchSpawnOn ? `me and ${godName}` : 'only me'}
+                            {orchSpawnOn ? uiText('dynamic12', { v0: godName }) : uiText("only_me_c533ea")}
                           </PixelButton>
                         </div>
                       </div>
@@ -1291,7 +1240,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                            <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                            <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                               {t('settings.autonomy.breakerDesc')}
                             </span>
                             <PixelButton variant={brkEnabled ? 'primary' : 'secondary'} size="sm"
@@ -1308,7 +1257,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                                 placeholder={t('settings.autonomy.budgetPlaceholder')}
                                 style={{ ...slackInputStyle, width: 180 }}
                               />
-                              <span style={{ fontSize: 11, color: 'var(--cth-ink-500)' }}>
+                              <span style={{ fontSize: 12, color: 'var(--cth-ink-500)' }}>
                                 {fmtBudgetTokens(agentBudget) ? t('settings.autonomy.budgetEquals', { value: fmtBudgetTokens(agentBudget) }) : t('settings.autonomy.budgetTotal')}
                               </span>
                             </label>
@@ -1343,7 +1292,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                               <span style={{ fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-900)' }}>{t('settings.autonomy.hardStop')}</span>
-                              <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                              <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                                 {t('settings.autonomy.hardStopDesc')}
                               </span>
                             </div>
@@ -1367,7 +1316,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             <span style={{ fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-900)' }}>{t('settings.memory.crossSession')}</span>
-                            <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                            <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                               {t('settings.memory.crossSessionDesc')}
                             </span>
                           </div>
@@ -1389,7 +1338,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                             <span style={{ fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-900)' }}>
                               {t('settings.memory.kgTitle')}
                             </span>
-                            <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                            <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                               {t('settings.memory.kgDesc')}
                             </span>
                           </div>
@@ -1456,19 +1405,19 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                                   border: 'none', borderRadius: '50%',
                                   background: showSlackHelp ? 'var(--cth-ink-700)' : 'var(--cth-ink-300)',
                                   color: showSlackHelp ? 'var(--cth-paper-100)' : 'var(--cth-ink-900)',
-                                  fontFamily: 'var(--cth-font-display)', fontSize: 10, lineHeight: '16px'
+                                  fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px'
                                 }}
                               >i</button>
                             </span>
-                            <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                            <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                               {t('settings.connections.slackDesc', { godName })}
                             </span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             {/* Connection status: clear, always-visible. */}
                             <span style={{
-                              fontSize: 12, lineHeight: '16px',
-                              color: running ? 'var(--cth-mint-700, #1f7a4d)' : 'var(--cth-ink-500)'
+                              fontSize: 12, lineHeight: '18px',
+                              color: running ? 'var(--cth-success-text)' : 'var(--cth-ink-500)'
                             }}>
                               {running ? t('settings.connections.connected') : t('settings.connections.notConnected')}
                             </span>
@@ -1489,9 +1438,9 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                             margin: 0, padding: 10, whiteSpace: 'pre-wrap',
                             background: 'var(--cth-paper-100)',
                             boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)',
-                            fontFamily: 'var(--cth-font-mono)', fontSize: 11, lineHeight: '16px',
+                            fontFamily: 'var(--cth-font-mono)', fontSize: 12, lineHeight: '18px',
                             color: 'var(--cth-ink-700)'
-                          }}>{SLACK_CONNECT_STEPS}</pre>
+                          }}>{uiText('slackConnectSteps')}</pre>
                         )}
 
                         {slackEnabled && (
@@ -1598,7 +1547,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                               </div>
                             )}
 
-                            <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                            <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                               {t('settings.connections.slackHint')}
                             </span>
                           </div>
@@ -1630,18 +1579,18 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                                   border: 'none', borderRadius: '50%',
                                   background: showWebhookHelp ? 'var(--cth-ink-700)' : 'var(--cth-ink-300)',
                                   color: showWebhookHelp ? 'var(--cth-paper-100)' : 'var(--cth-ink-900)',
-                                  fontFamily: 'var(--cth-font-display)', fontSize: 10, lineHeight: '16px'
+                                  fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px'
                                 }}
                               >i</button>
                             </span>
-                            <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                            <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                               {t('settings.connections.webhooksDesc')}
                             </span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span style={{
-                              fontSize: 12, lineHeight: '16px',
-                              color: webhookRunning ? 'var(--cth-mint-700, #1f7a4d)' : 'var(--cth-ink-500)'
+                              fontSize: 12, lineHeight: '18px',
+                              color: webhookRunning ? 'var(--cth-success-text)' : 'var(--cth-ink-500)'
                             }}>
                               {webhookRunning ? t('settings.connections.listeningOn') : t('settings.connections.notListening')}
                             </span>
@@ -1656,18 +1605,18 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                             margin: 0, padding: 10, whiteSpace: 'pre-wrap',
                             background: 'var(--cth-paper-100)',
                             boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)',
-                            fontFamily: 'var(--cth-font-mono)', fontSize: 11, lineHeight: '16px',
+                            fontFamily: 'var(--cth-font-mono)', fontSize: 12, lineHeight: '18px',
                             color: 'var(--cth-ink-700)'
                           }}>{webhookApiDoc(godName)}</pre>
                         )}
 
                         {/* Public surface warning. Loud, not buried. */}
-                        <span style={{ fontSize: 12, lineHeight: '16px', color: '#6E1423' }}>
+                        <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-danger-text)' }}>
                           {t('settings.connections.webhookWarning')}
                         </span>
 
                         {webhookTriggers.length === 0 ? (
-                          <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                          <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                             {t('settings.connections.noWebhooks')}
                           </span>
                         ) : (
@@ -1784,7 +1733,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                                         <option key={m.value} value={m.value}>{m.label}</option>
                                       ))}
                                     </select>
-                                    <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                                    <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                                       {modeBlurb}
                                     </span>
                                   </div>
@@ -1794,7 +1743,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                           </div>
                         )}
 
-                        <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                        <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                           {t('settings.connections.webhooksHint', { godName })}
                         </span>
 
@@ -1816,7 +1765,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                             <span style={{ fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-900)' }}>
                               {t('settings.connections.orgKey')}
                             </span>
-                            <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                            <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                               {t('settings.connections.orgKeyDesc')}
                             </span>
                           </div>
@@ -1852,7 +1801,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                           </div>
                         </label>
 
-                        <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                        <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                           {CLONE_NODE_BLURB}
                         </span>
 
@@ -1868,7 +1817,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                             ))}
                           </select>
                         </label>
-                        <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                        <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                           {TRIGGER_MODES.find((m) => m.value === orgTrigger.mode)?.blurb ?? ''}
                         </span>
 
@@ -1881,7 +1830,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                           )}
                         </div>
 
-                        <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                        <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                           {t('settings.connections.orgConfigOnly')}
                         </span>
                       </div>
@@ -1902,7 +1851,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                             <span style={{ fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-900)' }}>
                               {t('settings.voice.freeFlowTitle')}
                             </span>
-                            <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                            <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                               {t('settings.voice.freeFlowDesc')}
                             </span>
                           </div>
@@ -1957,7 +1906,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                               )}
                             </div>
 
-                            <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                            <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                               {t('settings.voice.freeFlowHint')}
                             </span>
                           </div>
@@ -1975,7 +1924,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                           <span style={{ fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-900)' }}>
                             {t('settings.voice.voiceChat', { godName })}
                           </span>
-                          <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                          <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                             {t('settings.voice.voiceChatDesc', { godName })}
                           </span>
                         </div>
@@ -2022,7 +1971,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                           </div>
                           <span style={{
                             display: 'inline-flex', alignItems: 'center', gap: 6,
-                            fontSize: 12, lineHeight: '16px',
+                            fontSize: 12, lineHeight: '18px',
                             color: hasOpenAiKey ? 'var(--cth-ink-900)' : 'var(--cth-ink-500)'
                           }}>
                             <span aria-hidden style={{
@@ -2059,7 +2008,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                             <option value="600000">{t('settings.voice.10m')}</option>
                             <option value="0">{t('settings.voice.never')}</option>
                           </select>
-                          <span style={{ fontSize: 12, lineHeight: '16px', color: 'var(--cth-ink-500)' }}>
+                          <span style={{ fontSize: 12, lineHeight: '18px', color: 'var(--cth-ink-500)' }}>
                             {t('settings.voice.idleDisconnectDesc')}
                           </span>
                         </label>
@@ -2071,8 +2020,8 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                   {activeSection === 'General' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                       <div style={{
-                        fontFamily: 'var(--cth-font-display)', fontSize: 10, lineHeight: '14px',
-                        color: '#6E1423'
+                        fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
+                        color: 'var(--cth-danger-text)'
                       }}>{t('settings.general.dangerZone')}</div>
                       <p style={{ margin: 0, fontSize: 13, lineHeight: '20px', color: 'var(--cth-ink-700)' }}>
                         {t('settings.general.dangerDesc', { godName })}

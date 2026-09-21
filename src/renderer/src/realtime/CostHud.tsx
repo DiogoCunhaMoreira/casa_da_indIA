@@ -1,3 +1,4 @@
+import { uiLocale } from '@/i18n/uiText';
 /**
  * Realtime Michael — voice session cost HUD (card rt-9, cost-guard).
  *
@@ -35,10 +36,10 @@ const wrap: React.CSSProperties = {
 };
 const labelStyle: React.CSSProperties = {
   fontFamily: 'var(--cth-font-display)',
-  fontSize: 8,
-  lineHeight: '12px',
+  fontSize: 12,
+  lineHeight: '18px',
   color: 'var(--cth-ink-500)',
-  textTransform: 'uppercase'
+  textTransform: 'none'
 };
 const capInputStyle: React.CSSProperties = {
   width: 92,
@@ -133,22 +134,22 @@ export function CostHud({ compact = false }: CostHudProps): React.ReactElement |
               ? t('costHud.thisSessionWithCap', { usd: formatUsd(usd), cap: formatUsd(capUsd) })
               : t('costHud.thisSession', { usd: formatUsd(usd) })}
           </span>
-          <span style={{ color: 'var(--cth-ink-500)', fontSize: 11 }}>
-            {t('costHud.audioTokens', { input: inputTokens.toLocaleString(), output: outputTokens.toLocaleString() })}
+          <span style={{ color: 'var(--cth-ink-500)', fontSize: 12 }}>
+            {t('costHud.audioTokens', { input: inputTokens.toLocaleString(uiLocale()), output: outputTokens.toLocaleString(uiLocale()) })}
           </span>
           {overCap && (
-            <span style={{ color: 'var(--cth-danger, #c0392b)', fontSize: 11 }}>
+            <span style={{ color: 'var(--cth-danger, #c0392b)', fontSize: 12 }}>
               {t('costHud.overCap')}
             </span>
           )}
           {near && (
-            <span style={{ color: 'var(--cth-warn, #b8860b)', fontSize: 11 }}>
+            <span style={{ color: 'var(--cth-warn, #b8860b)', fontSize: 12 }}>
               {t('costHud.nearCap')}
             </span>
           )}
         </div>
       ) : (
-        <span style={{ color: 'var(--cth-ink-500)', fontSize: 11 }}>
+        <span style={{ color: 'var(--cth-ink-500)', fontSize: 12 }}>
           {usd > 0 ? t('costHud.lastSession', { usd: formatUsd(usd) }) : t('costHud.noSession')}
         </span>
       )}
