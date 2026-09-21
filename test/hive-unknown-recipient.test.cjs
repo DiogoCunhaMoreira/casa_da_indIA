@@ -80,3 +80,11 @@ test('an unknown recipient does not stop the rest of a broadcast', async (t) => 
   assert.deepEqual(msg.delivered, ['jim-1']);
   assert.equal(entries(hive, 'drop').filter((e) => e.to === 'ghost-1').length, 1);
 });
+
+test('a scheduler receipt is logged without bouncing or waking the orchestrator', async t => {
+  const { hive } = await floor(t);
+  hive.send({ to: 'scheduler', act: 'inform', subject: 'Standup concluído' }, 'god-1');
+  assert.equal(hive.inbox('god-1').length, 0);
+  assert.equal(entries(hive, 'drop').length, 0);
+  assert.equal(entries(hive, 'message')[0].receipt, 'scheduler');
+});

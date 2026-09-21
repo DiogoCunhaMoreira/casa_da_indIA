@@ -1,3 +1,5 @@
+import { godCharacter } from '@/scene/office/themeRegistry';
+import { SpritePortrait } from './SpritePortrait';
 import { useTranslation } from 'react-i18next';
 import { PixelPanel } from '@/components/PixelPanel';
 import { useResolvedGodName } from '@/hooks/useResolvedGodName';
@@ -27,21 +29,7 @@ export function FeitorAChegar() {
             padding: 20,
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14
           }}>
-            {/* Blocos em degrau — pisca desencontrado, sem suavização (é o aspecto da casa) */}
-            <div style={{ display: 'flex', gap: 6 }}>
-              {[0, 1, 2, 3].map((i) => (
-                <span
-                  key={i}
-                  style={{
-                    width: 14, height: 14,
-                    background: '#6E1423',
-                    boxShadow: 'var(--cth-shadow-hard)',
-                    animation: 'cth-blink 1s steps(1, end) infinite',
-                    animationDelay: `${i * 0.2}s`
-                  }}
-                />
-              ))}
-            </div>
+            <SpritePortrait character={godCharacter()} scale={4} />
             <p style={{
               margin: 0, fontSize: 13, lineHeight: '20px', textAlign: 'center',
               color: 'var(--cth-ink-700)'

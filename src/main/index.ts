@@ -1,3 +1,4 @@
+import { shouldDispatchStandup } from '../shared/schedulerPolicy';
 import { registerWorldProtocol } from './worldProtocol';
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, powerMonitor, powerSaveBlocker, screen, shell, Notification } from 'electron';
 import { spawn } from 'node:child_process';
@@ -690,7 +691,12 @@ function syncMissions(): void {
         // we deliberately do NOT add `&& m.body`, so other (dispatch) missions keep
         // their prior behaviour, including the historical empty-body send (Pam N1).
         if (m.kind !== 'compact' && hive.enabled()) {
-          hive.send({ to: m.to, act: 'request', subject: m.label, body: m.body }, 'scheduler');
+          const roster = hive.registry();
+          if (m.id !== OPS_STANDUP_MISSION.id || shouldDispatchStandup(roster.agents, roster.godId, hive.tasks())) {
+            hive.send({ to: m.to, act: 'request', subject: m.label,
+              body: `${m.body}\n\nThis is an automatic scheduled instruction, not a message from the human. Handle it without conflating it with their conversation. The scheduler has no agent inbox: do not write a reply to scheduler; record results in the task ledger and archive this instruction.`,
+              requires_reply: false }, 'scheduler');
+          }
         }
         // Auto-compact: do NOT jam /compact into busy terminals. Hand it to the
         // renderer, which queues a /compact per agent (deduped — never two at

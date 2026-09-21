@@ -1505,6 +1505,12 @@ export class HiveManager {
       return;
     }
     const reg = this.registry();
+    // Scheduler is an internal sender, not an agent. Accept receipts locally;
+    // bouncing one to the orchestrator creates a needless second model turn.
+    if (msg.to === 'scheduler' && !reg.agents.scheduler) {
+      this.appendLog({ kind: 'message', from: msg.from, to: msg.to, act: msg.act, subject: msg.subject, id: msg.id, delivered: [], receipt: 'scheduler' });
+      return;
+    }
     const godId = reg.godId ?? 'god';
     // The hive has no separate human-approval queue — approvals are native to
     // each agent's Claude Code session (and approvable remotely). A message aimed

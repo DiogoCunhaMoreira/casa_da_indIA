@@ -7,7 +7,6 @@ var agents: Dictionary = {}
 var room := "casa"
 var navigation = preload("res://scripts/world_navigation.gd").new()
 var break_places: Dictionary = {}
-var task_label: Label3D
 var message_ids: Array = []
 var envelopes: Array = []
 var metrics_time := 0.0
@@ -27,13 +26,7 @@ func _ready() -> void:
 	for section in host.get_node("Maquete/CasaCompleta").get_children():
 		if section is Node3D:
 			batches.batch(section)
-	task_label = Label3D.new()
-	task_label.position = Vector3(0,3.0,8.0)
-	task_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	task_label.font_size = 36
-	task_label.pixel_size = 0.007
-	task_label.text = "Tarefas"
-	host.get_node("Maquete").add_child(task_label)
+
 	if OS.has_feature("web"):
 		bridge = JavaScriptBridge.get_interface("casaBridge")
 		callback = JavaScriptBridge.create_callback(receive)
@@ -144,11 +137,6 @@ func apply_snapshot(data: Variant) -> void:
 	if OS.has_feature("web"):
 		RenderingServer.render_loop_enabled = not host.paused
 		Engine.max_fps = 5 if host.paused else 60
-	var counts := {"todo":0,"doing":0,"done":0,"blocked":0}
-	for task in data.get("tasks",[]):
-		var status: String = task.get("status","todo")
-		counts[status] = counts.get(status,0)+1
-	task_label.text = "Tarefas · %d por fazer · %d em curso · %d concluídas\n%d perguntas para ti" % [counts.todo, counts.doing, counts.done, data.get("humanQuestions",0)]
 	var next_room: String = data.get("room", "casa")
 	if next_room != room:
 		view_room(next_room)

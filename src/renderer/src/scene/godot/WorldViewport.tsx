@@ -8,6 +8,13 @@ const save = (key: string, value: string) => { try { localStorage.setItem(key, v
 export function WorldViewport() {
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
+  const [summary, setSummary] = useState<{ todo: number; doing: number; done: number; blocked: number; questions: number } | null>(null);
+  const openPanel = (panel: 'tasks' | 'human') => {
+    const state = useStore.getState();
+    const feitor = state.agents.find(a => a.isGod);
+    if (feitor) state.select(feitor.id);
+    state.requestCommandCenterTab(panel);
+  };
   const [generation, setGeneration] = useState(0);
   const frame = useRef<HTMLIFrameElement>(null);
   const seats = useRef<Record<string, number>>({});
@@ -70,6 +77,8 @@ export function WorldViewport() {
         const rows = Array.isArray(raw?.tasks) ? raw.tasks : [];
         tasks = rows.filter(t => typeof t.id === 'string').slice(0, 1000).map(t => ({ id: t.id!, status: String(t.status || 'todo'), assignee: t.assignee }));
         humanQuestions = rows.filter(t => t.status === 'blocked' && t.humanQA?.some(qa => qa.q && !qa.a)).length;
+        setSummary({ todo: rows.filter(t => t.status === 'todo').length, doing: rows.filter(t => t.status === 'doing').length,
+          done: rows.filter(t => t.status === 'done').length, blocked: rows.filter(t => t.status === 'blocked').length, questions: humanQuestions });
         snapshot();
       } catch { /* preserve the last successful ledger snapshot */ }
       finally { polling = false; }
@@ -98,6 +107,11 @@ export function WorldViewport() {
         {WORLD_ROOMS.map((r, i) => <option key={r} value={r}>{['Planta geral', 'Gabinete', 'Escrivães', 'Conselho', 'Cartografia', 'Tesouraria', 'Refeitório'][i]}</option>)}
       </select><button aria-label="Aproximar" onClick={() => control('zoom_in')}>+</button><button aria-label="Afastar" onClick={() => control('zoom_out')}>−</button><button onClick={() => control('walls')}>Paredes</button>
       {!ready && !error && <span role="status">A carregar o cenário…</span>}
+    </div>
+    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '6px 10px', background: 'var(--cth-paper-100)', fontSize: 12 }}>
+      <button onClick={() => openPanel('tasks')}>{summary ? `${summary.todo} por fazer · ${summary.doing} em curso · ${summary.done} concluídas · ${summary.blocked} bloqueadas` : 'Tarefas'}</button>
+      <button onClick={() => openPanel('human')}>Perguntas{summary ? ` · ${summary.questions}` : ''}</button>
+      <span style={{ marginLeft: 'auto' }}>Arrasta para mover · roda ou pinça para aproximar</span>
     </div>
     <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
       <iframe key={generation} ref={frame} title="Casa da Índia — mundo 3D" src={`${WORLD_ORIGIN}/index.html`}

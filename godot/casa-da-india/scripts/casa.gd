@@ -483,31 +483,63 @@ func _process(delta: float) -> void:
 		var a := officials[selected]
 		info.text = "%s · %s\n%s" % [a.name,a.role,a.get("caption",a.state)]
 
-func zoom_camera(factor: float) -> void:
+var camera_drag_start := Vector2.ZERO
+var camera_dragging := false
+var camera_pointer_down := false
+var camera_double_click := false
+
+func ground_at(point: Vector2) -> Vector3:
+	var hit = Plane(Vector3.UP, 0.0).intersects_ray(camera.project_ray_origin(point), camera.project_ray_normal(point))
+	return hit if hit != null else camera_focus
+
+func pan_camera(previous: Vector2, current: Vector2) -> void:
+	camera_focus += ground_at(previous) - ground_at(current)
+	update_camera()
+
+func zoom_camera(factor: float, anchor: Vector2 = Vector2.INF) -> void:
+	var anchored := anchor.is_finite()
+	var before := ground_at(anchor) if anchored else Vector3.ZERO
 	camera.size = clampf(camera.size * factor, 2.5, 60.0)
+	if anchored:
+		camera_focus += before - ground_at(anchor)
+		update_camera()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if Engine.is_editor_hint():
 		return
 	if event is InputEventMagnifyGesture:
-		zoom_camera(1.0 / maxf(event.factor, 0.01))
+		zoom_camera(1.0 / maxf(event.factor, 0.01), event.position)
 	elif event is InputEventPanGesture:
-		zoom_camera(exp(event.delta.y * 0.025))
-	elif event is InputEventMouseMotion and (event.button_mask & MOUSE_BUTTON_MASK_RIGHT):
-		var scale_per_pixel := camera.size / get_viewport().get_visible_rect().size.y
-		camera_focus += (-camera.global_basis.x * event.relative.x + camera.global_basis.y * event.relative.y) * scale_per_pixel
-		update_camera()
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			zoom_camera(pow(0.9, maxf(event.factor, 1.0)))
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			zoom_camera(pow(1.0 / 0.9, maxf(event.factor, 1.0)))
+		zoom_camera(exp(event.delta.y * 0.025), event.position)
+	elif event is InputEventMouseMotion:
+		if camera_pointer_down and not (event.button_mask & MOUSE_BUTTON_MASK_LEFT):
+			camera_pointer_down = false
+			camera_dragging = false
+		if camera_pointer_down:
+			if not camera_dragging and event.position.distance_to(camera_drag_start) > 5.0:
+				camera_dragging = true
+				pan_camera(camera_drag_start, event.position)
+			elif camera_dragging:
+				pan_camera(event.position - event.relative, event.position)
+		elif event.button_mask & (MOUSE_BUTTON_MASK_RIGHT | MOUSE_BUTTON_MASK_MIDDLE):
+			pan_camera(event.position - event.relative, event.position)
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
+			zoom_camera(pow(0.9, maxf(event.factor, 1.0)), event.position)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
+			zoom_camera(pow(1.0 / 0.9, maxf(event.factor, 1.0)), event.position)
 		elif event.button_index == MOUSE_BUTTON_LEFT:
-			if is_instance_valid(live_world):
-				var board_point := camera.unproject_position(live_world.task_label.position)
-				if board_point.distance_to(event.position) < 65.0:
-					live_world.emit({"type":"openPanel","panel":"human" if event.shift_pressed else "tasks"})
-					return
+			if event.pressed:
+				camera_pointer_down = true
+				camera_dragging = false
+				camera_drag_start = event.position
+				camera_double_click = event.double_click
+				return
+			var was_click: bool = camera_pointer_down and not camera_dragging and event.position.distance_to(camera_drag_start) <= 5.0
+			camera_pointer_down = false
+			camera_dragging = false
+			if not was_click:
+				return
 			if not plan_rooms.is_empty() and not is_instance_valid(live_world):
 				var destination := plan_room_at(event.position)
 				if not destination.is_empty():
@@ -525,7 +557,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				officials[i].ring.visible = i == selected
 				officials[i].label.visible = i == selected
 			if is_instance_valid(live_world) and selected >= 0:
-				live_world.emit({"type":"openTerminal" if event.double_click else "select", "id":officials[selected].live_id})
+				live_world.emit({"type":"openTerminal" if camera_double_click else "select", "id":officials[selected].live_id})
 			if selected < 0 and not is_instance_valid(live_world):
 				info.text = "Dois oficiais · pausa simulada" if refeitorio else "Dois oficiais · contabilidade simulada" if tesouraria else "Dois oficiais · estudo de cartas simulado" if cartografia else ("Seis lugares · dois oficiais · reunião simulada" if conselho else ("Seis postos · três oficiais · rotinas simuladas" if escrivaes else ("Fernão Lourenço · rotina simulada" if gabinete else "Clica numa sala para abrir o interior detalhado.")))
 	if event is InputEventKey and event.pressed and not event.echo:

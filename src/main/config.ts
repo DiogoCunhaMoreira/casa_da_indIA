@@ -60,29 +60,20 @@ export interface ScheduledMission {
 }
 
 /** The built-in hourly ops standup: god reviews who's doing what + whether tasks
- *  are on track and agents are running, and every terminal's context is compacted.
- *  Shipped enabled by default; users can toggle it off in the Command Center. */
+ *  are on track and agents are running. Context maintenance is separate.
+ *  Opt-in on fresh installations; existing saved schedules are preserved. */
 export const OPS_STANDUP_MISSION: ScheduledMission = {
   id: 'ops-standup',
   label: 'Hourly ops standup',
   intervalMs: 3_600_000,
   to: 'god',
   body:
-    'Hourly ops standup. Review every agent: who is doing what, and confirm each ' +
-    'is still running (not stalled or idle-stale). Check the task board — are ' +
-    'in-flight tasks on track, and is anything blocked or unowned? Flag stale ' +
-    'agents and at-risk tasks, and keep the board accurate. (As part of this ' +
-    "standup each working agent is asked to summarise its current task and the " +
-    'next step, then compact and resume from the same point — so terminal ' +
-    'contexts stay bounded without losing work. The compaction is queued and ' +
-    'runs when an agent is idle, so it never interrupts work mid-step.)',
-  enabled: true
-  // NO autoCompact. Compaction belongs to contextTrigger.compact and nothing else.
-  // This flag used to live here as well, which meant a default install asked for
-  // compaction on TWO cadences — hourly from this standup and 2-hourly from the
-  // trigger — the exact "two controls that disagree" the maint-1 retirement below
-  // was written to end. The standup's own prose still describes compaction, and
-  // that stays true: the trigger does it, just not on this mission's clock.
+    'Review the active team and unfinished tasks. Identify stalled work, blockers ' +
+    'and tasks without an owner. Update the existing task ledger. Do not invent ' +
+    'work for an empty team, start a compaction, or send a reply to scheduler. ' +
+    'This is scheduled maintenance, separate from the human conversation.',
+  enabled: false
+  // Context compaction is controlled exclusively by contextTrigger.compact.
 };
 
 /** The built-in heartbeat (Lane A #1). A context-aware beat that, each tick,

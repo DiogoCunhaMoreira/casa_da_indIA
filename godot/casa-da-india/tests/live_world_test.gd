@@ -7,6 +7,7 @@ func run() -> void:
 	var scene = load("res://scenes/casa.tscn").instantiate()
 	root.add_child(scene)
 	await process_frame
+	verify_camera(scene)
 	verify_doors(scene)
 	verify_continuous_walk(scene)
 	var live = load("res://scripts/live_world.gd").new()
@@ -81,3 +82,29 @@ func verify_continuous_walk(scene: Node3D) -> void:
 		assert(actor.position.is_equal_approx(Vector3(10,0,0)),"Ultrapassou o destino")
 		actor.queue_free()
 	print("DOORS / WALK: six clear door sweeps; continuous movement at 30, 60 and 120 Hz")
+
+func verify_camera(scene) -> void:
+	var point := Vector2(280, 220)
+	var before: Vector3 = scene.ground_at(point)
+	scene.zoom_camera(0.5, point)
+	assert(scene.ground_at(point).distance_to(before) < 0.001, "Zoom must preserve the ground under the pointer")
+	var focus: Vector3 = scene.camera_focus
+	var selected_before: int = scene.selected
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.position = point
+	scene._unhandled_input(press)
+	var motion := InputEventMouseMotion.new()
+	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+	motion.position = point + Vector2(130, 90)
+	motion.relative = Vector2(130, 90)
+	scene._unhandled_input(motion)
+	assert(scene.camera_focus.distance_to(focus) > 0.1, "Left drag must move the camera")
+	assert(absf(scene.camera_focus.y - focus.y) < 0.001, "Pan must stay on the ground plane")
+	assert(scene.ground_at(motion.position).distance_to(before) < 0.001, "Ground must follow the drag")
+	press.pressed = false
+	press.position = motion.position
+	scene._unhandled_input(press)
+	assert(scene.selected == selected_before, "Dragging must not select an agent or open a room")
+	print("Camera: cursor zoom and left drag passed")
