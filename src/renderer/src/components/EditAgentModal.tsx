@@ -1,9 +1,14 @@
+import { sessionMatchesModel } from '@shared/agentSessionModel';
+import { useAgentModelSession } from '@/hooks/useAgentModelSession';
+import { switchAgentModel } from '@/lib/switchAgentModel';
+import { acquireTerminal, resetTerminal } from './terminalPool';
+import { useTranslation } from 'react-i18next';
+import { AgentModelPicker } from './AgentModelPicker';
 import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useState, type CSSProperties } from 'react';
 import { PixelPanel } from './PixelPanel';
 import { PixelButton } from './PixelButton';
 import { SpritePortrait } from './SpritePortrait';
-import { ProviderLogo } from './ProviderLogo';
 import { useStore, type Agent } from '@/store/store';
 import type { CharacterName } from '@/scene/office/cast';
 import { ELENCO } from '@/scene/office/themeRegistry';
@@ -11,12 +16,7 @@ import { type AccentColorName } from '@/design/tokens';
 import {
   type AgentProvider,
   type HarnessConfig,
-  AGENT_PROVIDER_PRESETS,
-  buildSpawnCommand,
-  modelsForProvider,
-  inferAgentProvider,
-  providerPreset,
-  isClaudeProvider
+  inferAgentProvider
 } from '@/store/config';
 
 const ACCENTS: AccentColorName[] = ['coral', 'mint', 'sky', 'lemon', 'lilac', 'peach'];
@@ -29,10 +29,16 @@ export interface EditAgentModalProps {
 /**
  * Compact post-hire editor for Identity / Engine / Briefing. Mirrors the Add
  * Agent fields that matter after spawn; save only patches the durable roster
- * via updateAgent (engine changes apply on the next restart).
+ * via updateAgent; model changes replace the live terminal session on save.
  */
 export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
   useUiLanguage();
+  const { t } = useTranslation();
+  const live = useAgentModelSession(agent.ptyId);
+  const [modelPicked, setModelPicked] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [configError, setConfigError] = useState(false);
   const updateAgent = useStore((s) => s.updateAgent);
   const [config, setConfig] = useState<HarnessConfig | null>(null);
 
@@ -47,11 +53,12 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
   const [goal, setGoal] = useState(agent.goal ?? '');
 
   useEffect(() => {
-    void window.cth.getConfig().then(setConfig).catch(() => setConfig(null));
+    void window.cth.getConfig().then(setConfig).catch(() => setConfigError(true));
   }, []);
 
   // Keep form in sync when the selected agent changes while the modal is open.
   useEffect(() => {
+    setModelPicked(false);
     setName(agent.name);
     setCharacter(agent.character);
     setAccent(agent.accent);
@@ -61,42 +68,41 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
     setGoal(agent.goal ?? '');
   }, [agent.id]);
 
-  const pickProvider = (id: AgentProvider) => {
-    setProvider(id);
-    if (!config) {
-      setModel(undefined);
-      return;
-    }
-    const nextModel = isClaudeProvider(id) ? config.defaultModel : config.providerDefaultModels?.[id];
-    setModel(nextModel);
-  };
-
-  const preset = providerPreset(provider);
-
-  const save = () => {
-    const trimmedName = name.trim() || agent.name;
-    const trimmedDescription = description.trim() || uiText("a_fresh_harness_24e449");
-    const trimmedGoal = goal.trim();
-    const command = config
-      ? buildSpawnCommand(config, model, provider)
-      : agent.command;
-
-    updateAgent(agent.id, {
-      name: trimmedName,
-      character,
-      accent,
-      provider,
-      model,
-      command,
-      description: trimmedDescription,
-      goal: trimmedGoal || undefined
-    });
-    onClose();
+  const liveMismatch = live.ready && !live.error && !sessionMatchesModel(live.session, provider, model);
+  const engineChanged = liveMismatch || modelPicked || provider !== inferAgentProvider(agent.command, agent.provider) || model !== agent.model;
+  const save = async () => {
+    if (!config || saving || !live.ready || live.error) return;
+    setSaving(true); setSaveError('');
+    const patch = {
+      name: name.trim() || agent.name, character, accent,
+      description: description.trim() || uiText("a_fresh_harness_24e449"),
+      goal: goal.trim() || undefined
+    };
+    try {
+      if (engineChanged) {
+        await switchAgentModel({ ...agent, ...patch }, config, provider, model, {
+          api: window.cth,
+          prepareTerminal: id => {
+            const entry = acquireTerminal(id);
+            const dimensions = { cols: entry.term.cols || 100, rows: entry.term.rows || 30 };
+            resetTerminal(id);
+            return dimensions;
+          },
+          update: next => updateAgent(agent.id, next),
+          missingEngine: label => t('agentModelPicker.missingEngine', { label }),
+          failed: t('agentModelPicker.switchFailed')
+        });
+      }
+      updateAgent(agent.id, patch);
+      onClose();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : t('agentModelPicker.switchFailed'));
+    } finally { setSaving(false); }
   };
 
   return (
     <div
-      onClick={onClose}
+      onClick={() => { if (!saving) onClose(); }}
       style={{
         position: 'fixed', inset: 0,
         background: 'rgba(26, 19, 32, 0.6)',
@@ -189,71 +195,18 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
               </Row>
             </Section>
 
-            <Section label={uiText("Engine_c1f65d")} hint="provider · model · next restart">
-              <Row label={uiText("Provider_7ceee3")}>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {AGENT_PROVIDER_PRESETS.map((p) => {
-                    const active = provider === p.id;
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => pickProvider(p.id)}
-                        title={p.label}
-                        style={{
-                          padding: '3px 8px 1px',
-                          background: active ? `var(--cth-${accent}-light)` : 'var(--cth-cream-100)',
-                          boxShadow: active
-                            ? 'inset 0 0 0 1.5px var(--cth-ink-500)'
-                            : 'inset 0 0 0 1px var(--cth-ink-100)',
-                          fontFamily: 'var(--cth-font-ui)', fontSize: 12,
-                          color: 'var(--cth-ink-900)', cursor: 'pointer', border: 'none',
-                          display: 'inline-flex', alignItems: 'center', gap: 6
-                        }}
-                      >
-                        <ProviderLogo provider={p.id} size={14} />
-                        {p.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </Row>
-
-              {preset.supportsModel && (
-                <Row label={uiText("Model_68c2cc")}>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {(() => {
-                      const known = modelsForProvider(provider);
-                      return model && !known.some((m) => m.id === model)
-                        ? [...known, { id: model, label: `${model} (current)` }]
-                        : known;
-                    })().map((m) => {
-                      const active = (model ?? '') === (m.id ?? '');
-                      return (
-                        <button
-                          key={m.label}
-                          type="button"
-                          onClick={() => setModel(m.id)}
-                          title={m.id ?? uiText("CLI_default_model_b3fcc8")}
-                          style={{
-                            padding: '3px 8px 1px',
-                            background: active ? `var(--cth-${accent}-light)` : 'var(--cth-cream-100)',
-                            boxShadow: active
-                              ? 'inset 0 0 0 1.5px var(--cth-ink-500)'
-                              : 'inset 0 0 0 1px var(--cth-ink-100)',
-                            fontFamily: 'var(--cth-font-ui)', fontSize: 12,
-                            color: 'var(--cth-ink-900)', cursor: 'pointer', border: 'none'
-                          }}
-                        >
-                          {m.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </Row>
-              )}
-
-              <span style={{ fontSize: 12, color: 'var(--cth-ink-500)', lineHeight: '18px' }}> {uiText("Engine_changes_are_saved_for_the_next_restart_2b29bf")} </span>
+            <Section label={t('localModels.model')} hint="">
+              <fieldset disabled={saving} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+              {config ? <AgentModelPicker config={config} provider={provider} model={model} onChange={(nextProvider, nextModel) => {
+                setModelPicked(true); setSaveError('');
+                setProvider(nextProvider); setModel(nextModel);
+              }} /> : <span role="status">{t(configError ? 'agentModelPicker.loadError' : 'agentModelPicker.loading')}</span>}
+              </fieldset>
+              {liveMismatch && <div role="status">{t('agentModelPicker.notApplied')}</div>}
+              {live.error && <div role="alert">{t('agentModelPicker.sessionError')}</div>}
+              <span style={{ fontSize: 12, color: 'var(--cth-ink-500)', lineHeight: '18px' }}>
+                {t('agentModelPicker.switchHint')}
+              </span>
             </Section>
 
               </div>
@@ -281,10 +234,11 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
               </div>
             </div>
 
+            {saveError && <div role="alert" style={{ color: 'var(--cth-ink-900)', padding: 10, border: '1px solid var(--cth-coral)' }}>{saveError}</div>}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-              <PixelButton variant="ghost" size="md" onClick={onClose}>{uiText("cancel_4fd065")}</PixelButton>
+              <PixelButton variant="ghost" size="md" disabled={saving} onClick={onClose}>{uiText("cancel_4fd065")}</PixelButton>
               <div style={{ flex: 1 }} />
-              <PixelButton variant="primary" size="md" onClick={save}>{uiText("save_changes_c0d61b")}</PixelButton>
+              <PixelButton variant="primary" size="md" disabled={!config || saving || !live.ready || live.error} onClick={save}>{saving ? t('agentModelPicker.switching') : engineChanged ? t(liveMismatch ? 'agentModelPicker.applyTerminal' : 'agentModelPicker.saveSwitch') : uiText("save_changes_c0d61b")}</PixelButton>
             </div>
           </div>
         </PixelPanel>

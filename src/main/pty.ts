@@ -34,6 +34,7 @@ interface PtySession {
   proc: pty.IPty;
   cwd: string;
   command: string;
+  model?: string;
   /** The window (webContents) that spawned this PTY and should receive its
    *  output. Multi-window: each floor owns its own terminals, so `pty:data:<id>`
    *  / `pty:exit:<id>` route ONLY here — never broadcast — so one floor's stream
@@ -665,6 +666,7 @@ export class PtyManager {
         proc,
         cwd: opts.cwd,
         command: resolved,
+        model: (() => { const index = opts.args?.findIndex(arg => arg === '--model' || arg === '-m') ?? -1; return index >= 0 ? opts.args?.[index + 1] : undefined; })(),
         lastOutputAt: Date.now(),
         hasOutput: false,
         owner
@@ -747,11 +749,13 @@ export class PtyManager {
     }
   }
 
-  list(): Array<{ id: string; cwd: string; command: string; pid: number; lastOutputAt: number; hasOutput: boolean }> {
+  list(): Array<{ id: string; cwd: string; command: string; model?: string; modelKnown: boolean; pid: number; lastOutputAt: number; hasOutput: boolean }> {
     return Array.from(this.sessions.values()).map(s => ({
       id: s.id,
       cwd: s.cwd,
       command: s.command,
+      model: s.model,
+      modelKnown: true,
       pid: s.proc.pid,
       lastOutputAt: s.lastOutputAt,
       hasOutput: s.hasOutput

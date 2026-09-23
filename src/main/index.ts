@@ -1,3 +1,5 @@
+import { localProviderConfig } from '../shared/localModels';
+import { discoverLocalModels } from './localModels';
 import { shouldDispatchStandup } from '../shared/schedulerPolicy';
 import { registerWorldProtocol } from './worldProtocol';
 import { restartApp } from './restart';
@@ -435,7 +437,7 @@ const preservedWorktrees = new Map<string, PreservedWorktree>();
  * step is wrapped so a teardown error can never crash the caller (an IPC
  * handler or node-pty's onExit).
  */
-function teardownPty(id: string): void {
+function teardownPty(id: string, preserveWorktree = false): void {
   // Ephemeral-worker flag, read BEFORE the cleanup below deletes the entry. All
   // worker deaths (done-release, idle/token reap, manual stop, crash) funnel
   // through here, so this is the one place their floor card gets archived
@@ -464,7 +466,7 @@ function teardownPty(id: string): void {
   }
   // 2) Remove the isolated worktree, if any. Non-blocking; errors are logged.
   const wtPath = worktreePaths.get(id);
-  if (wtPath) {
+  if (wtPath && !preserveWorktree) {
     const origCwd = worktreeOrigins.get(id) ?? wtPath;
     worktreePaths.delete(id);
     worktreeOrigins.delete(id);
@@ -2902,7 +2904,7 @@ async function spawnAgentCore(opts: AgentSpawnOptions, owner: Electron.WebConten
       anthropic: 'anthropic', openai: 'openai', google: 'google', gemini: 'google', groq: 'groq', openrouter: 'openrouter'
     };
     const scoped = PREFIX_BACKEND[prefix];
-    const backends = scoped ? [scoped] : Object.keys(BACKEND_KEY_ENV);
+    const backends = prefix.startsWith('local-') ? [] : scoped ? [scoped] : Object.keys(BACKEND_KEY_ENV);
     for (const backend of backends) {
       const key = integrations.getSecret(providerKeyRef(backend));
       if (!key) continue;
@@ -2930,6 +2932,10 @@ async function spawnAgentCore(opts: AgentSpawnOptions, owner: Electron.WebConten
           local: { npm: '@ai-sdk/openai-compatible', name: 'Local (self-hosted)', options: { baseURL: baseUrl }, models: { [localModel]: { name: localModel } } }
         };
       }
+      oc.provider = {
+        ...(oc.provider as Record<string, unknown> ?? {}),
+        ...localProviderConfig(cfg.localConnections ?? [], modelSlug, id => integrations.getSecret(`localModel:${id}`))
+      };
       extra.OPENCODE_CONFIG_CONTENT = JSON.stringify(oc);
     }
     opts.env = { ...(opts.env ?? {}), ...extra };
@@ -2966,13 +2972,13 @@ ipcMain.handle('pty:redraw', (_evt, id: string) => {
   if (typeof id !== 'string') return { ok: false, error: 'invalid id' };
   return ptyManager.redraw(id);
 });
-ipcMain.handle('pty:kill', (_evt, id: string) => {
+ipcMain.handle('pty:kill', (_evt, id: string, options?: { preserveWorktree?: boolean }) => {
   if (typeof id !== 'string') return { ok: false, error: 'invalid id' };
   // Kill the process, then run the shared lifecycle teardown (archive the agent,
   // remove its isolated worktree, drop the maps). teardownPty is idempotent, so
   // node-pty firing onExit once the child actually dies is a harmless no-op.
   const res = ptyManager.kill(id);
-  teardownPty(id);
+  if (res.ok || /^no pty:/.test(res.error ?? '')) teardownPty(id, options?.preserveWorktree === true);
   return res;
 });
 ipcMain.handle('pty:list', () => ptyManager.list());
@@ -3077,6 +3083,11 @@ ipcMain.handle('integrations:remove', (_evt, payload: unknown) => {
 // can SET a key and ASK whether one is set (boolean) — it can never read the
 // plaintext back. Keys are materialized MAIN-ONLY at spawn (spawnAgentCore). Base
 // URLs are non-secret and ride HarnessConfig.providerBaseUrls (normal config save).
+ipcMain.handle('localModels:discover', (_evt, payload: unknown) => discoverLocalModels(payload));
+ipcMain.handle('localModels:key', (_evt, payload: { id?: unknown; key?: unknown }) => {
+  if (!payload || typeof payload.id !== 'string' || !/^local-[a-z0-9-]+$/.test(payload.id) || typeof payload.key !== 'string') return { ok: false };
+  return integrations.setSecret(`localModel:${payload.id}`, payload.key);
+});
 ipcMain.handle('providerKey:set', (_evt, payload: unknown) => {
   const p = (payload ?? {}) as { backend?: unknown; key?: unknown };
   if (typeof p.backend !== 'string' || !(p.backend in BACKEND_KEY_ENV)) return { ok: false, error: 'unknown backend' };

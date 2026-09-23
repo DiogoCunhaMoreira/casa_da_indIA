@@ -1,3 +1,5 @@
+import { LocalModelsSettings } from './LocalModelsSettings';
+import type { LocalConnection } from '@shared/localModels';
 import { catalogText } from '@/i18n/catalog';
 import { useState, useEffect, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -61,7 +63,7 @@ const headStyle: CSSProperties = {
 };
 const linkStyle: CSSProperties = { color: 'var(--cth-ink-900)', textDecoration: 'underline', cursor: 'pointer' };
 
-export function AiEnginesSettings({ config }: { config: HarnessConfig }) {
+export function AiEnginesSettings({ config, onLocalChange }: { config: HarnessConfig; onLocalChange: (connections: LocalConnection[]) => void }) {
   const { t } = useTranslation();
   // Keep the global "OpenAI key present" signal (boolean only) live so the Talk
   // button's missing-key warning clears the instant the user saves their OpenAI key
@@ -164,6 +166,8 @@ export function AiEnginesSettings({ config }: { config: HarnessConfig }) {
         ))}
       </div>
 
+      <LocalModelsSettings config={config} onChange={onLocalChange} />
+      <details><summary>{t('localModels.legacy')}</summary>
       {/* Per-CLI local endpoint + default model */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={headStyle}>{t('aiEngines.localEndpoint')}</div>
@@ -205,6 +209,7 @@ export function AiEnginesSettings({ config }: { config: HarnessConfig }) {
         </div>
       </div>
 
+      </details>
       {/* Unsandboxed-in-auto caveat (Pam guardrail #6) */}
       <div style={{
         fontSize: 12, color: 'var(--cth-ink-700)', lineHeight: '17px',

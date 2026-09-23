@@ -1,3 +1,4 @@
+import { AgentModelSessionNotice } from './AgentModelSessionNotice';
 import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -247,6 +248,7 @@ export function AgentDetailPanel({ agent }: AgentDetailPanelProps) {
               </EmptyTab>
             ) : (
             <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <AgentModelSessionNotice key={agent.id} agent={agent} />
               <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
                 <PtyTerminalView
                   key={terminalInstanceKey(agent.ptyId, agent.terminalGeneration)}

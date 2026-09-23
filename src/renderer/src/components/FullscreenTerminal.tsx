@@ -1,3 +1,4 @@
+import { AgentModelSessionNotice } from './AgentModelSessionNotice';
 import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -587,6 +588,7 @@ export function FullscreenTerminal({ config }: FullscreenTerminalProps) {
               <AgentControlStrip key={agent.id} agentId={agent.id} />
 
               <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <AgentModelSessionNotice key={agent.id} agent={agent} />
                 <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
                   <PtyTerminalView
                     key={terminalInstanceKey(agent.ptyId, agent.terminalGeneration)}

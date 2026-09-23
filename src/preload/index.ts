@@ -1,3 +1,4 @@
+import type { LocalConnection } from '../shared/localModels';
 import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from 'electron';
 import type { AgentProvider } from '../shared/agentProvider';
 import type { HireManifest } from '../shared/hire';
@@ -327,6 +328,7 @@ export interface HarnessConfig {
   providerBaseUrls?: Partial<Record<AgentProvider, string>>;
   /** Per-CLI-provider default model slug, used to pre-fill the model picker. */
   providerDefaultModels?: Partial<Record<AgentProvider, string>>;
+  localConnections?: LocalConnection[];
 }
 
 export interface MemoryStatus {
@@ -583,12 +585,14 @@ const api = {
     ipcRenderer.invoke('pty:resize', id, cols, rows),
   redrawPty: (id: string): Promise<{ ok: boolean; error?: string }> =>
     ipcRenderer.invoke('pty:redraw', id),
-  killPty: (id: string): Promise<{ ok: boolean; error?: string }> =>
-    ipcRenderer.invoke('pty:kill', id),
+  killPty: (id: string, options?: { preserveWorktree?: boolean }): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke('pty:kill', id, options),
   listPtys: (): Promise<Array<{
     id: string;
     cwd: string;
     command: string;
+    model?: string;
+    modelKnown?: boolean;
     pid: number;
     lastOutputAt: number;
     hasOutput: boolean;
@@ -650,6 +654,10 @@ const api = {
     try { return ipcRenderer.sendSync('app:readClipboardSync') ?? ''; } catch { return ''; }
   },
 
+  discoverLocalModels: (payload: { baseUrl: string; key?: string }): Promise<{ ok: boolean; models?: string[]; baseUrl?: string; error?: string }> =>
+    ipcRenderer.invoke('localModels:discover', payload),
+  setLocalModelKey: (id: string, key: string): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke('localModels:key', { id, key }),
   // ─── Config ──────────────────────────────────────────────────────────────
   getConfig: (): Promise<HarnessConfig> =>
     ipcRenderer.invoke('config:get'),

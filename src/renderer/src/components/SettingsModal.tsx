@@ -1168,7 +1168,7 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
 
                       <div style={{ height: 1, background: 'var(--cth-ink-300)' }} />
 
-                      <AiEnginesSettings config={config} />
+                      <AiEnginesSettings config={{ ...config, ...pending }} onLocalChange={(localConnections) => stage({ localConnections })} />
 
                       <div style={{ height: 1, background: 'var(--cth-ink-300)' }} />
 

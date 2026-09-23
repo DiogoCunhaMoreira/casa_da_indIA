@@ -1,3 +1,5 @@
+import { LocalModelsSettings } from './LocalModelsSettings';
+import { LOCAL_SERVERS, localModelSlug } from '@shared/localModels';
 import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useLayoutEffect, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,9 +16,7 @@ import type { HireManifest } from '@shared/hire';
 import { hireQueueProgress } from '@shared/hireQueue';
 import { MCP_CATALOG } from '@shared/mcpCatalog';
 import {
-  OSS_LOCAL_PICKS,
   OSS_PROVIDER_PICKS,
-  localSlugFor,
   hasOssQuickPicks,
   OSS_BLOG_LINKS
 } from '@shared/ossModels';
@@ -191,6 +191,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
   const initialProvider = inferAgentProvider(config.defaultCommand);
   const initialModel = isClaudeProvider(initialProvider) ? config.defaultModel : undefined;
 
+  const [localConnections, setLocalConnections] = useState(config.localConnections ?? []);
   const [name, setName] = useState(pendingHire?.name ?? 'Caminha');
   const [character, setCharacter] = useState<CharacterName>(knownCharacter(pendingHire?.character));
   const [accent, setAccent] = useState<AccentColorName>(knownAccent(pendingHire?.accent));
@@ -876,6 +877,16 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
 
                 {section === 'engine' && (
                   <>
+                    <LocalModelsSettings selectedSlug={provider === 'opencode' ? model : undefined} config={{ ...config, localConnections }} onUse={(connection, updated) => {
+                      setLocalConnections(updated.localConnections ?? []);
+                      const slug = localModelSlug(connection);
+                      setProvider('opencode'); setModel(slug);
+                      setCommand(buildSpawnCommand(updated, slug, 'opencode'));
+                      setResumeSessionId(''); setFolderNote(undefined);
+                    }} />
+
+                    <details open={!(provider === 'opencode' && model?.startsWith('local-'))}>
+                      <summary>{tr('localModels.engineOptions')}</summary>
                     <Row label={tr('addAgent.provider')}>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         {AGENT_PROVIDER_PRESETS.map((p) => {
@@ -919,7 +930,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
                           // hardcoded list (e.g. claude-fable-5). Surface it as a real,
                           // selected card instead of leaving the picker looking unset —
                           // the command field already carries it either way.
-                          const known = modelsForProvider(provider);
+                          const known = [...modelsForProvider(provider), ...(provider === 'opencode' ? localConnections.map(c => ({ id: localModelSlug(c), label: `${c.model} · ${LOCAL_SERVERS[c.kind]?.label ?? c.kind}` })) : [])];
                           return model && !known.some((m) => m.id === model)
                             ? [...known, { id: model, label: tr('addAgent.fromHire', { model }) }]
                             : known;
@@ -955,25 +966,6 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
                     {hasOssQuickPicks(provider) && (
                       <Row label={tr('addAgent.ossModels')}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          <div>
-                            <div style={ossGroupHead}>{tr('addAgent.ossLocal')}</div>
-                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                              {OSS_LOCAL_PICKS.map((p) => {
-                                const slug = localSlugFor(provider, p.tag);
-                                const active = (model ?? '') === slug;
-                                return (
-                                  <button
-                                    key={p.tag}
-                                    onClick={() => pickModel(slug)}
-                                    title={tr('addAgent.ossLocalTitle', { slug, ram: p.minRam, tag: p.tag })}
-                                    style={ossChip(active, accent)}
-                                  >
-                                    {p.label}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
                           <div>
                             <div style={ossGroupHead}>{tr('addAgent.ossByok')}</div>
                             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -1030,6 +1022,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
                         style={{ ...inputStyle, fontFamily: 'var(--cth-font-mono)' }}
                       />
                     </Row>
+                    </details>
                   </>
                 )}
 
