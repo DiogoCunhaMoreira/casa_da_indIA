@@ -1,5 +1,6 @@
 import { shouldDispatchStandup } from '../shared/schedulerPolicy';
 import { registerWorldProtocol } from './worldProtocol';
+import { restartApp } from './restart';
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, powerMonitor, powerSaveBlocker, screen, shell, Notification } from 'electron';
 import { spawn } from 'node:child_process';
 import {
@@ -2167,6 +2168,7 @@ if (process.defaultApp) {
 // over the same hive, which was previously possible but never useful.
 const gotInstanceLock = app.requestSingleInstanceLock();
 if (!gotInstanceLock) {
+  console.error('[startup] A casa_da_indIA já está aberta noutra instância. Fecha-a com Cmd+Q (macOS) ou Sair antes de executar npm run dev novamente.');
   allowQuit = true;
   app.quit();
 } else {
@@ -2371,7 +2373,9 @@ function createWindow(opts: { floor?: boolean } = {}): BrowserWindow {
   });
 
   if (isDev && process.env.ELECTRON_RENDERER_URL) {
-    win.loadURL(process.env.ELECTRON_RENDERER_URL);
+    void win.loadURL(process.env.ELECTRON_RENDERER_URL).catch((error) => {
+      console.error('[startup] Não foi possível carregar a interface de desenvolvimento:', error);
+    });
   } else {
     win.loadFile(join(__dirname, '../renderer/index.html'));
   }
@@ -3237,8 +3241,7 @@ ipcMain.handle('config:changeHome', async (_evt, payload: unknown) => {
   allowQuit = true;
   writeConfig({ harnessHome: newHome });
   try { ptyManager.killAll(); } catch (e) { console.error('[changeHome] killAll:', e); }
-  app.relaunch();
-  app.exit(0);
+  restartApp();
   return { ok: true as const }; // unreachable (process exits) — typed for the renderer
 });
 
@@ -3779,8 +3782,7 @@ ipcMain.handle('app:resetAll', () => {
   // Back to first-run defaults, then relaunch clean so all in-memory services
   // re-bootstrap from scratch and the renderer lands on onboarding.
   resetConfig();
-  app.relaunch();
-  app.exit(0);
+  restartApp();
 });
 
 // ─── IPC: token telemetry (real usage + est. cost from CC transcripts) ───────

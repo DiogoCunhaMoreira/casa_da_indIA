@@ -195,17 +195,32 @@ func wall_map(p: Node3D, pos: Vector3) -> void:
 		var angle = i*TAU/8
 		rod(map,Vector3(-1.4,-0.65,0.21),Vector3(-1.4+sin(angle)*0.24,-0.65+cos(angle)*0.24,0.21),0.012,OAK)
 
-func globe(p: Node3D, pos: Vector3) -> void:
+func globe(p: Node3D, pos: Vector3, variant: int = 0) -> void:
 	var g = h.pivot(p,"GloboArmilar",pos)
-	for i in range(3):
-		var a = i*TAU/3
-		rod(g,Vector3(sin(a)*0.5,0.10,cos(a)*0.5),Vector3(0,1.1,0),0.06,OAK)
-	h.ball(g,Vector3(0,1.35,0),Vector3(1.05,1.05,1.05),Color("669597"))
-	for i in range(3):
+	var ocean: Color = [Color("669597"),Color("c5ae79"),Color("466b87")][variant]
+	var land: Color = [PAPER,Color("718269"),Color("d7c694")][variant]
+	var wood: Color = OAK.darkened(0.18) if variant == 2 else OAK
+	if variant == 2:
+		h.round_shape(g,"PeDoPedestal",Vector3(0,0.12,0),0.46,0.18,wood)
+		h.round_shape(g,"ColunaTorneada",Vector3(0,0.59,0),0.11,0.85,wood)
+		for y in [0.25,0.88]:
+			h.round_shape(g,"AnelDoPedestal",Vector3(0,y,0),0.17,0.07,BRASS)
+	else:
+		for i in range(3):
+			var a = i*TAU/3
+			rod(g,Vector3(sin(a)*0.5,0.10,cos(a)*0.5),Vector3(0,1.1,0),0.06,wood)
+		if variant == 1:
+			h.torus(g,Vector3(0,0.35,0),0.35,0.035,wood)
+	var sphere = h.pivot(g,"EsferaCartografica",Vector3(0,1.35,0))
+	sphere.rotation = Vector3(0,[0.0,0.65,-0.5][variant],[0.0,0.18,-0.12][variant])
+	h.ball(sphere,Vector3.ZERO,Vector3(1.05,1.05,1.05),ocean)
+	for i in range(2 if variant == 2 else 3):
 		var ring = h.torus(g,Vector3(0,1.35,0),0.61,0.025,BRASS)
 		ring.rotation = Vector3(PI/2 if i == 0 else 0,0,0.5 if i == 2 else 0)
 	for pos2 in [Vector3(-0.15,1.6,0.4),Vector3(0.2,1.35,0.47),Vector3(0.05,1.16,0.45)]:
-		h.ball(g,pos2,Vector3(0.28,0.24,0.08),PAPER)
+		h.ball(sphere,pos2-Vector3(0,1.35,0),Vector3(0.28,0.24,0.08),land)
+	if variant == 1:
+		g.scale = Vector3.ONE*1.2
 
 func candle(p: Node3D, pos: Vector3, wall: bool) -> void:
 	var c = h.pivot(p,"Castical",pos)

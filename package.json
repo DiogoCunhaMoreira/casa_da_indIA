@@ -11,7 +11,7 @@
     "url": "https://github.com/DiogoCunhaMoreira/casa_da_indIA.git"
   },
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "node tools/dev.cjs",
     "arte": "node tools/mapgen/run.cjs",
     "cena": "vite --config vite.cena.config.ts",
     "build": "npm run godot:export && electron-vite build && npm run copy:main-assets",
