@@ -79,3 +79,33 @@ O Godot é a visualização definitiva por decisão do utilizador. O código do 
 As seis zonas de abertura das portas estão livres de mobiliário, vasos e bancos. O movimento conserva a velocidade entre os pontos da grelha e trava apenas no destino; testes a 30, 60 e 120 Hz verificam que não há paragens intermédias nem ultrapassagem do destino.
 
 A secretária junto à entrada dos Escrivães foi retirada: há agora 15 lugares principais e 6 no Conselho. O ID do posto retirado (5) fica reservado, para preservar os outros lugares guardados. O globo da Cartografia foi afastado da entrada para a zona do arquivo.
+
+## Cenário alternativo: Tasca Portuguesa
+
+O seletor acima do mundo permite alternar entre **Casa da Índia** e **Tasca Portuguesa**. A Casa é a opção inicial; a última escolha fica em `casa.world.scenario`, na partição local da janela. A troca substitui apenas o iframe e envia um snapshot completo. IDs, nomes, tarefas, PTYs, providers e permissões não são alterados.
+
+A tasca é uma planta original de bairro: balcão (coordenador), sala com 12 lugares, cozinha com 4, despensa com 4 e pátio com 4 lugares de pausa. Mantém a capacidade de 21 agentes com lugar, espera para os restantes, estações de ferramentas, correspondência, estados e cancelamento das pausas ao retomar trabalho. Os modelos são procedurais, sem áudio ou recursos remotos.
+
+`casa_world_config.gd` contém os destinos originais da Casa; `tasca.gd` constrói a tasca e define os seus destinos. O controlador `live_world.gd` é partilhado. A ponte visual está na versão 2: os snapshots e eventos `view` identificam o cenário, e as zonas são validadas por cenário. A origem `casa-world://app` e o isolamento permanecem os mesmos.
+
+`agent.character` continua a guardar a personagem da Casa. A tasca resolve uma personagem estável por ID (Manuel para o coordenador) e guarda escolhas explícitas em `tasca.world.characters`. Criar/editar agentes e os retratos da interface usam o elenco ativo. As escolhas da tasca são preferências locais de apresentação e não fazem parte da exportação do roster. Os lugares e a zona da Casa mantêm as chaves `casa.world.*`; a tasca usa `tasca.world.*`.
+
+Verificações adicionais:
+
+```sh
+node --test test/world-bridge.test.cjs test/world-scenarios.test.cjs
+"$GODOT_BIN" --headless --path godot/casa-da-india \
+  --script res://tests/tasca_world_test.gd --log-file /tmp/tasca-native.log
+npm run godot:portraits
+npm run test:godot
+```
+
+O ensaio Electron percorre Casa → Tasca → Casa, testa 1/24/16 agentes, verifica todas as zonas e a ausência de Node/preload. Capturas em `/tmp/casadaindia-world-overview.png`, `/tmp/tasca-world-overview.png` e `/tmp/tasca-world-*.png`. Não inicia providers reais. Para inspecionar a geometria nativa, executar o projeto Godot com `-- --tasca`.
+
+Referências de ambiente (inspiração, sem copiar imagens ou plantas): [Taste of Lisboa](https://www.tasteoflisboa.com/pt/blog/how-to-identify-an-authentic-portuguese-tasca/) e [Petisc’ar — NiT](https://www.nit.pt/comida/restaurantes/petiscar-o-novo-espaco-da-baixa-onde-ha-pratos-portugueses-sem-precos-proibitivos).
+
+### Verificação da primeira versão — 23/09/2026
+
+TypeScript, build/exportação Web, os cinco testes da ponte/preferências e os dois ensaios nativos passaram. O ensaio Electron Casa → Tasca → Casa terminou sem erros, com 60 FPS nas amostras locais de 1/16/24 agentes e isolamento confirmado. Foram revistas as capturas da planta e do balcão após ajustar o quadro e os materiais. Estes ensaios usam agentes simulados e não substituem uma sessão prolongada com providers reais.
+
+A suite geral terminou com 777 testes aprovados e quatro falhas anteriores à tasca: paridade de chaves e interpolação de `localModels`/`agentModelPicker` nas traduções árabe e chinesa. Confirmado que as árvores dessas traduções, fora das novas mensagens `interface`, são iguais às do commit base `8bcbe7fe`.

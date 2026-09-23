@@ -1392,6 +1392,14 @@
     "decodeFailed": "Não foi possível abrir a imagem. O ficheiro pode estar danificado ou ter uma extensão incorreta."
   },
   "interface": {
+    "worldScenario": "Cenário",
+    "worldSwitchScenario": "Mudar de cenário",
+    "tascaOverview": "Vista geral",
+    "tascaCounter": "Balcão",
+    "tascaTables": "Sala de mesas",
+    "tascaKitchen": "Cozinha",
+    "tascaPantry": "Despensa e garrafeira",
+    "tascaPatio": "Pátio",
     "auto_mode_on_8318a9": "Autonomia ativada",
     "auto_mode_off_4ce3b7": "Autonomia desativada",
     "Light_theme_9e5ba0": "Tema claro",

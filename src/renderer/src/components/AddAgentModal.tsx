@@ -10,7 +10,8 @@ import { Icon } from './Icon';
 import { ProviderLogo } from './ProviderLogo';
 import { useStore, type Agent } from '@/store/store';
 import type { CharacterName } from '@/scene/office/cast';
-import { CARA_POR_OMISSAO, ELENCO } from '@/scene/office/themeRegistry';
+import { TASCA_ROSTER, useWorldScenario } from '@/scene/godot/scenarios';
+import { CARA_POR_OMISSAO, ELENCO as CASA_ROSTER } from '@/scene/office/themeRegistry';
 import { type AccentColorName } from '@/design/tokens';
 import type { HireManifest } from '@shared/hire';
 import { hireQueueProgress } from '@shared/hireQueue';
@@ -146,6 +147,9 @@ export interface AddAgentModalProps {
 
 export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModalProps) {
   useUiLanguage();
+  const scenario = useWorldScenario(s => s.scenario);
+  const ELENCO = scenario === 'tasca' ? TASCA_ROSTER : CASA_ROSTER;
+  const defaultCharacter = scenario === 'tasca' ? TASCA_ROSTER[1].name : CARA_POR_OMISSAO;
   const { t: tr } = useTranslation();
   const rtl = useRtl();
   const addAgent = useStore(s => s.addAgent);
@@ -158,7 +162,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
   const reviewProgress = hireQueueProgress(hireQueue);
 
   const knownCharacter = (c?: string): CharacterName =>
-    (ELENCO.some(m => m.name === c) ? (c as CharacterName) : CARA_POR_OMISSAO);
+    (ELENCO.some(m => m.name === c) ? (c as CharacterName) : defaultCharacter);
   const knownAccent = (a?: string): AccentColorName =>
     (ACCENTS.includes(a as AccentColorName) ? (a as AccentColorName) : 'sky');
   /** The cast member a typed name refers to, if any.
@@ -457,7 +461,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
     const agent: Agent = {
       id,
       name: name.trim(),
-      character,
+      character: scenario === 'tasca' ? CARA_POR_OMISSAO : character,
       accent,
       description: description.trim() || uiText("a_fresh_harness_24e449"),
       project: basename(projectCwd),
@@ -481,6 +485,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
       recentTextTs: Date.now()
     };
     addAgent(agent);
+    if (scenario === 'tasca') useWorldScenario.getState().setCharacter(agent.id, character);
     // Remember the folder for the next hire: promote it to the front of the
     // registeredRepos quick-picks (the modal's default cwd) so back-to-back
     // hires land in the same project without re-picking.

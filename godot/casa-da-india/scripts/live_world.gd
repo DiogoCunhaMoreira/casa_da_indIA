@@ -12,10 +12,14 @@ var envelopes: Array = []
 var metrics_time := 0.0
 const SEAT_IDS = [0,1,2,3,4,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21]
 const CAPTIONS = {"idle":"Disponível", "working":"A trabalhar", "thinking":"A pensar", "compacting":"A organizar contexto", "waiting":"À espera", "blocked":"Precisa de ajuda", "success":"Concluído", "ghost":"Desligado", "looping":"A repetir", "typing":"A escrever"}
-const CENTRES = {"gabinete": Vector3(-10.5,0,-11), "escrivaes": Vector3(10.5,0,-11), "conselho": Vector3(-10.5,0,0), "cartografia": Vector3(10.5,0,0), "tesouraria": Vector3(-10.5,0,11), "refeitorio": Vector3(10.5,0,11)}
+var definition: RefCounted
+var CENTRES: Dictionary
 
 func _ready() -> void:
 	host = get_parent()
+	definition = host.world_definition
+	CENTRES = definition.CENTRES
+	room = definition.OVERVIEW
 	for actor in host.officials:
 		actor.node.queue_free()
 	host.officials.clear()
@@ -52,7 +56,9 @@ func receive(args: Array) -> void:
 	apply_snapshot(data)
 
 func apply_snapshot(data: Variant) -> void:
-	if not data is Dictionary or data.get("version") != 1 or data.get("type") != "snapshot":
+	if not data is Dictionary or data.get("version") != 2 or data.get("type") != "snapshot":
+		return
+	if data.get("scenario", "casadaindia") != definition.ID:
 		return
 	if not data.get("agents") is Array:
 		return
@@ -88,7 +94,7 @@ func apply_snapshot(data: Variant) -> void:
 		actor.state = str(item.get("status", "idle"))
 		if old_state != actor.state:
 			actor.idle_time = 0.0
-		actor.role = "Feitor" if item.get("isGod", false) else "Agente"
+		actor.role = ("Taberneiro" if definition.ID == "tasca" else "Feitor") if item.get("isGod", false) else "Agente"
 		actor.caption = CAPTIONS.get(actor.state, actor.state)
 		actor.label.text = "%s · %s" % [actor.name, actor.caption]
 		actor.ring.visible = item.get("selected", false)
@@ -103,21 +109,11 @@ func apply_snapshot(data: Variant) -> void:
 			actor.label.visible = true
 		actor.home = destination
 		if actor.live_working:
-			match item.get("station", "desk"):
-				"board": destination = Vector3(0,0,8)
-				"mailbox": destination = Vector3(1,0,6)
-				"web", "mcp": destination = CENTRES.cartografia+Vector3(4.75,0,-0.35)
-				"shelf":
-					var centre := CENTRES.escrivaes as Vector3
-					for entry in CENTRES.values():
-						if Vector2(entry.x-actor.home.x,entry.z-actor.home.z).length() < 9.0:
-							centre = entry
-							break
-					destination = centre+Vector3(0,0,-3.0)
+			destination = definition.station_position(str(item.get("station", "desk")), actor.home)
 		if actor.state == "blocked":
-			destination = Vector3(-1.0,0,14.5-float(agents.keys().find(id))*0.65)
+			destination = definition.blocked_position(agents.keys().find(id))
 		if item.get("seat") == null:
-			destination = Vector3(3.0+float(agents.keys().find(id)%12)*0.8,0,17.5)
+			destination = definition.waiting_position(agents.keys().find(id))
 		if actor.state != "idle":
 			actor.break_stage = ""
 			break_places.erase(id)
@@ -137,33 +133,22 @@ func apply_snapshot(data: Variant) -> void:
 	if OS.has_feature("web"):
 		RenderingServer.render_loop_enabled = not host.paused
 		Engine.max_fps = 5 if host.paused else 60
-	var next_room: String = data.get("room", "casa")
+	var next_room: String = data.get("room", definition.OVERVIEW)
 	if next_room != room:
 		view_room(next_room)
 	host.info.text = "%d agentes · Estado em tempo real" % agents.size()
 
 func seat_position(seat: Variant) -> Vector3:
-	if seat == null:
-		return Vector3(1.2,0,17.4)
-	var n := int(seat)
-	if n == 0:
-		return CENTRES.gabinete + Vector3(0,0,-2.6)
-	if n <= 8:
-		return CENTRES.escrivaes + Vector3(-5.4 + ((n-1)%4)*3.6,0,-0.8 if n <= 4 else 2.5)
-	if n <= 11:
-		return CENTRES.cartografia + [Vector3(-2.8,0,1.75),Vector3(4.75,0,-0.35),Vector3(0.4,0,1.75)][n-9]
-	if n <= 15:
-		return CENTRES.tesouraria + [Vector3(-2.6,0,1.25),Vector3(-0.7,0,1.25),Vector3(1.2,0,1.25),Vector3(5.35,0,1.55)][n-12]
-	return CENTRES.conselho + Vector3(-4.25 if n < 19 else 4.25,0,-2.0+((n-16)%3)*2.0)
+	return definition.seat_position(seat)
 
 func view_room(next: String) -> void:
-	if next != "casa" and not CENTRES.has(next):
+	if next != definition.OVERVIEW and not CENTRES.has(next):
 		return
 	room = next
-	host.camera_focus = Vector3(0,0.2,2.5) if room == "casa" else CENTRES[room] + Vector3(0,0.8,0)
-	host.camera.size = 49.0 if room == "casa" else 18.8
+	host.camera_focus = definition.OVERVIEW_FOCUS if room == definition.OVERVIEW else CENTRES[room] + Vector3(0,0.8,0)
+	host.camera.size = definition.OVERVIEW_SIZE if room == definition.OVERVIEW else 18.8
 	host.update_camera()
-	emit({"type":"view", "room":room})
+	emit({"type":"view", "scenario":definition.ID, "room":room})
 
 func move_to(actor: Dictionary, target: Vector3) -> void:
 	var goal: Vector3 = navigation.stand(target)
@@ -193,17 +178,17 @@ func tick(actor: Dictionary, delta: float) -> void:
 				break
 		actor.break_stage = "serve"
 		actor.idle_time = 0.0
-		move_to(actor,CENTRES.refeitorio+Vector3(-0.5,0,-2.55))
+		move_to(actor,definition.break_position("serve"))
 	elif actor.break_stage != "" and actor.node.position.distance_to(actor.destination) < 0.15:
 		var place: int = break_places.get(id,0)
 		if actor.break_stage == "serve" and actor.idle_time > 4.0:
 			actor.break_stage = "eat"
 			actor.idle_time = 0.0
-			move_to(actor,CENTRES.refeitorio+[Vector3(-3.4,0,1.8),Vector3(-3.4,0,-0.78),Vector3(3.7,0,-0.30),Vector3(5.5,0,0.9)][place])
+			move_to(actor,definition.break_position("eat",place))
 		elif actor.break_stage == "eat" and actor.idle_time > 18.0:
 			actor.break_stage = "wash"
 			actor.idle_time = 0.0
-			move_to(actor,CENTRES.refeitorio+Vector3(6.5,0,-2.5))
+			move_to(actor,definition.break_position("wash"))
 		elif actor.break_stage == "wash" and actor.idle_time > 5.0:
 			actor.break_stage = "return"
 			move_to(actor,actor.home)
@@ -223,7 +208,7 @@ func show_message(data: Dictionary) -> void:
 			continue
 		var start: Vector3 = agents[data.from].node.position + Vector3(0,2,0)
 		var end: Vector3 = agents[target].node.position + Vector3(0,2,0)
-		var letter = host.box(host.get_node("Maquete"),"Correspondencia",start,Vector3(0.32,0.22,0.05),Color("f2e6ce"))
+		var letter = host.box(host.get_node("Maquete"),"Correspondencia",start,(Vector3(0.18,0.36,0.025) if definition.ID == "tasca" else Vector3(0.32,0.22,0.05)),Color("f2e6ce"))
 		envelopes.append(letter)
 		var tween := create_tween()
 		tween.tween_property(letter,"position",(start+end)*0.5+Vector3(0,2,0),0.6)
@@ -234,4 +219,4 @@ func _process(delta: float) -> void:
 	metrics_time += delta
 	if metrics_time >= 1.0 and bridge != null:
 		metrics_time = 0.0
-		bridge.metrics(JSON.stringify({"fps":Engine.get_frames_per_second(),"agents":agents.size(),"room":room,"nodes":get_tree().get_node_count(),"drawCalls":Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)}))
+		bridge.metrics(JSON.stringify({"fps":Engine.get_frames_per_second(),"agents":agents.size(),"room":room,"scenario":definition.ID,"nodes":get_tree().get_node_count(),"drawCalls":Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)}))

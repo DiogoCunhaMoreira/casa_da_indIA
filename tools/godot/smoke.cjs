@@ -19,21 +19,42 @@ app.whenReady().then(async () => {
   win.webContents.on('console-message', (_e, level, message) => { console.log(`[renderer ${level}] ${message}`); if (level >= 3) errors.push(message); });
   win.webContents.on('render-process-gone', (_e, info) => { console.error(info); app.exit(1); });
   await win.loadFile(join(__dirname, 'smoke.html'));
-  let ready = false;
-  for (let i=0; i<90; i++) {
-    await delay(1000);
-    ready = await win.webContents.executeJavaScript("window.results.some(x => x.type === 'ready')");
-    if (ready) break;
+  const cast = require('../../test/load-ts.cjs')('src/renderer/src/scene/godot/tascaCast.ts').TASCA_CAST;
+  await win.webContents.executeJavaScript(`window.tascaCast = ${JSON.stringify(cast)}`);
+  const waitReady = async () => {
+    for (let i=0; i<90; i++) {
+      await delay(1000);
+      if (await win.webContents.executeJavaScript("window.results.some(x => x.type === 'ready')")) return;
+    }
+    throw new Error('Godot bridge never became ready');
+  };
+  for (const scenario of ['casadaindia', 'tasca', 'casadaindia']) {
+    if (scenario !== 'casadaindia' || await win.webContents.executeJavaScript("window.scenario === 'tasca'")) {
+      await win.webContents.executeJavaScript(`window.switchScenario('${scenario}')`);
+    }
+    await waitReady();
+    await delay(1500);
+    writeFileSync(`/tmp/${scenario}-world-overview.png`, (await win.webContents.capturePage()).toPNG());
+    const subframe = win.webContents.mainFrame.frames.find(f => f.url.startsWith('casa-world:'));
+    const isolation = await subframe.executeJavaScript("({origin:location.origin, node:typeof require, preload:typeof window.cth, canvas:!!document.querySelector('canvas')})");
+    console.log('ISOLATION', scenario, JSON.stringify(isolation));
+    if (isolation.node !== 'undefined' || isolation.preload !== 'undefined') throw new Error('World is not isolated');
+    for (const count of [1,24,16]) {
+      await win.webContents.executeJavaScript(`window.sendSnapshot(${count}, '${scenario === 'tasca' ? 'mesas' : 'escrivaes'}')`);
+      await delay(3000);
+      const stats = await subframe.executeJavaScript('window.casaBridge.stats');
+      console.log('PERFORMANCE', JSON.stringify(stats));
+      if (stats.agents !== count || stats.scenario !== scenario) throw new Error('Roster/scenario mismatch');
+    }
+    writeFileSync(`/tmp/${scenario}-world-room.png`, (await win.webContents.capturePage()).toPNG());
+    for (const room of (scenario === 'tasca' ? ['balcao','cozinha','despensa','patio'] : ['gabinete','conselho','cartografia','tesouraria','refeitorio'])) {
+      await win.webContents.executeJavaScript(`window.sendSnapshot(16, '${room}')`);
+      await delay(1100);
+      const stats = await subframe.executeJavaScript('window.casaBridge.stats');
+      if (stats.room !== room || stats.agents !== 16) throw new Error('Navigation lost agents');
+      if (scenario === 'tasca') writeFileSync(`/tmp/tasca-world-${room}.png`, (await win.webContents.capturePage()).toPNG());
+    }
   }
-  if (!ready) throw new Error('Godot bridge never became ready');
-  await delay(3000);
-  writeFileSync('/tmp/casa-world-smoke.png', (await win.webContents.capturePage()).toPNG());
-  const subframe = win.webContents.mainFrame.frames.find(f => f.url.startsWith('casa-world:'));
-  const isolation = await subframe.executeJavaScript("({origin:location.origin, node:typeof require, preload:typeof window.cth, canvas:!!document.querySelector('canvas')})");
-  console.log('ISOLATION', JSON.stringify(isolation));
-  if (isolation.node !== 'undefined' || isolation.preload !== 'undefined') throw new Error('World is not isolated');
-  for (const count of [1,24,16]) { await win.webContents.executeJavaScript(`window.sendSnapshot(${count}, 'escrivaes')`); await delay(5000); console.log('PERFORMANCE', JSON.stringify(await subframe.executeJavaScript('window.casaBridge.stats'))); }
-  writeFileSync('/tmp/casa-world-room.png', (await win.webContents.capturePage()).toPNG());
   console.log('MESSAGES', JSON.stringify(await win.webContents.executeJavaScript('window.results')));
   console.log('ERRORS', JSON.stringify(errors));
   app.exit(errors.length ? 1 : 0);

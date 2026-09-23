@@ -1392,6 +1392,14 @@
     "decodeFailed": "could not decode this image — the file may be corrupt or misnamed"
   },
   "interface": {
+    "worldScenario": "Scenario",
+    "worldSwitchScenario": "Switch scenario",
+    "tascaOverview": "Overview",
+    "tascaCounter": "Counter",
+    "tascaTables": "Dining room",
+    "tascaKitchen": "Kitchen",
+    "tascaPantry": "Pantry and wine shelves",
+    "tascaPatio": "Patio",
     "auto_mode_on_8318a9": "auto mode on",
     "auto_mode_off_4ce3b7": "auto mode off",
     "Light_theme_9e5ba0": "Light theme",

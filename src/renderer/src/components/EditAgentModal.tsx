@@ -11,7 +11,8 @@ import { PixelButton } from './PixelButton';
 import { SpritePortrait } from './SpritePortrait';
 import { useStore, type Agent } from '@/store/store';
 import type { CharacterName } from '@/scene/office/cast';
-import { ELENCO } from '@/scene/office/themeRegistry';
+import { TASCA_ROSTER, useWorldScenario, visualCharacter } from '@/scene/godot/scenarios';
+import { ELENCO as CASA_ROSTER } from '@/scene/office/themeRegistry';
 import { type AccentColorName } from '@/design/tokens';
 import {
   type AgentProvider,
@@ -33,6 +34,8 @@ export interface EditAgentModalProps {
  */
 export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
   useUiLanguage();
+  const scenario = useWorldScenario(s => s.scenario);
+  const ELENCO = scenario === 'tasca' ? TASCA_ROSTER : CASA_ROSTER;
   const { t } = useTranslation();
   const live = useAgentModelSession(agent.ptyId);
   const [modelPicked, setModelPicked] = useState(false);
@@ -43,7 +46,7 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
   const [config, setConfig] = useState<HarnessConfig | null>(null);
 
   const [name, setName] = useState(agent.name);
-  const [character, setCharacter] = useState<CharacterName>(agent.character);
+  const [character, setCharacter] = useState<CharacterName>(visualCharacter(agent));
   const [accent, setAccent] = useState<AccentColorName>(agent.accent);
   const [provider, setProvider] = useState<AgentProvider>(
     inferAgentProvider(agent.command, agent.provider)
@@ -60,7 +63,7 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
   useEffect(() => {
     setModelPicked(false);
     setName(agent.name);
-    setCharacter(agent.character);
+    setCharacter(visualCharacter(agent));
     setAccent(agent.accent);
     setProvider(inferAgentProvider(agent.command, agent.provider));
     setModel(agent.model);
@@ -74,7 +77,7 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
     if (!config || saving || !live.ready || live.error) return;
     setSaving(true); setSaveError('');
     const patch = {
-      name: name.trim() || agent.name, character, accent,
+      name: name.trim() || agent.name, character: scenario === 'tasca' ? agent.character : character, accent,
       description: description.trim() || uiText("a_fresh_harness_24e449"),
       goal: goal.trim() || undefined
     };
@@ -94,6 +97,7 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
         });
       }
       updateAgent(agent.id, patch);
+      if (scenario === 'tasca') useWorldScenario.getState().setCharacter(agent.id, character);
       onClose();
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : t('agentModelPicker.switchFailed'));

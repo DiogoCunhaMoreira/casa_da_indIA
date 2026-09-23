@@ -34,7 +34,7 @@ func render_portraits() -> void:
 	camera.current = true
 	var helper = load("res://scripts/casa.gd").new()
 	for person in roster:
-		var appearance := {"skin":person.pele,"hair":person.cabelo,"cloth":person.corCorpo,"beard":person.barba,"hat":person.cabeca,"cape":person.capa,"capeColor":person.corCapa}
+		var appearance := {"skin":person.pele,"hair":person.cabelo,"cloth":person.corCorpo,"beard":person.barba,"hat":person.cabeca,"cape":person.capa,"capeColor":person.corCapa,"outfit":person.get("outfit", "")}
 		helper.make_official(stage,person.nome,"",Color(person.corCorpo),[Vector3.ZERO,Vector3.ZERO],0,appearance)
 		var actor: Node3D = helper.officials.back().node
 		actor.rotation.y = -0.18

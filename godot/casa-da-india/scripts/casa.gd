@@ -12,6 +12,8 @@ const INK = Color("294954")
 @export var cartografia := false
 @export var tesouraria := false
 @export var refeitorio := false
+var scenario := "casadaindia"
+var world_definition: RefCounted = preload("res://scripts/casa_world_config.gd").new()
 var live_world: Node
 var material_cache: Dictionary = {}
 var plan_rooms: Array[Dictionary] = []
@@ -75,6 +77,9 @@ func ball(parent: Node3D, pos: Vector3, size: Vector3, color: Color) -> MeshInst
 	return node
 
 func _ready() -> void:
+	if "--tasca" in OS.get_cmdline_user_args() or scenario == "tasca":
+		scenario = "tasca"
+		world_definition = preload("res://scripts/tasca.gd").new()
 	var world := Node3D.new()
 	world.name = "Maquete"
 	add_child(world)
@@ -91,7 +96,7 @@ func _ready() -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48, -35, 0)
 	sun.light_color = Color("fff0d6")
-	sun.light_energy = 0.85
+	sun.light_energy = 0.58 if scenario == "tasca" else 0.85
 	sun.shadow_enabled = true
 	# Uma maquete compacta não precisa de cascatas para grandes distâncias.
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
@@ -100,9 +105,12 @@ func _ready() -> void:
 	sun.shadow_bias = 0.2
 	sun.shadow_normal_bias = 1.0
 	world.add_child(sun)
-	var backdrop := box(world, "Fundo", Vector3(0,-0.85,0), Vector3(200,0.2,200), Color("b8ced0"))
+	var backdrop := box(world, "Fundo", Vector3(0,-0.85,0), Vector3(200,0.2,200), Color("7c8d83") if scenario == "tasca" else Color("b8ced0"))
 	backdrop.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	if refeitorio:
+	if scenario == "tasca":
+		world_definition.build(self,world)
+		camera_focus = world_definition.OVERVIEW_FOCUS
+	elif refeitorio:
 		preload("res://scripts/refeitorio.gd").new().build(self, world)
 		make_official(world,"Tomé Pires","Em pausa",Color("73844b"),[Vector3(-1.0,0,0.4),Vector3(-0.5,0,0.4),Vector3(-0.5,0,-2.55),Vector3(-0.5,0,0.4)],0)
 		make_official(world,"Duarte Barbosa","Em pausa",Color("487b80"),[Vector3(2.5,0,2.3),Vector3(1.1,0,2.3),Vector3(1.1,0,-2.55),Vector3(1.1,0,2.3)],1)
@@ -150,7 +158,7 @@ func _ready() -> void:
 	camera = Camera3D.new()
 	camera.name = "CameraDaMaquete"
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 18.8 if gabinete or escrivaes or conselho or cartografia or tesouraria or refeitorio else 49.0
+	camera.size = world_definition.OVERVIEW_SIZE if scenario == "tasca" else 18.8 if gabinete or escrivaes or conselho or cartografia or tesouraria or refeitorio else 49.0
 	camera.near = 5.0
 	camera.far = 95.0
 	world.add_child(camera)
@@ -158,7 +166,7 @@ func _ready() -> void:
 	camera.current = true
 	if not Engine.is_editor_hint():
 		make_ui()
-		if OS.has_feature("web"):
+		if OS.has_feature("web") or scenario == "tasca":
 			live_world = preload("res://scripts/live_world.gd").new()
 			add_child(live_world)
 		if "--capture" in OS.get_cmdline_user_args():
@@ -209,6 +217,9 @@ func make_official(parent: Node3D, title: String, role: String, color: Color, ro
 		collar.rotation.z = side*0.3
 	for y in [0.71,0.85,0.98]:
 		ball(body,Vector3(0,y,0.225),Vector3(0.05,0.05,0.028),GOLD)
+	if appearance.get("outfit", "") == "apron":
+		box(body,"Avental",Vector3(0,0.72,0.24),Vector3(0.48,0.56,0.035),Color("d9ceb6"))
+		box(body,"Bolso",Vector3(0,0.67,0.265),Vector3(0.25,0.15,0.025),Color("c2b395"))
 	var head := pivot(body,"Cabeca",Vector3(0,1.39,0))
 	ball(head,Vector3(0,0.02,-0.035),Vector3(0.79,0.78,0.68),hair)
 	ball(head,Vector3(0,-0.025,0.06),Vector3(0.73,0.69,0.63),skin)
@@ -407,7 +418,7 @@ func make_ui() -> void:
 	stack.add_theme_constant_override("separation",8)
 	panel.add_child(stack)
 	var title := Label.new()
-	title.text = "CASA DA ÍNDIA"
+	title.text = "TASCA PORTUGUESA" if scenario == "tasca" else "CASA DA ÍNDIA"
 	title.add_theme_font_size_override("font_size",26)
 	stack.add_child(title)
 	var subtitle := Label.new()
@@ -426,7 +437,7 @@ func make_ui() -> void:
 	rooms.position = Vector2(28,26)
 	rooms.add_theme_constant_override("separation",10)
 	layer.add_child(rooms)
-	for entry in [["Gabinete", "gabinete"], ["Escrivães", "escrivaes"], ["Conselho", "conselho"], ["Cartografia", "cartografia"], ["Tesouraria", "tesouraria"], ["Refeitório", "refeitorio"], ["Planta", "casa"]]:
+	for entry in ([["Balcão","balcao"],["Mesas","mesas"],["Cozinha","cozinha"],["Despensa","despensa"],["Pátio","patio"],["Vista geral","tasca"]] if scenario == "tasca" else [["Gabinete", "gabinete"], ["Escrivães", "escrivaes"], ["Conselho", "conselho"], ["Cartografia", "cartografia"], ["Tesouraria", "tesouraria"], ["Refeitório", "refeitorio"], ["Planta", "casa"]]):
 		var button := Button.new()
 		button.text = entry[0]
 		button.custom_minimum_size = Vector2(125,40)
@@ -579,9 +590,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif selected < 0:
 				info.text = "Dois oficiais · pausa simulada" if refeitorio else "Dois oficiais · contabilidade simulada" if tesouraria else "Dois oficiais · estudo de cartas simulado" if cartografia else ("Seis lugares · dois oficiais · reunião simulada" if conselho else ("Seis postos · três oficiais · rotinas simuladas" if escrivaes else ("Fernão Lourenço · rotina simulada" if gabinete else "Clica numa sala para abrir o interior detalhado.")))
 		if event.physical_keycode == KEY_R:
-			camera_focus = Vector3(0,0.8,0) if gabinete or escrivaes or conselho or cartografia or tesouraria or refeitorio else Vector3(0,0.2,2.5)
+			camera_focus = Vector3(0,0.8,0) if gabinete or escrivaes or conselho or cartografia or tesouraria or refeitorio else world_definition.OVERVIEW_FOCUS
 			orbit = 0.0
-			camera.size = 18.8 if gabinete or escrivaes or conselho or cartografia or tesouraria or refeitorio else 49.0
+			camera.size = 18.8 if gabinete or escrivaes or conselho or cartografia or tesouraria or refeitorio else world_definition.OVERVIEW_SIZE
 			update_camera()
 
 func capture_preview() -> void:

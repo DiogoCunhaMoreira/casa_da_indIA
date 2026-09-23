@@ -6,7 +6,7 @@ const { join, resolve } = require('node:path');
 const root = resolve(__dirname, '../..');
 const scratch = mkdtempSync(join(tmpdir(), 'casa-portraits-'));
 const roster = join(scratch, 'roster.json');
-writeFileSync(roster, JSON.stringify(require('../../test/load-ts.cjs')('src/renderer/src/scene/office/casadaindia/elenco.ts').ELENCO));
+writeFileSync(roster, JSON.stringify([...require('../../test/load-ts.cjs')('src/renderer/src/scene/office/casadaindia/elenco.ts').ELENCO, ...require('../../test/load-ts.cjs')('src/renderer/src/scene/godot/tascaCast.ts').TASCA_CAST]));
 const output = join(root, 'src/renderer/public/portraits');
 mkdirSync(output, { recursive: true });
 const binary = process.env.GODOT_BIN || ['/Applications/Godot.app/Contents/MacOS/Godot', join(homedir(), 'Downloads/Godot.app/Contents/MacOS/Godot')].find(existsSync) || 'godot';
