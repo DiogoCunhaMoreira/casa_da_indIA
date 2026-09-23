@@ -84,7 +84,7 @@ A secretária junto à entrada dos Escrivães foi retirada: há agora 15 lugares
 
 O seletor acima do mundo permite alternar entre **Casa da Índia** e **Tasca Portuguesa**. A Casa é a opção inicial; a última escolha fica em `casa.world.scenario`, na partição local da janela. A troca substitui apenas o iframe e envia um snapshot completo. IDs, nomes, tarefas, PTYs, providers e permissões não são alterados.
 
-A tasca é uma planta original de bairro: balcão (coordenador), sala com 12 lugares, cozinha com 4, despensa com 4 e pátio com 4 lugares de pausa. Mantém a capacidade de 21 agentes com lugar, espera para os restantes, estações de ferramentas, correspondência, estados e cancelamento das pausas ao retomar trabalho. Os modelos são procedurais, sem áudio ou recursos remotos.
+A tasca é uma planta original de bairro: balcão (coordenador), sala de mesas com 6 lugares, reservado com 6, cozinha com 4, despensa com 4 e pátio com 4 lugares de pausa. Mantém a capacidade de 21 agentes com lugar, espera para os restantes, estações de ferramentas, correspondência, estados e cancelamento das pausas ao retomar trabalho. Os modelos são procedurais, sem áudio ou recursos remotos.
 
 `casa_world_config.gd` contém os destinos originais da Casa; `tasca.gd` constrói a tasca e define os seus destinos. O controlador `live_world.gd` é partilhado. A ponte visual está na versão 2: os snapshots e eventos `view` identificam o cenário, e as zonas são validadas por cenário. A origem `casa-world://app` e o isolamento permanecem os mesmos.
 
@@ -109,3 +109,14 @@ Referências de ambiente (inspiração, sem copiar imagens ou plantas): [Taste o
 TypeScript, build/exportação Web, os cinco testes da ponte/preferências e os dois ensaios nativos passaram. O ensaio Electron Casa → Tasca → Casa terminou sem erros, com 60 FPS nas amostras locais de 1/16/24 agentes e isolamento confirmado. Foram revistas as capturas da planta e do balcão após ajustar o quadro e os materiais. Estes ensaios usam agentes simulados e não substituem uma sessão prolongada com providers reais.
 
 A suite geral terminou com 777 testes aprovados e quatro falhas anteriores à tasca: paridade de chaves e interpolação de `localModels`/`agentModelPicker` nas traduções árabe e chinesa. Confirmado que as árvores dessas traduções, fora das novas mensagens `interface`, são iguais às do commit base `8bcbe7fe`.
+
+
+### Revisão artística — seis divisões
+
+A planta aberta inicial foi substituída por seis divisões com portas para um corredor central: balcão/gerência, sala de mesas, reservado, cozinha, adega/despensa e pátio. Os 21 IDs de lugar existentes são preservados. O reservado recebe seis dos doze lugares anteriores da sala de mesas; a posição visual adapta-se à nova planta sem alterar os agentes.
+
+Os azulejos usam um shader procedural original, com rosetas, losangos, leques nos cantos, cercadura dupla e juntas. Cada sala tem painéis contínuos nas paredes, frisos e placas cerâmicas. A decoração inclui fotografias estilizadas de fachadas, pratos azuis, relógio, guitarra, cortinas, rádio, toalhas aos quadrados, louça, garrafeiras, panelas de cobre e uma latada no pátio. Tudo é local; não há imagens descarregadas ou recursos de rede.
+
+As paredes de fundo decoradas mantêm-se visíveis em corte, como na Casa; as divisórias do corredor e paredes da frente alternam com o botão Paredes. As portas e os percursos foram verificados com os novos móveis.
+
+Verificação desta revisão: TypeScript e build passaram; testes nativos da Casa e da Tasca confirmaram percursos, identidade e 21 lugares. O Electron percorreu as seis salas da tasca e a troca Casa → Tasca → Casa sem erros, com 60 FPS nas amostras locais de 1/16/24 agentes. Capturas de todas as salas foram geradas; planta, sala de mesas, balcão, cozinha e reservado foram inspecionados. O ensaio do divisor lateral passou, incluindo arrasto sobre Godot, redimensionamento e preservação da instância do terminal. O seu handshake foi atualizado para a versão 2 da ponte.

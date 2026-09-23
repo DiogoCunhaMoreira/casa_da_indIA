@@ -437,7 +437,7 @@ func make_ui() -> void:
 	rooms.position = Vector2(28,26)
 	rooms.add_theme_constant_override("separation",10)
 	layer.add_child(rooms)
-	for entry in ([["Balcão","balcao"],["Mesas","mesas"],["Cozinha","cozinha"],["Despensa","despensa"],["Pátio","patio"],["Vista geral","tasca"]] if scenario == "tasca" else [["Gabinete", "gabinete"], ["Escrivães", "escrivaes"], ["Conselho", "conselho"], ["Cartografia", "cartografia"], ["Tesouraria", "tesouraria"], ["Refeitório", "refeitorio"], ["Planta", "casa"]]):
+	for entry in ([["Balcão","balcao"],["Mesas","mesas"],["Reservado","reservado"],["Cozinha","cozinha"],["Despensa","despensa"],["Pátio","patio"],["Vista geral","tasca"]] if scenario == "tasca" else [["Gabinete", "gabinete"], ["Escrivães", "escrivaes"], ["Conselho", "conselho"], ["Cartografia", "cartografia"], ["Tesouraria", "tesouraria"], ["Refeitório", "refeitorio"], ["Planta", "casa"]]):
 		var button := Button.new()
 		button.text = entry[0]
 		button.custom_minimum_size = Vector2(125,40)

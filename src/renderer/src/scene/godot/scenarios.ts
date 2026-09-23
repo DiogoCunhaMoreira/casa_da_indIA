@@ -4,7 +4,7 @@ import { ELENCO as CASA_CAST } from '../office/casadaindia/elenco';
 import { TASCA_CAST, defaultTascaCharacter } from './tascaCast';
 
 export const SCENARIO_LABELS = { casadaindia: 'Casa da Índia', tasca: 'Tasca Portuguesa' };
-export const TASCA_ROOM_LABELS = ['tascaOverview', 'tascaCounter', 'tascaTables', 'tascaKitchen', 'tascaPantry', 'tascaPatio'];
+export const TASCA_ROOM_LABELS = ['tascaOverview', 'tascaCounter', 'tascaTables', 'tascaPrivate', 'tascaKitchen', 'tascaPantry', 'tascaPatio'];
 export const readWorldPreference = (key: string) => { try { return localStorage.getItem(key); } catch { return null; } };
 export const saveWorldPreference = (key: string, value: string) => { try { localStorage.setItem(key, value); } catch { /* Keep the in-memory choice. */ } };
 const saved = readWorldPreference('casa.world.scenario');

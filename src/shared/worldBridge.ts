@@ -6,7 +6,7 @@ export const WORLD_ROOMS = ['casa', 'gabinete', 'escrivaes', 'conselho', 'cartog
 export const WORLD_SEAT_IDS = Array.from({ length: 22 }, (_, i) => i).filter(i => i !== 5);
 export const WORLD_SCENARIOS = ['casadaindia', 'tasca'] as const;
 export type WorldScenario = typeof WORLD_SCENARIOS[number];
-export const TASCA_ROOMS = ['tasca', 'balcao', 'mesas', 'cozinha', 'despensa', 'patio'] as const;
+export const TASCA_ROOMS = ['tasca', 'balcao', 'mesas', 'reservado', 'cozinha', 'despensa', 'patio'] as const;
 export type WorldRoom = typeof WORLD_ROOMS[number] | typeof TASCA_ROOMS[number];
 export function isWorldScenario(value: unknown): value is WorldScenario {
   return value === 'casadaindia' || value === 'tasca';

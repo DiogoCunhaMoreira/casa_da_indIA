@@ -20,7 +20,7 @@ import { sidebarLimits, clampSidebarWidth } from './src/renderer/src/components/
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 window.ready = false;
-setInterval(()=>document.querySelector('iframe')?.contentWindow?.postMessage({version:1,type:'hello'},'casa-world://app'),500);
+setInterval(()=>document.querySelector('iframe')?.contentWindow?.postMessage({version:2,type:'hello'},'casa-world://app'),500);
 window.addEventListener('message', e => { if(e.origin === 'casa-world://app' && e.data.type === 'ready') window.ready = true; });
 function Fixture() {
  const [node, setNode] = useState(null);

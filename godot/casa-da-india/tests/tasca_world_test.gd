@@ -8,6 +8,8 @@ func run() -> void:
 	scene.scenario = "tasca"
 	root.add_child(scene)
 	await process_frame
+	assert(scene.has_node("Maquete/CasaCompleta"),"Tasca geometry must load before testing navigation")
+	assert(scene.plan_rooms.size() == 6,"Six independent rooms required")
 	var live = scene.live_world
 	assert(live.definition.ID == "tasca")
 	assert(live.room == "tasca")

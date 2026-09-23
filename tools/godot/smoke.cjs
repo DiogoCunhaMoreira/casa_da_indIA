@@ -47,7 +47,7 @@ app.whenReady().then(async () => {
       if (stats.agents !== count || stats.scenario !== scenario) throw new Error('Roster/scenario mismatch');
     }
     writeFileSync(`/tmp/${scenario}-world-room.png`, (await win.webContents.capturePage()).toPNG());
-    for (const room of (scenario === 'tasca' ? ['balcao','cozinha','despensa','patio'] : ['gabinete','conselho','cartografia','tesouraria','refeitorio'])) {
+    for (const room of (scenario === 'tasca' ? ['balcao','reservado','cozinha','despensa','patio'] : ['gabinete','conselho','cartografia','tesouraria','refeitorio'])) {
       await win.webContents.executeJavaScript(`window.sendSnapshot(16, '${room}')`);
       await delay(1100);
       const stats = await subframe.executeJavaScript('window.casaBridge.stats');
