@@ -1,3 +1,4 @@
+import { useAgentNames, renameVisualAgent } from '@/scene/godot/scenarios';
 import { AgentModelSessionNotice } from './AgentModelSessionNotice';
 import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useRef, useState } from 'react';
@@ -28,6 +29,7 @@ export interface AgentDetailPanelProps {
 
 export function AgentDetailPanel({ agent }: AgentDetailPanelProps) {
   useUiLanguage();
+  const displayName = useAgentNames();
   const { t } = useTranslation();
   const [openTerminalState, setOpenTerminalState] = useState<'idle' | 'opening' | 'ok' | 'error'>('idle');
   const [openTerminalError, setOpenTerminalError] = useState<string | undefined>();
@@ -120,7 +122,7 @@ export function AgentDetailPanel({ agent }: AgentDetailPanelProps) {
 
   const onKill = async () => {
     if (!agent.ptyId) return;
-    if (!confirm(t('agentDetail.killConfirm', { name: agent.name }))) return;
+    if (!confirm(t('agentDetail.killConfirm', { name: displayName(agent) }))) return;
     await window.cth.killPty(agent.ptyId);
     disposeTerminal(agent.ptyId);
     archiveAgent(agent.id);
@@ -158,8 +160,8 @@ export function AgentDetailPanel({ agent }: AgentDetailPanelProps) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', minWidth: 0, lineHeight: '18px' }}>
             <AgentNameEditor
-              name={agent.name}
-              onCommit={(name) => renameAgent(agent.id, name)}
+              name={displayName(agent)}
+              onCommit={(name) => renameVisualAgent(agent.id, name, renameAgent)}
               fontSize={14}
             />
           </div>
@@ -177,7 +179,7 @@ export function AgentDetailPanel({ agent }: AgentDetailPanelProps) {
         <PixelButton variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
           <span
             className="cth-tip cth-tip-wrap"
-            data-tip={uiText('dynamic0', { v0: agent.name })}
+            data-tip={uiText('dynamic0', { v0: displayName(agent) })}
             aria-label={uiText("Edit_this_agent_d315e8")}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
           >

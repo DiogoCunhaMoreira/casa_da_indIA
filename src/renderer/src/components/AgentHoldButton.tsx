@@ -1,3 +1,4 @@
+import { useAgentNames } from '@/scene/godot/scenarios';
 import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useState } from 'react';
 import { PixelButton } from './PixelButton';
@@ -24,8 +25,10 @@ import { useStore } from '@/store/store';
  */
 export function AgentHoldButton({ agentId }: { agentId: string }) {
   useUiLanguage();
+  const displayName = useAgentNames();
   const agent = useStore((s) => s.agents.find((a) => a.id === agentId));
-  const godName = useStore((s) => s.agents.find((a) => a.isGod)?.name) ?? uiText("the_orchestrator_fc0fec");
+  const god = useStore(s => s.agents.find(a => a.isGod));
+  const godName = god ? displayName(god) : uiText("the_orchestrator_fc0fec");
   const [busy, setBusy] = useState(false);
   /** Last failure, shown on the button itself. A control that silently does
    *  nothing is worse than one that says why. */
@@ -77,8 +80,8 @@ export function AgentHoldButton({ agentId }: { agentId: string }) {
       <span
         className="cth-tip cth-tip-wrap"
         data-tip={err ? err : on
-          ? uiText('dynamic6', { v0: godName, v1: agent.name })
-          : uiText('dynamic7', { v0: agent.name, v1: godName })}
+          ? uiText('dynamic6', { v0: godName, v1: displayName(agent) })
+          : uiText('dynamic7', { v0: displayName(agent), v1: godName })}
         aria-label={on ? uiText('dynamic8', { v0: godName }) : uiText("Take_this_agent_aside_for_a_1_1_41fb91")}
         style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
       >

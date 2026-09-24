@@ -1,3 +1,4 @@
+import { useAgentNames } from '@/scene/godot/scenarios';
 import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { ClipboardEvent, DragEvent, KeyboardEvent, type MouseEvent as ReactMouseEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -33,6 +34,7 @@ export interface MessageQueueComposerProps {
  */
 export function MessageQueueComposer({ agent }: MessageQueueComposerProps) {
   useUiLanguage();
+  const displayName = useAgentNames();
   const { t } = useTranslation();
   const rtl = useRtl();
   const queue = useStore((s) => s.messageQueues[agent.id]) ?? EMPTY_QUEUE;
@@ -175,16 +177,16 @@ export function MessageQueueComposer({ agent }: MessageQueueComposerProps) {
   const statusHint = queue.length === 0
     ? null
     : !idle
-    ? t('queueComposer.busyQueued', { name: agent.name, count: queue.length })
+    ? t('queueComposer.busyQueued', { name: displayName(agent), count: queue.length })
     : deliveryPaused && !queue[0]?.manual
     ? t('queueComposer.heldFloor')
     : block === 'draft'
-    ? t('queueComposer.heldDraft', { name: agent.name })
+    ? t('queueComposer.heldDraft', { name: displayName(agent) })
     : block === 'picker'
-    ? t('queueComposer.heldPicker', { name: agent.name })
+    ? t('queueComposer.heldPicker', { name: displayName(agent) })
     : block === 'exited'
-    ? t('queueComposer.heldExited', { name: agent.name })
-    : t('queueComposer.sendingOneByOne', { name: agent.name });
+    ? t('queueComposer.heldExited', { name: displayName(agent) })
+    : t('queueComposer.sendingOneByOne', { name: displayName(agent) });
 
   return (
     <div
@@ -352,7 +354,7 @@ export function MessageQueueComposer({ agent }: MessageQueueComposerProps) {
           onKeyDown={onKey}
           onPaste={onPaste}
           rows={5}
-          placeholder={idle ? t('queueComposer.messagePlaceholder', { name: agent.name }) : t('queueComposer.busyPlaceholder', { name: agent.name })}
+          placeholder={idle ? t('queueComposer.messagePlaceholder', { name: displayName(agent) }) : t('queueComposer.busyPlaceholder', { name: displayName(agent) })}
           style={{
             width: '100%',
             resize: 'vertical',

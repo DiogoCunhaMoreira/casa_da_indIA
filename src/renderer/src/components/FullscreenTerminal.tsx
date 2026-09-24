@@ -1,3 +1,4 @@
+import { useAgentNames } from '@/scene/godot/scenarios';
 import { AgentModelSessionNotice } from './AgentModelSessionNotice';
 import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -151,6 +152,7 @@ export interface FullscreenTerminalProps {
 
 export function FullscreenTerminal({ config }: FullscreenTerminalProps) {
   useUiLanguage();
+  const displayName = useAgentNames();
   const { t } = useTranslation();
   const agents = useStore(s => s.agents);
   const restorableAgents = useStore(s => s.restorableAgents);
@@ -519,7 +521,7 @@ export function FullscreenTerminal({ config }: FullscreenTerminalProps) {
                   onClick={restoreTeam}
                   disabled={restoring}
                   style={{ width: '100%' }}
-                  title={t('fullscreenTerminal.respawnTitle', { names: restorableAgents.map((a: Agent) => a.name).join(', ') })}
+                  title={t('fullscreenTerminal.respawnTitle', { names: restorableAgents.map((a: Agent) => displayName(a)).join(', ') })}
                 >
                   <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
                     <Icon name="play" /> {restoring ? t('agentStrip.restoringTeam') : t('agentStrip.restoreTeam', { count: restorableAgents.length })}
@@ -531,7 +533,7 @@ export function FullscreenTerminal({ config }: FullscreenTerminalProps) {
                   {restorableAgents.map((a: Agent) => (
                     <span
                       key={a.id}
-                      title={uiText('dynamic3', { v0: a.name })}
+                      title={uiText('dynamic3', { v0: displayName(a) })}
                       style={{
                         display: 'inline-flex', alignItems: 'center', gap: 2,
                         height: 20, padding: '0 2px 0 6px',
@@ -540,11 +542,11 @@ export function FullscreenTerminal({ config }: FullscreenTerminalProps) {
                         boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)'
                       }}
                     >
-                      {a.name}
+                      {displayName(a)}
                       <button
                         onClick={() => useStore.getState().removeRestorableAgent(a.id)}
-                        title={uiText('dynamic4', { v0: a.name })}
-                        aria-label={uiText('dynamic5', { v0: a.name })}
+                        title={uiText('dynamic4', { v0: displayName(a) })}
+                        aria-label={uiText('dynamic5', { v0: displayName(a) })}
                         style={{
                           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                           width: 14, height: 14, padding: 0, lineHeight: 1,
@@ -670,6 +672,7 @@ function SidebarRow({
   scale: ReturnType<typeof rosterScale>;
 }) {
   useUiLanguage();
+  const displayName = useAgentNames();
   const { t } = useTranslation();
   const rtl = useRtl();
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -725,7 +728,7 @@ function SidebarRow({
         onDrop={(e) => { e.preventDefault(); drag.drop(agent.id); }}
         onDragEnd={drag.end}
         onClick={onClick}
-        aria-label={`${agent.name} · ${agent.project}`}
+        aria-label={`${displayName(agent)} · ${agent.project}`}
         aria-current={active ? 'true' : undefined}
         style={{
           width: '100%',
@@ -768,7 +771,7 @@ function SidebarRow({
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               fontFamily: 'var(--cth-font-display)',
               fontSize: scale.name, lineHeight: 1.5
-            }}>{agent.name}</span>
+            }}>{displayName(agent)}</span>
             {/* Your unsent text outranks the agent's own state here: an idle
                 agent with a draft on its prompt is not idle-and-free, it is
                 idle-and-held, and nothing else on screen said so. */}
@@ -783,7 +786,7 @@ function SidebarRow({
                 if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); toggleEditor(); }
               }}
               title={agent.note ? t('agentCard.editNote') : t('agentCard.addNote')}
-              aria-label={t('agentCard.editNoteAria', { name: agent.name })}
+              aria-label={t('agentCard.editNoteAria', { name: displayName(agent) })}
               style={{
                 flexShrink: 0, width: 20, height: 20,
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -895,7 +898,7 @@ function SidebarRow({
               }
             }}
             placeholder={t('agentStrip.notePlaceholder')}
-            aria-label={t('agentCard.noteAria', { name: agent.name })}
+            aria-label={t('agentCard.noteAria', { name: displayName(agent) })}
             style={{
               width: '100%',
               height: noteHeight,
@@ -925,6 +928,7 @@ function SidebarRow({
 
 function Header({ agent, onEdit }: { agent: Agent; onEdit: () => void }) {
   useUiLanguage();
+  const displayName = useAgentNames();
   const { t } = useTranslation();
   const typing = useHasTerminalDraft(agent.ptyId);
   const archiveAgent = useStore((st) => st.archiveAgent);
@@ -947,7 +951,7 @@ function Header({ agent, onEdit }: { agent: Agent; onEdit: () => void }) {
    *  button would read as "restart Michael" while looking like "close". */
   const onKill = async () => {
     if (!agent.ptyId) return;
-    if (!confirm(t('agentDetail.killConfirm', { name: agent.name }))) return;
+    if (!confirm(t('agentDetail.killConfirm', { name: displayName(agent) }))) return;
     await window.cth.killPty(agent.ptyId);
     disposeTerminal(agent.ptyId);
     // archiveAgent re-homes focus mode to the next agent, and only leaves it when
@@ -967,7 +971,7 @@ function Header({ agent, onEdit }: { agent: Agent; onEdit: () => void }) {
       <span style={{
         fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
         color: 'var(--cth-ink-900)'
-      }}>{agent.name}</span>
+      }}>{displayName(agent)}</span>
       {/* Edit belongs with the NAME, not with the action cluster on the right:
           it changes who this agent is, and the right-hand group is things you do
           with the agent. Icon-only because it sits inside the identity line —
@@ -977,8 +981,8 @@ function Header({ agent, onEdit }: { agent: Agent; onEdit: () => void }) {
         <PixelButton variant="secondary" size="sm" onClick={onEdit}>
           <span
             className="cth-tip cth-tip-left cth-tip-wrap"
-            data-tip={uiText('dynamic0', { v0: agent.name })}
-            aria-label={uiText('dynamic1', { v0: agent.name })}
+            data-tip={uiText('dynamic0', { v0: displayName(agent) })}
+            aria-label={uiText('dynamic1', { v0: displayName(agent) })}
             style={{ display: 'inline-flex', alignItems: 'center', lineHeight: 0 }}
           >
             <Icon name="edit" />
@@ -1003,7 +1007,7 @@ function Header({ agent, onEdit }: { agent: Agent; onEdit: () => void }) {
         <PixelButton variant="secondary" size="sm" onClick={() => useStore.getState().setIdeOpen(true, agent.id)}>
           <span
             className="cth-tip cth-tip-wrap"
-            data-tip={t('fullscreenTerminal.ideTip', { name: agent.name })}
+            data-tip={t('fullscreenTerminal.ideTip', { name: displayName(agent) })}
             aria-label={t('fullscreenTerminal.openIdeAria')}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
           >
@@ -1045,7 +1049,7 @@ function Header({ agent, onEdit }: { agent: Agent; onEdit: () => void }) {
                 24px box — the button measured the same as its neighbours while
                 reading taller than them. */}
             <span
-              title={t('fullscreenTerminal.closeAgent', { name: agent.name })}
+              title={t('fullscreenTerminal.closeAgent', { name: displayName(agent) })}
               style={{ display: 'inline-flex', alignItems: 'center', lineHeight: 0 }}
             >
               <Icon name="x" />

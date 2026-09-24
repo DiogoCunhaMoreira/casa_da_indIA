@@ -87,7 +87,14 @@ func shelving(p: Node3D, at: Vector3, width: float = 4.6) -> void:
 		b(shelf,"Prateleira",Vector3(0,y,0),Vector3(width,0.14,0.75),TRIM)
 		if y > 2.0: continue
 		for i in range(int(width/0.43)-1):
-			bottle(shelf,Vector3(-width/2+0.42+i*0.43,y+0.07,0.05),i)
+			if (i+int(y*10))%4==0: continue
+			var item = h.pivot(shelf,"Reserva",Vector3(-width/2+0.42+i*0.43,y+0.07,0.04+0.08*sin(i*2.1)))
+			item.rotation.y = sin(i*3.0)*0.3
+			item.scale = Vector3.ONE*(0.8+float(i%3)*0.1)
+			if y<0.5 and i%2==0:
+				h.round_shape(item,"PoteConserva",Vector3(0,0.18,0),0.15,0.36,CREAM)
+				h.round_shape(item,"TampaConserva",Vector3(0,0.38,0),0.16,0.04,BLUE)
+			else: bottle(item,Vector3.ZERO,i)
 
 func chair(p: Node3D, at: Vector3, angle: float) -> void:
 	var node = h.pivot(p,"CadeiraDeMadeira",at)
@@ -100,16 +107,19 @@ func chair(p: Node3D, at: Vector3, angle: float) -> void:
 	for y in [0.83,1.02,1.25]:
 		b(node,"Travessa",Vector3(0,y,-0.26),Vector3(0.59,0.085,0.085),WOOD)
 
-func place_setting(p: Node3D, at: Vector3) -> void:
+func place_setting(p: Node3D, at: Vector3, variant: int = 0) -> void:
 	h.round_shape(p,"Prato",at,0.28,0.025,CREAM)
 	h.torus(p,at+Vector3(0,0.023,0),0.23,0.013,BLUE)
-	for i in range(3):
-		h.ball(p,at+Vector3(-0.12+i*0.11,0.06,0),Vector3(0.12,0.065,0.085),Color("ad8138"))
+	if variant%3 == 0:
+		for i in range(3): h.ball(p,at+Vector3(-0.12+i*0.11,0.06,0),Vector3(0.12,0.065,0.085),Color("ad8138"))
+	elif variant%3 == 1:
+		h.ball(p,at+Vector3(0,0.04,0),Vector3(0.34,0.04,0.16),Color("c1ac79"))
+		h.ball(p,at+Vector3(0.06,0.06,0.13),Vector3(0.16,0.07,0.09),Color("74804a"))
 	for x in [-0.39,0.39]:
 		b(p,"Talher",at+Vector3(x,0.02,0),Vector3(0.035,0.025,0.35),Color("a9afa9"))
 	h.round_shape(p,"CopoVinho",at+Vector3(0.35,0.09,-0.35),0.07,0.16,Color("7a5549"))
 
-func table(p: Node3D, at: Vector3, width: float = 1.8, cloth: bool = false) -> void:
+func table(p: Node3D, at: Vector3, width: float = 1.8, cloth: bool = false, variant: int = 0) -> void:
 	var node = h.pivot(p,"MesaDaTasca",at)
 	b(node,"Tampo",Vector3(0,0.99,0),Vector3(width,0.15,1.65),CREAM if not cloth else WOOD)
 	for x in [-width/2+0.2,width/2-0.2]:
@@ -118,15 +128,21 @@ func table(p: Node3D, at: Vector3, width: float = 1.8, cloth: bool = false) -> v
 	if cloth:
 		b(node,"ToalhaLinho",Vector3(0,1.073,0),Vector3(width+0.05,0.02,1.7),CREAM)
 		for i in range(int(width/0.24)):
-			b(node,"QuadradosVermelhos",Vector3(-width/2+0.12+i*0.24,1.089,0),Vector3(0.1,0.008,1.7),Color("a95a50"))
+			b(node,"QuadradosVermelhos",Vector3(-width/2+0.12+i*0.24,1.089,0),Vector3(0.1,0.008,1.7),(Color("a95a50") if variant==0 else Color("537f91")))
 		for z in [-0.72,-0.48,-0.24,0.0,0.24,0.48,0.72]:
-			b(node,"TramaVermelha",Vector3(0,1.094,z),Vector3(width,0.008,0.085),Color("b27161"))
+			b(node,"TramaVermelha",Vector3(0,1.094,z),Vector3(width,0.008,0.085),(Color("b27161") if variant==0 else Color("829ca6")))
 	else:
 		b(node,"Papel",Vector3(0,1.073,0),Vector3(width-0.12,0.014,1.5),Color("eee8d9"))
 	for x in ([-3.0,0.0,3.0] if width > 5 else [0.0]):
-		place_setting(node,Vector3(x,1.115,-0.35))
-		place_setting(node,Vector3(x,1.115,0.38))
-	bottle(node,Vector3(width/2-0.26,1.12,0),1)
+		place_setting(node,Vector3(x,1.115,-0.35),variant+int((x+3)/3))
+		place_setting(node,Vector3(x+0.08,1.115,0.38),variant+int((x+3)/3)+1)
+	if variant%3==0:
+		bottle(node,Vector3(width/2-0.26,1.12,0),1)
+	elif variant%3==1:
+		h.round_shape(node,"JarroBarro",Vector3(width/2-0.3,1.3,0),0.15,0.36,TRIM,0.11)
+	else:
+		b(node,"Guardanapeiro",Vector3(width/2-0.3,1.23,0),Vector3(0.2,0.22,0.3),WOOD)
+		b(node,"Guardanapos",Vector3(width/2-0.3,1.28,0),Vector3(0.15,0.24,0.24),CREAM)
 
 func window(p: Node3D, at: Vector3) -> void:
 	var node = h.pivot(p,"JanelaComCortinas",at)
@@ -195,3 +211,21 @@ func saying(p: Node3D, words: String, at: Vector3, size: Vector2, pixel: float =
 				var a := i*PI/2
 				h.ball(plaque,corner+Vector3(cos(a)*0.045,sin(a)*0.045,0),Vector3(0.045,0.045,0.012),BLUE)
 	lettering(plaque,words,Vector3(0,0,0.078),pixel,BLUE)
+
+func pot(p: Node3D, at: Vector3, radius: float, height: float, color: Color, lid: bool) -> void:
+	h.round_shape(p,"Panela",at+Vector3(0,height/2,0),radius,height,color)
+	h.torus(p,at+Vector3(0,height,0),radius,0.025,color.lightened(0.2))
+	for side in [-1,1]:
+		b(p,"AsaPanela",at+Vector3(side*(radius+0.1),height*0.7,0),Vector3(0.22,0.065,0.16),Color("323b3c"))
+	if lid:
+		h.round_shape(p,"TampaPanela",at+Vector3(0,height+0.025,0),radius+0.02,0.045,color)
+		h.ball(p,at+Vector3(0,height+0.09,0),Vector3(0.13,0.1,0.13),WOOD)
+	else:
+		h.round_shape(p,"Caldo",at+Vector3(0,height+0.003,0),radius*0.88,0.012,Color("a8783c"))
+
+func frying_pan(p: Node3D, at: Vector3) -> void:
+	h.round_shape(p,"Frigideira",at+Vector3(0,0.055,0),0.32,0.11,Color("303639"))
+	h.torus(p,at+Vector3(0,0.115,0),0.3,0.02,Color("697577"))
+	b(p,"CaboFrigideira",at+Vector3(0.55,0.075,0),Vector3(0.5,0.075,0.1),WOOD)
+	h.ball(p,at+Vector3(-0.06,0.12,0),Vector3(0.31,0.025,0.23),CREAM)
+	h.ball(p,at+Vector3(-0.06,0.145,0),Vector3(0.11,0.025,0.11),Color("d5a23d"))

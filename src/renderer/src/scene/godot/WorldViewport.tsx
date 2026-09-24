@@ -1,7 +1,7 @@
 import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/store/store';
-import { SCENARIO_LABELS, TASCA_ROOM_LABELS, useWorldScenario, visualCharacter, visualPerson } from './scenarios';
+import { SCENARIO_LABELS, TASCA_ROOM_LABELS, useWorldScenario, visualCharacter, visualPerson, visualName } from './scenarios';
 import { allocateWorldSeats, isWorldRequest, WORLD_ORIGIN, WORLD_VERSION, WORLD_SCENARIOS, scenarioRooms, isScenarioRoom, type WorldRoom, type WorldPayload } from '@shared/worldBridge';
 
 const read = (key: string) => { try { return localStorage.getItem(key); } catch { return null; } };
@@ -46,7 +46,7 @@ export function WorldViewport() {
       seats.current = allocateWorldSeats(state.agents, seats.current);
       save(`${storagePrefix}.seats`, JSON.stringify(seats.current));
       post({ type: 'snapshot', scenario, room: room.current, tasks, humanQuestions, visible: !document.hidden && !state.fullscreenAgentId,
-        agents: state.agents.map(a => ({ id: a.id, name: a.name, character: visualCharacter(a, scenario), status: a.status, station: a.currentStation,
+        agents: state.agents.map(a => ({ id: a.id, name: visualName(a, scenario), character: visualCharacter(a, scenario), status: a.status, station: a.currentStation,
           appearance: (() => { const c = visualPerson(visualCharacter(a, scenario)); return c ? { skin: c.pele, hair: c.cabelo, cloth: c.corCorpo, beard: c.barba, hat: c.cabeca, cape: c.capa, capeColor: c.corCapa, outfit: 'outfit' in c ? c.outfit : undefined } : undefined; })(),
           isGod: !!a.isGod, selected: a.id === state.selectedId, seat: seats.current[a.id] ?? null })) });
     };

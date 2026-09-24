@@ -82,7 +82,7 @@ A secretária junto à entrada dos Escrivães foi retirada: há agora 15 lugares
 
 ## Cenário alternativo: Tasca Portuguesa
 
-O seletor acima do mundo permite alternar entre **Casa da Índia** e **Tasca Portuguesa**. A Casa é a opção inicial; a última escolha fica em `casa.world.scenario`, na partição local da janela. A troca substitui apenas o iframe e envia um snapshot completo. IDs, nomes, tarefas, PTYs, providers e permissões não são alterados.
+O seletor acima do mundo permite alternar entre **Casa da Índia** e **Tasca Portuguesa**. A Casa é a opção inicial; a última escolha fica em `casa.world.scenario`, na partição local da janela. A troca substitui apenas o iframe e envia um snapshot completo. IDs, nomes internos, tarefas, PTYs, providers e permissões não são alterados; os nomes apresentados acompanham o cenário.
 
 A tasca é uma planta original de bairro: balcão (coordenador), sala de mesas com 6 lugares, reservado com 6, cozinha com 4, despensa com 4 e pátio com 4 lugares de pausa. Mantém a capacidade de 21 agentes com lugar, espera para os restantes, estações de ferramentas, correspondência, estados e cancelamento das pausas ao retomar trabalho. Os modelos são procedurais, sem áudio ou recursos remotos.
 
@@ -126,3 +126,14 @@ Verificação desta revisão: TypeScript e build passaram; testes nativos da Cas
 O balcão usa inox acetinado com escovado direcional, rebordo tubular, espelho traseiro, painéis aparafusados, apoio de pés e escorredor. O acabamento é local e procedural. A sala de mesas tem placas cerâmicas com «Fiado só amanhã» e «Quem não é para comer, não é para trabalhar»; o reservado tem «Pão e vinho fazem caminho» e «A boa mesa junta a gente». Os lugares e percursos mantêm-se.
 
 Verificado em 24/09/2026: exportação Web e ensaio Electron Casa → Tasca → Casa concluídos sem erros; 60 FPS nas amostras locais de 1/16/24 agentes. Balcão e placas inspecionados nas capturas. O teste nativo de lugares e percursos passou após a alteração do balcão.
+
+
+### Cozinha, variedade e nomes portugueses — 24/09/2026
+
+A cozinha tem um fogão em inox com seis queimadores e grelhas, seis comandos, dois fornos com vidro, puxadores e prateleiras interiores, exaustor com filtros, panelas de diferentes tamanhos, frigideira, gavetas, lava-louça e preparação de alimentos. As salas variam toalhas, comida, objetos de mesa, posição das cadeiras e decoração de parede. A despensa combina garrafeira, conservas, sacos, azeite, balança e encomendas; o pátio distingue o serviço de comida do lava-louça. Os espaços de circulação e os 21 lugares permanecem acessíveis.
+
+`visualName` apresenta José Carlos para o coordenador e nomes do elenco português com apelidos estáveis por ID para os restantes agentes. Renomear na tasca guarda apenas um alias em `tasca.world.names`; regressar à Casa recupera o nome interno original. A ponte 3D, cartões, painéis, terminal, compositor de mensagens, agendamentos e grafo usam os nomes do cenário. Logs históricos, conteúdo dos terminais e identidade dos processos permanecem originais. Estes aliases são preferências locais, tal como as personagens, e não são exportados no roster.
+
+Verificação: os seis testes de ponte/preferências incluem troca repetida, renomeação, persistência após recarregar e preservação da identidade/sessão. TypeScript, build e ensaios nativos de ambos os mundos passaram. O ensaio visual Electron usa o resolvedor real de nomes sobre agentes simulados.
+
+O ensaio final Casa → Tasca → Casa terminou sem erros e com 60 FPS nas amostras locais de 1/16/24 agentes. Cozinha, sala de mesas, reservado, despensa e pátio foram inspecionados em captura. Os testes adicionais de identidade/i18n tiveram nove aprovações e as duas falhas já conhecidas de paridade/interpolação chinesa (`localModels`/`agentModelPicker`), sem alterações a esses ficheiros de tradução.

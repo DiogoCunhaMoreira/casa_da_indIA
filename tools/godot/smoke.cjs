@@ -21,6 +21,12 @@ app.whenReady().then(async () => {
   await win.loadFile(join(__dirname, 'smoke.html'));
   const cast = require('../../test/load-ts.cjs')('src/renderer/src/scene/godot/tascaCast.ts').TASCA_CAST;
   await win.webContents.executeJavaScript(`window.tascaCast = ${JSON.stringify(cast)}`);
+  const { visualName, useWorldScenario } = require('../../test/load-ts.cjs')('src/renderer/src/scene/godot/scenarios.ts');
+  const names = Array.from({ length: 24 }, (_, i) => {
+    useWorldScenario.getState().setCharacter(`smoke-${i}`, cast[i % 8].id);
+    return visualName({ id: `smoke-${i}`, name: `Oficial ${i}`, character: 'caminha', isGod: i === 0 }, 'tasca');
+  });
+  await win.webContents.executeJavaScript(`window.tascaNames = ${JSON.stringify(names)}`);
   const waitReady = async () => {
     for (let i=0; i<90; i++) {
       await delay(1000);

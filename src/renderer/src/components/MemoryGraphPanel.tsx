@@ -1,3 +1,4 @@
+import { useAgentNames } from '@/scene/godot/scenarios';
 import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +31,7 @@ export function MemoryGraphPanel({
 }) {
   useUiLanguage();
   const { t } = useTranslation();
+  const displayName = useAgentNames();
   const agents = useStore((s) => s.agents);
 
   const [log, setLog] = useState<MessageLogEntry[]>([]);
@@ -71,8 +73,8 @@ export function MemoryGraphPanel({
 
   // ── graph model ──────────────────────────────────────────────────────────────
   const graph: GraphData = useMemo(
-    () => buildGraph(agents, log, { showTopics, memories }),
-    [agents, log, showTopics, memories]
+    () => buildGraph(agents.map(a => ({ ...a, name: displayName(a) })), log, { showTopics, memories }),
+    [agents, log, showTopics, memories, displayName]
   );
 
   // ── canvas sizing ─────────────────────────────────────────────────────────────

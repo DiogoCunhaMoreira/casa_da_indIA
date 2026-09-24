@@ -103,7 +103,9 @@ func architecture(room: Node3D, key: String) -> void:
 		decor.tile_panel(side,Vector3(0,1.02,0.13),Vector2(9.6,1.65))
 		box(side,"Remate",Vector3(0,1.9,0.16),Vector3(9.7,0.08,0.1),BLUE)
 		decor.window(side,Vector3(-1.6,2.73,0.16))
-		decor.photograph(side,Vector3(2,2.8,0.17),2)
+		if key=="balcao": decor.photograph(side,Vector3(2,2.8,0.17),2)
+		elif key=="mesas": decor.saying(side,"CASA ONDE NÃO HÁ PÃO,\nTODOS RALHAM\nE NINGUÉM TEM RAZÃO",Vector3(2.4,2.8,0.17),Vector2(2.65,1.35),0.004)
+		else: decor.saying(side,"VINHO DA CASA\nCOLHEITA DO ANO",Vector3(2,2.8,0.17),Vector2(2.5,1.1),0.0045)
 	for walls in [h.plan_walls_cut,h.plan_walls_full]:
 		var group = h.pivot(walls,"Divisorias",room.position)
 		var height := 0.7 if walls==h.plan_walls_cut else 3.8
@@ -153,24 +155,27 @@ func counter(room: Node3D) -> void:
 
 func dining(room: Node3D) -> void:
 	for x in [-3.8,0.0,3.8]:
-		decor.table(room,Vector3(x,0,-0.7),1.8,true)
-		decor.chair(room,Vector3(x,0,-3.1),0)
-		decor.chair(room,Vector3(x,0,1.7),PI)
+		decor.table(room,Vector3(x,0,-0.7),1.8,x!=0,int((x+3.8)/3.8))
+		decor.chair(room,Vector3(x+0.1*sin(x),0,-3.1),sin(x+1)*0.12)
+		decor.chair(room,Vector3(x,0,1.7),PI+cos(x)*0.13)
 	decor.saying(room,"FIADO\nSÓ AMANHÃ",Vector3(-3.5,2.67,-4.65),Vector2(3.5,1.15),0.007)
 	decor.saying(room,"QUEM NÃO É PARA COMER,\nNÃO É PARA TRABALHAR",Vector3(3.5,2.67,-4.65),Vector2(3.5,1.15),0.0048)
-	for x in [-1.05,1.05]: decor.wall_plate(room,Vector3(x,2.58,-4.64),0.32)
+	decor.wall_plate(room,Vector3(-1.05,2.58,-4.64),0.32)
+	decor.photograph(room,Vector3(0.65,2.58,-4.64),1)
 	box(room,"Aparador",Vector3(-4.4,0.58,3.9),Vector3(3.5,1.16,0.75),WOOD)
-	for x in [-5.3,-4.4,-3.5]:
-		h.round_shape(room,"PilhaPratos",Vector3(x,1.25,3.9),0.27,0.13,CREAM)
+	h.round_shape(room,"PilhaPratos",Vector3(-5.3,1.25,3.9),0.27,0.13,CREAM)
+	box(room,"CestoPao",Vector3(-4.3,1.3,3.9),Vector3(0.75,0.28,0.5),TRIM)
+	h.ball(room,Vector3(-4.3,1.47,3.9),Vector3(0.6,0.2,0.3),Color("b9975e"))
+	box(room,"ToalhasDobradas",Vector3(-3.4,1.25,3.9),Vector3(0.55,0.17,0.5),CREAM)
 	decor.plant(room,Vector3(3.8,0,3.8))
 
 func private_room(room: Node3D) -> void:
 	box(room,"Tapete",Vector3(0,0.07,-0.3),Vector3(10.4,0.025,6.3),Color("8b5047"))
 	for z in [-3.25,2.65]: box(room,"BarraTapete",Vector3(0,0.09,z),Vector3(10.1,0.014,0.16),Color("c5a576"))
-	decor.table(room,Vector3(0,0,-0.3),8.5,true)
+	decor.table(room,Vector3(0,0,-0.3),8.5,true,1)
 	for x in [-3.0,0.0,3.0]:
 		decor.chair(room,Vector3(x,0,-2.85),0)
-		decor.chair(room,Vector3(x,0,2.25),PI)
+		decor.chair(room,Vector3(x+0.1,0,2.25),PI+sin(x+2)*0.14)
 	decor.saying(room,"PÃO E VINHO\nFAZEM CAMINHO",Vector3(-4.6,2.6,-4.65),Vector2(2.3,1.10),0.0045)
 	decor.guitar(room,Vector3(-2.35,2.55,-4.57))
 	decor.saying(room,"A BOA MESA\nJUNTA A GENTE",Vector3(0.65,2.6,-4.65),Vector2(3.05,1.1),0.0055)
@@ -183,51 +188,113 @@ func private_room(room: Node3D) -> void:
 	box(room,"EscalaRadio",Vector3(4.8,2.3,-3.96),Vector3(0.35,0.16,0.035),CREAM)
 
 func kitchen(room: Node3D) -> void:
-	box(room,"BancadaCozinha",Vector3(0,0.58,-3.7),Vector3(11.5,1.16,1.5),CREAM)
-	for x in [-4.5,-1.5,1.5,4.5]:
-		box(room,"PortaArmario",Vector3(x,0.62,-2.93),Vector3(2.7,0.94,0.04),Color("66858c"))
-		box(room,"Puxador",Vector3(x,0.88,-2.88),Vector3(0.4,0.045,0.04),CREAM)
-		h.round_shape(room,"PanelaCobre",Vector3(x,1.45,-3.7),0.34,0.43,Color("a47148"))
-		h.round_shape(room,"Tampa",Vector3(x,1.69,-3.7),0.37,0.06,Color("b78b5c"))
-	box(room,"Exaustor",Vector3(-2.8,2.8,-4),Vector3(4.6,0.5,1.5),Color("9ca7a0"))
-	for x in [0.5,1.6,2.7,3.8,4.9]:
-		var pan = h.round_shape(room,"FrigideiraPendurada",Vector3(x,2.65,-4.47),0.28,0.09,Color("94613e"))
-		pan.rotation.x = PI/2
-		box(room,"CaboPanela",Vector3(x,3.02,-4.47),Vector3(0.075,0.28,0.065),WOOD)
+	# A working range, washing station and preparation area, not repeated cabinets.
+	decor.steel_box(room,"FogaoIndustrial",Vector3(-3.25,0.65,-3.7),Vector3(4.9,1.3,1.5))
+	decor.steel_box(room,"MesaFogao",Vector3(-3.25,1.34,-3.7),Vector3(5.05,0.12,1.62))
+	for x in [-4.8,-3.25,-1.7]:
+		for z in [-4.08,-3.32]:
+			var burner := Vector3(x,1.43,z)
+			h.round_shape(room,"QueimadorFerro",burner,0.24,0.07,Color("252a2c"))
+			h.torus(room,burner+Vector3(0,0.04,0),0.18,0.025,Color("566775"))
+			for angle in [0.0,PI/2]:
+				var grate = box(room,"GrelhaFogao",burner+Vector3(0,0.09,0),Vector3(0.66,0.065,0.055),Color("303638"))
+				grate.rotation.y = angle
+	for x in [-4.5,-2.0]:
+		box(room,"PortaFornoEsmaltada",Vector3(x,0.64,-2.92),Vector3(2.15,0.86,0.08),Color("343e42"))
+		box(room,"VidroForno",Vector3(x,0.59,-2.865),Vector3(1.68,0.46,0.025),Color("17252b"))
+		for y in [0.46,0.63]: box(room,"GrelhaInteriorForno",Vector3(x,y,-2.845),Vector3(1.53,0.018,0.012),Color("687573"))
+		decor.steel_rail(room,Vector3(x,0.99,-2.8),1.72,0.045)
+	for i in range(6):
+		var knob = h.round_shape(room,"ComandoGas",Vector3(-5.12+i*0.75,1.23,-2.85),0.095,0.08,Color("20282a"))
+		knob.rotation.x = PI/2
+		box(room,"MarcaComando",Vector3(-5.12+i*0.75,1.27,-2.801),Vector3(0.015,0.055,0.012),CREAM)
+	decor.pot(room,Vector3(-4.8,1.56,-4.08),0.35,0.56,Color("a47148"),true)
+	decor.pot(room,Vector3(-3.25,1.56,-3.32),0.29,0.28,Color("8c9c9f"),false)
+	decor.frying_pan(room,Vector3(-1.7,1.56,-4.08))
+	decor.steel_box(room,"Exaustor",Vector3(-3.25,2.95,-4.4),Vector3(5.2,0.4,0.7))
+	decor.steel_box(room,"CondutaExaustor",Vector3(-3.25,3.45,-4.3),Vector3(1.3,0.6,0.55))
+	for i in range(15): box(room,"FiltroExaustor",Vector3(-5.45+i*0.31,2.735,-4.35),Vector3(0.16,0.025,0.5),Color("4f5c5d"))
+	box(room,"ArmarioPreparacao",Vector3(1.5,0.58,-3.7),Vector3(2.5,1.16,1.5),Color("66858c"))
+	for y in [0.3,0.65,1.0]:
+		box(room,"GavetaUtensilios",Vector3(1.5,y,-2.92),Vector3(2.3,0.28,0.06),CREAM)
+		decor.steel_rail(room,Vector3(1.5,y,-2.84),0.6,0.025)
+	decor.steel_box(room,"LavaLouca",Vector3(4.3,0.58,-3.7),Vector3(2.9,1.16,1.5))
+	decor.steel_box(room,"BordoLavaLouca",Vector3(4.3,1.22,-3.7),Vector3(3.0,0.12,1.58))
+	box(room,"CubaEscura",Vector3(4.1,1.287,-3.7),Vector3(1.5,0.015,0.95),Color("52676c"))
+	box(room,"FundoCuba",Vector3(4.1,1.296,-3.7),Vector3(1.17,0.01,0.66),Color("85989a"))
+	decor.steel_box(room,"Torneira",Vector3(4.1,1.62,-4.25),Vector3(0.075,0.7,0.075))
+	decor.steel_box(room,"Bica",Vector3(4.1,1.95,-4.05),Vector3(0.075,0.075,0.47))
+	decor.steel_rail(room,Vector3(2,2.6,-4.48),3.3,0.035)
+	for i in range(3):
+		var x := 0.7+i*0.87
+		box(room,"CaboUtensilio",Vector3(x,2.27,-4.43),Vector3(0.065,0.5,0.05),WOOD)
+		if i==0: h.ball(room,Vector3(x,1.97,-4.43),Vector3(0.22,0.3,0.08),TRIM)
+		elif i==1: decor.steel_box(room,"Espatula",Vector3(x,1.98,-4.43),Vector3(0.23,0.27,0.035))
+		else: h.ball(room,Vector3(x,1.98,-4.38),Vector3(0.25,0.22,0.17),Color("9aa8a9"))
 	box(room,"IlhaPreparacao",Vector3(0,0.52,1.1),Vector3(4.5,1.04,1.4),WOOD)
 	box(room,"PedraIlha",Vector3(0,1.1,1.1),Vector3(4.65,0.12,1.55),CREAM)
-	for x in [-1.4,-0.7,0.0,0.7,1.4]: h.ball(room,Vector3(x,1.23,1.1),Vector3(0.28,0.18,0.22),Color("a74e37") if x<0 else Color("778246"))
+	var board = box(room,"TabuaCortar",Vector3(-1.15,1.18,1.14),Vector3(1.45,0.065,0.9),TRIM)
+	board.rotation.y = 0.12
+	for at in [Vector3(-1.5,1.28,1.1),Vector3(-1.05,1.26,1.3)]: h.ball(room,at,Vector3(0.24,0.2,0.23),Color("b95237"))
+	decor.steel_box(room,"LaminaFaca",Vector3(-0.8,1.23,0.95),Vector3(0.45,0.025,0.12))
+	box(room,"CaboFaca",Vector3(-0.46,1.23,0.95),Vector3(0.23,0.06,0.10),WOOD)
+	decor.pot(room,Vector3(1.4,1.17,1.1),0.32,0.19,CREAM,false)
+	h.ball(room,Vector3(0.4,1.3,1.35),Vector3(0.6,0.26,0.29),Color("b69558"))
+	box(room,"PanoDobrado",Vector3(1.4,1.18,0.55),Vector3(0.7,0.05,0.35),Color("819aa1"))
 	decor.plant(room,Vector3(5.5,0,3.7))
 
 func cellar(room: Node3D) -> void:
 	decor.shelving(room,Vector3(-3.4,0,-4.15),4.8)
-	decor.shelving(room,Vector3(3.4,0,-4.15),4.8)
+	box(room,"ArmarioMercearia",Vector3(3.4,1.35,-4.3),Vector3(4.8,2.7,0.45),WOOD)
+	for y in [0.4,1.25,2.1]:
+		box(room,"PrateleiraMantimentos",Vector3(3.4,y,-4.0),Vector3(4.8,0.12,0.85),TRIM)
+		for i in range(4):
+			var x := 1.55+i*1.1
+			if i==2 and y>2: continue
+			if i%2==0: h.ball(room,Vector3(x,y+0.35,-4.0),Vector3(0.62,0.65,0.45),Color("bbab86"))
+			else: box(room,"LataAzeite",Vector3(x,y+0.3,-4.0),Vector3(0.45,0.6,0.42),Color("71815a"))
 	box(room,"MesaRegistos",Vector3(0,0.95,-1.15),Vector3(10.3,0.15,1.2),WOOD)
 	for x in [-4.7,4.7]: box(room,"PeMesa",Vector3(x,0.46,-1.15),Vector3(0.17,0.92,0.8),TRIM)
-	for x in [-4.0,-1.35,1.3,3.95]:
+	for x in [-4.0]:
 		box(room,"LivroContas",Vector3(x,1.06,-1.15),Vector3(0.8,0.09,0.65),CREAM)
 		box(room,"Lombada",Vector3(x,1.12,-1.15),Vector3(0.035,0.015,0.65),WOOD)
-	for x in [-5.1,-3.8,-2.5]: h.barrel(room,Vector3(x,0,3.5))
-	for x in [1.0,2.4,3.8]:
+	box(room,"BalancaBase",Vector3(-1.35,1.13,-1.15),Vector3(0.7,0.18,0.6),Color("56736b"))
+	h.round_shape(room,"PratoBalanca",Vector3(-1.35,1.4,-1.15),0.38,0.06,CREAM)
+	decor.bottle(room,Vector3(1.3,1.03,-1.15),2)
+	box(room,"EncomendaPapel",Vector3(3.95,1.17,-1.15),Vector3(0.95,0.3,0.65),Color("b9a17c"))
+	h.barrel(room,Vector3(-5.1,0,3.5))
+	var barrel = h.pivot(room,"BarricaPequena",Vector3(-3.65,0,3.7))
+	barrel.scale = Vector3(0.72,0.8,0.72)
+	h.barrel(barrel,Vector3.ZERO)
+	for x in [1.0,2.6]:
 		box(room,"CaixaMadeira",Vector3(x,0.38,3.8),Vector3(1.15,0.76,0.9),TRIM)
 		for y in [0.15,0.38,0.62]: box(room,"RipaCaixa",Vector3(x,y,4.27),Vector3(1.13,0.13,0.06),WOOD)
 	decor.wall_plate(room,Vector3(0,2.65,-4.65),0.4)
 
 func courtyard(room: Node3D) -> void:
 	for x in [-3.0,3.0]:
-		decor.table(room,Vector3(x,0,0),1.8,false)
+		decor.table(room,Vector3(x,0,0),1.8,x>0,2 if x<0 else 1)
 		decor.chair(room,Vector3(x,0,-2.4),0)
 		decor.chair(room,Vector3(x,0,2.4),PI)
 	for x in [-4.8,4.8]:
 		box(room,"ServicoPatio",Vector3(x,0.5,-4.0),Vector3(1.8,1,1.1),CREAM)
-		h.round_shape(room,"BaciaLouca",Vector3(x,1.1,-4),0.35,0.2,BLUE)
+		if x>0:
+			h.round_shape(room,"BaciaLouca",Vector3(x,1.1,-4),0.35,0.2,BLUE)
+			decor.steel_box(room,"TorneiraPatio",Vector3(x,1.45,-4.4),Vector3(0.08,0.7,0.08))
+			decor.steel_box(room,"BicaPatio",Vector3(x,1.77,-4.23),Vector3(0.08,0.08,0.42))
+		else:
+			decor.pot(room,Vector3(x,1.01,-4),0.32,0.42,Color("b68050"),true)
+			h.round_shape(room,"CanecaPatio",Vector3(x+0.6,1.13,-3.8),0.12,0.24,CREAM)
 	decor.window(room,Vector3(0,2.6,-4.7))
-	for x in [-5.7,5.7]: decor.plant(room,Vector3(x,0,-2.0))
+	decor.plant(room,Vector3(-5.7,0,-2.0))
+	var herb = h.pivot(room,"ErvasAromaticas",Vector3(5.7,0,-1.8))
+	herb.scale = Vector3(0.7,0.65,0.7)
+	decor.plant(herb,Vector3.ZERO)
 	decor.plant(room,Vector3(0,0,3.7))
 	# Grapevine and timber suggest a shaded courtyard without hiding its agents.
 	for x in [-5.8,5.8]: box(room,"PosteLatada",Vector3(x,1.8,-3.9),Vector3(0.14,3.6,0.14),WOOD)
 	box(room,"VigaLatada",Vector3(0,3.6,-3.9),Vector3(11.8,0.15,0.18),WOOD)
 	for i in range(13):
 		var x := -5.4+i*0.9
-		h.ball(room,Vector3(x,3.64,-3.9),Vector3(1.0,0.23,0.6),Color("566e3b"))
+		h.ball(room,Vector3(x,3.64+0.08*sin(i*1.7),-3.9+0.14*cos(i)),Vector3(0.8+0.2*sin(i*2),0.23,0.5+0.15*cos(i*3)),Color("566e3b"))
 		if i%3==0: h.ball(room,Vector3(x,3.36,-3.9),Vector3(0.16,0.3,0.16),Color("615270"))

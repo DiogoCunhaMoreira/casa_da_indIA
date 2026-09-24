@@ -1,3 +1,4 @@
+import { useAgentNames } from '@/scene/godot/scenarios';
 import { useEffect, useState } from 'react';
 import { resolveGodName, DEFAULT_GOD_NAME } from '@shared/godIdentity';
 
@@ -11,6 +12,7 @@ const GOD_ID = 'god';
  * "clocking in" screen would flash the wrong name every launch.
  */
 export function useResolvedGodName(): string {
+  const displayName = useAgentNames();
   const [godName, setGodName] = useState(DEFAULT_GOD_NAME);
   useEffect(() => {
     let cancelled = false;
@@ -19,5 +21,5 @@ export function useResolvedGodName(): string {
     }).catch(() => { /* keep the default while unknown */ });
     return () => { cancelled = true; };
   }, []);
-  return godName;
+  return displayName({ id: GOD_ID, name: godName, isGod: true });
 }

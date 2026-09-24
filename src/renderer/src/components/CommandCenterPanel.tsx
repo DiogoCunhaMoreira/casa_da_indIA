@@ -1,3 +1,4 @@
+import { useAgentNames } from '@/scene/godot/scenarios';
 import { uiLocale } from '@/i18n/uiText';
 import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useRef, useState } from 'react';
@@ -87,6 +88,7 @@ const TABS: { key: CCTab; labelKey: string; icon: Parameters<typeof Icon>[0]['na
  *  cols/rows and corrupt the display. */
 export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent; fullscreen?: boolean }) {
   useUiLanguage();
+  const displayName = useAgentNames();
   const { t } = useTranslation();
   const [tab, setTab] = useState<CCTab>('terminal');
   // The trigger-history ledger has nothing to say until an outside party can
@@ -184,7 +186,7 @@ export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent
             <span style={{
               fontSize: 12, color: 'var(--cth-ink-500)',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-            }}>{t('commandCenter.runsTheFloor', { name: agent.name })}</span>
+            }}>{t('commandCenter.runsTheFloor', { name: displayName(agent) })}</span>
           </div>
         </div>
         {/* v0.3.4: floor-wide auto-delivery lives HERE (one switch for every
@@ -320,7 +322,7 @@ export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent
               <MessageQueueComposer agent={agent} />
             </>
           ) : (
-            <Centered>{t('commandCenter.noTerminal', { name: agent.name })}</Centered>
+            <Centered>{t('commandCenter.noTerminal', { name: displayName(agent) })}</Centered>
           )
         )}
         {tab === 'floor' && <FloorTab seed={dispatchSeed} />}
@@ -349,10 +351,12 @@ export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent
 
 function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
   useUiLanguage();
+  const displayName = useAgentNames();
   const { t } = useTranslation();
   const rtl = useRtl();
   const agents = useStore((s) => s.agents);
-  const godName = agents.find((a) => a.isGod)?.name ?? uiText("the_orchestrator_fc0fec");
+  const god = agents.find(a => a.isGod);
+  const godName = god ? displayName(god) : uiText("the_orchestrator_fc0fec");
   const select = useStore((s) => s.select);
   const updateAgent = useStore((s) => s.updateAgent);
   const toolCounts = useStore((s) => s.toolCounts);
@@ -651,7 +655,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
           <Select value={dispatchTo} onChange={setDispatchTo}>
             <option value="">{t('commandCenter.michaelDecides', { godName })}</option>
             {agents.filter((a) => !a.isGod).map((a) => (
-              <option key={a.id} value={a.id}>{a.name}</option>
+              <option key={a.id} value={a.id}>{displayName(a)}</option>
             ))}
           </Select>
         </div>
@@ -711,7 +715,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
                   border: 'none', background: 'transparent', cursor: 'pointer', padding: 0,
                   fontFamily: 'var(--cth-font-ui)', fontSize: 12, color: 'var(--cth-ink-900)'
                 }}
-              >{a.name}{a.isGod ? t('commandCenter.godTag') : ''}</button>
+              >{displayName(a)}{a.isGod ? t('commandCenter.godTag') : ''}</button>
               <PixelBadge status={armed ? 'looping' : a.status} />
               {armed && <span title={breaker?.reason} style={{ color: 'var(--cth-coral)', fontSize: 12 }}>⚠</span>}
               <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--cth-ink-500)' }}>
@@ -899,7 +903,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
                   onClick={async () => {
                     const currentProvider = inferAgentProvider(a.command, a.provider);
                     if (engineProvider !== currentProvider) {
-                      if (!window.confirm(t('commandCenter.confirmRestartEngine', { name: a.name }))) return;
+                      if (!window.confirm(t('commandCenter.confirmRestartEngine', { name: displayName(a) }))) return;
                     }
                     await window.cth.updateConfig({ godProvider: engineProvider, godModel: engineModel });
                     await restartWithModel(a, engineModel, { provider: engineProvider, resume: false });
@@ -915,7 +919,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
                   disabled={restarting === a.id}
                   onClick={() => restartWithModel(a, a.model, { resume: true })}
                 >
-                  <span title={t('commandCenter.restartContinueTitle', { name: a.name })}>
+                  <span title={t('commandCenter.restartContinueTitle', { name: displayName(a) })}>
                     {t('commandCenter.restartContinue')}
                   </span>
                 </PixelButton>
@@ -1019,6 +1023,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
 
 function ArchivedSection() {
   useUiLanguage();
+  const displayName = useAgentNames();
   const { t } = useTranslation();
   const archivedAgents = useStore((s) => s.archivedAgents);
   const removeArchivedAgent = useStore((s) => s.removeArchivedAgent);
@@ -1050,7 +1055,7 @@ function ArchivedSection() {
             <SpritePortrait agentId={a.id} character={a.character} scale={1} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: 'var(--cth-font-ui)', fontSize: 12, color: 'var(--cth-ink-700)' }}>{a.name}</div>
+            <div style={{ fontFamily: 'var(--cth-font-ui)', fontSize: 12, color: 'var(--cth-ink-700)' }}>{displayName(a)}</div>
             <div style={{ fontSize: 12, color: 'var(--cth-ink-500)', wordBreak: 'break-all' }}>{a.cwd}</div>
           </div>
           <button
@@ -1067,6 +1072,7 @@ function ArchivedSection() {
 
 function MemoryTab({ godId, who: controlledWho, onWho }: { godId: string; who?: string; onWho?: (id: string) => void }) {
   useUiLanguage();
+  const displayName = useAgentNames();
   const { t } = useTranslation();
   const agents = useStore((s) => s.agents);
   // Selection is controllable from the graph tab; falls back to local state.
@@ -1152,7 +1158,7 @@ function MemoryTab({ godId, who: controlledWho, onWho }: { godId: string; who?: 
 
       <Section title={t('commandCenter.memoryFile')}>
         <Select value={who} onChange={setWho}>
-          {agents.map((a) => (<option key={a.id} value={a.id}>{a.name}</option>))}
+          {agents.map((a) => (<option key={a.id} value={a.id}>{displayName(a)}</option>))}
         </Select>
         <Pre>{mem || t('commandCenter.noMemory')}</Pre>
       </Section>

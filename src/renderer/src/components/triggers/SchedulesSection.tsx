@@ -1,3 +1,4 @@
+import { useAgentNames } from '@/scene/godot/scenarios';
 import { uiText, useUiLanguage } from '@/i18n/uiText';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -54,6 +55,7 @@ function relTime(ms: number, t: TFunction): string {
 
 export function SchedulesSection({ onSummary }: { onSummary?: (s: string) => void }) {
   useUiLanguage();
+  const displayName = useAgentNames();
   const { t } = useTranslation();
   const rtl = useRtl();
   const agents = useStore((s) => s.agents);
@@ -108,10 +110,11 @@ export function SchedulesSection({ onSummary }: { onSummary?: (s: string) => voi
   /** A weekly draft with no days picked would never fire, so it cannot be saved. */
   const whenIsUsable = !mWeekly || weeklyIsUsable(mWeekly);
 
-  const targetName = (to: string) =>
-    to === 'broadcast' ? t('schedulesSection.everyone')
-      : to === 'god' ? (agents.find((a) => a.isGod)?.name ?? uiText("the_orchestrator_fc0fec"))
-        : agents.find((a) => a.id === to)?.name ?? to;
+  const targetName = (to: string) => {
+    if (to === 'broadcast') return t('schedulesSection.everyone');
+    const target = agents.find(a => to === 'god' ? a.isGod : a.id === to);
+    return target ? displayName(target) : to === 'god' ? uiText("the_orchestrator_fc0fec") : to;
+  };
 
   return (
     <>
@@ -147,7 +150,7 @@ export function SchedulesSection({ onSummary }: { onSummary?: (s: string) => voi
             <Select value={mTo} onChange={setMTo} style={{ width: '100%' }}>
               <option value="broadcast">{t('schedulesSection.everyone')}</option>
               <option value="god">{agents.find((a) => a.isGod)?.name ?? uiText("the_orchestrator_fc0fec")}</option>
-              {agents.filter((a) => !a.isGod).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+              {agents.filter((a) => !a.isGod).map((a) => <option key={a.id} value={a.id}>{displayName(a)}</option>)}
             </Select>
           </Field>
           <Field label={t('schedulesSection.when')}>
@@ -194,6 +197,7 @@ function MissionRow({ mission, targetName, agents, onPatch, onDelete }: {
   onDelete: () => void;
 }) {
   useUiLanguage();
+  const displayName = useAgentNames();
   const { t } = useTranslation();
   const rtl = useRtl();
   const [open, setOpen] = useState(false);
@@ -293,7 +297,7 @@ function MissionRow({ mission, targetName, agents, onPatch, onDelete }: {
             <Select value={to} onChange={setTo} style={{ width: '100%' }}>
               <option value="broadcast">{t('schedulesSection.everyone')}</option>
               <option value="god">{agents.find((a) => a.isGod)?.name ?? uiText("the_orchestrator_fc0fec")}</option>
-              {agents.filter((a) => !a.isGod).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+              {agents.filter((a) => !a.isGod).map((a) => <option key={a.id} value={a.id}>{displayName(a)}</option>)}
             </Select>
           </Field>
           <Field label={t('schedulesSection.when')}>

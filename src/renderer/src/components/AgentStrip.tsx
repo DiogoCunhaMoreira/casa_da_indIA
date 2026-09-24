@@ -1,3 +1,4 @@
+import { useAgentNames, renameVisualAgent } from '@/scene/godot/scenarios';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AgentCard } from './AgentCard';
@@ -15,6 +16,7 @@ export interface AgentStripProps {
 }
 
 export function AgentStrip({ config }: AgentStripProps) {
+  const displayName = useAgentNames();
   const { t } = useTranslation();
   const rtl = useRtl();
   const agents = useStore(s => s.agents);
@@ -134,7 +136,7 @@ export function AgentStrip({ config }: AgentStripProps) {
           <AgentCard
             agentId={a.id}
             draggable
-            name={a.name}
+            name={displayName(a)}
             character={a.character}
             accent={a.accent}
             status={a.status}
@@ -147,7 +149,7 @@ export function AgentStrip({ config }: AgentStripProps) {
             selected={a.id === selectedId}
             isGod={a.isGod}
             onClick={() => select(a.id)}
-            onRename={(name) => renameAgent(a.id, name)}
+            onRename={(name) => renameVisualAgent(a.id, name, renameAgent)}
             doingCount={doingByAgent[a.id]?.length ?? 0}
             onTaskNoteClick={() => {
               const first = doingByAgent[a.id]?.[0];
@@ -188,7 +190,7 @@ export function AgentStrip({ config }: AgentStripProps) {
                     <span style={{
                       fontFamily: 'var(--cth-font-display)', fontSize: 12, lineHeight: '18px',
                       color: 'var(--cth-ink-500)'
-                    }}>{t('agentStrip.privateNote', { name: a.name })}</span>
+                    }}>{t('agentStrip.privateNote', { name: displayName(a) })}</span>
                     <button
                       onClick={() => setNoteEditId(null)}
                       title={t('agentStrip.done')}
@@ -213,7 +215,7 @@ export function AgentStrip({ config }: AgentStripProps) {
                     onChange={(e) => setAgentNote(a.id, e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Escape') setNoteEditId(null); }}
                     placeholder={t('agentStrip.notePlaceholder')}
-                    aria-label={t('agentCard.noteAria', { name: a.name })}
+                    aria-label={t('agentCard.noteAria', { name: displayName(a) })}
                     style={{
                       width: '100%', padding: '6px 8px',
                       border: 'none', outline: 'none', resize: 'none', boxSizing: 'border-box',
@@ -253,7 +255,7 @@ export function AgentStrip({ config }: AgentStripProps) {
           style={{ alignSelf: 'center', flexShrink: 0, marginLeft: 'auto' }}
           title={restoreBusy
             ? t('agentStrip.restoringTitle')
-            : t('agentStrip.restoreTitle', { names: restorableAgents.map((a: Agent) => a.name).join(', ') })}
+            : t('agentStrip.restoreTitle', { names: restorableAgents.map((a: Agent) => displayName(a)).join(', ') })}
         >
           <PixelButton
             variant="primary"
@@ -295,7 +297,7 @@ export function AgentStrip({ config }: AgentStripProps) {
             {restorableAgents.map((a: Agent) => (
               <span
                 key={a.id}
-                title={t('agentStrip.restorable', { name: a.name })}
+                title={t('agentStrip.restorable', { name: displayName(a) })}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   height: 26, padding: '0 4px 0 8px',
@@ -305,15 +307,15 @@ export function AgentStrip({ config }: AgentStripProps) {
                 }}
               >
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {a.name}
+                  {displayName(a)}
                 </span>
                 <span style={{ fontSize: 12, color: 'var(--cth-ink-500)', whiteSpace: 'nowrap' }}>
                   {a.description ? a.description.slice(0, 24) : ''}
                 </span>
                 <button
                   onClick={() => useStore.getState().removeRestorableAgent(a.id)}
-                  title={t('agentStrip.dismiss', { name: a.name })}
-                  aria-label={t('agentStrip.dismissAria', { name: a.name })}
+                  title={t('agentStrip.dismiss', { name: displayName(a) })}
+                  aria-label={t('agentStrip.dismissAria', { name: displayName(a) })}
                   style={{
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     width: 18, height: 18, padding: 0, lineHeight: 1,

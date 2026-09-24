@@ -196,7 +196,7 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
   const initialModel = isClaudeProvider(initialProvider) ? config.defaultModel : undefined;
 
   const [localConnections, setLocalConnections] = useState(config.localConnections ?? []);
-  const [name, setName] = useState(pendingHire?.name ?? 'Caminha');
+  const [name, setName] = useState(pendingHire?.name ?? (scenario === 'tasca' ? 'Lurdes' : 'Caminha'));
   const [character, setCharacter] = useState<CharacterName>(knownCharacter(pendingHire?.character));
   const [accent, setAccent] = useState<AccentColorName>(knownAccent(pendingHire?.accent));
   const [cwd, setCwd] = useState<string>(config.registeredRepos[0] ?? '');
@@ -485,7 +485,10 @@ export function AddAgentModal({ onClose, config, onConfigChange }: AddAgentModal
       recentTextTs: Date.now()
     };
     addAgent(agent);
-    if (scenario === 'tasca') useWorldScenario.getState().setCharacter(agent.id, character);
+    if (scenario === 'tasca') {
+      useWorldScenario.getState().setCharacter(agent.id, character);
+      useWorldScenario.getState().setName(agent.id, name);
+    }
     // Remember the folder for the next hire: promote it to the front of the
     // registeredRepos quick-picks (the modal's default cwd) so back-to-back
     // hires land in the same project without re-picking.

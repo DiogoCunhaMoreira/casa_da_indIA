@@ -2,7 +2,7 @@ window.results = [];
 window.scenario = 'casadaindia';
 window.sendSnapshot = (count = 16, room = window.scenario === 'tasca' ? 'tasca' : 'casa') => {
   document.getElementById('world').contentWindow.postMessage({ version: 2, type: 'snapshot', scenario: window.scenario, room, visible: true,
-    agents: Array.from({ length: count }, (_, i) => ({ id: `smoke-${i}`, name: i === 0 ? 'Feitor de teste' : `Oficial ${i}`, character: window.scenario === 'tasca' ? window.tascaCast[i % 8].id : `character-${i}`, status: i === 1 ? 'blocked' : 'working', seat: i < 21 ? (i < 5 ? i : i + 1) : null, selected: i === 0, isGod: i === 0,
+    agents: Array.from({ length: count }, (_, i) => ({ id: `smoke-${i}`, name: window.scenario === 'tasca' ? window.tascaNames[i] : i === 0 ? 'Feitor de teste' : `Oficial ${i}`, character: window.scenario === 'tasca' ? window.tascaCast[i % 8].id : `character-${i}`, status: i === 1 ? 'blocked' : 'working', seat: i < 21 ? (i < 5 ? i : i + 1) : null, selected: i === 0, isGod: i === 0,
       ...(window.scenario === 'tasca' ? { appearance: (() => { const c = window.tascaCast[i % 8]; return { skin: c.pele, hair: c.cabelo, cloth: c.corCorpo, beard: c.barba, hat: c.cabeca, cape: c.capa, capeColor: c.corCapa, outfit: c.outfit }; })() } : {}) }))
   }, 'casa-world://app');
 };

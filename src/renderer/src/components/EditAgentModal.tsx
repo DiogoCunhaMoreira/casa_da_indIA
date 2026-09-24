@@ -11,7 +11,7 @@ import { PixelButton } from './PixelButton';
 import { SpritePortrait } from './SpritePortrait';
 import { useStore, type Agent } from '@/store/store';
 import type { CharacterName } from '@/scene/office/cast';
-import { TASCA_ROSTER, useWorldScenario, visualCharacter } from '@/scene/godot/scenarios';
+import { TASCA_ROSTER, useWorldScenario, visualCharacter, visualName } from '@/scene/godot/scenarios';
 import { ELENCO as CASA_ROSTER } from '@/scene/office/themeRegistry';
 import { type AccentColorName } from '@/design/tokens';
 import {
@@ -45,7 +45,7 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
   const updateAgent = useStore((s) => s.updateAgent);
   const [config, setConfig] = useState<HarnessConfig | null>(null);
 
-  const [name, setName] = useState(agent.name);
+  const [name, setName] = useState(visualName(agent));
   const [character, setCharacter] = useState<CharacterName>(visualCharacter(agent));
   const [accent, setAccent] = useState<AccentColorName>(agent.accent);
   const [provider, setProvider] = useState<AgentProvider>(
@@ -62,14 +62,14 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
   // Keep form in sync when the selected agent changes while the modal is open.
   useEffect(() => {
     setModelPicked(false);
-    setName(agent.name);
+    setName(visualName(agent));
     setCharacter(visualCharacter(agent));
     setAccent(agent.accent);
     setProvider(inferAgentProvider(agent.command, agent.provider));
     setModel(agent.model);
     setDescription(agent.description);
     setGoal(agent.goal ?? '');
-  }, [agent.id]);
+  }, [agent.id, scenario]);
 
   const liveMismatch = live.ready && !live.error && !sessionMatchesModel(live.session, provider, model);
   const engineChanged = liveMismatch || modelPicked || provider !== inferAgentProvider(agent.command, agent.provider) || model !== agent.model;
@@ -77,7 +77,7 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
     if (!config || saving || !live.ready || live.error) return;
     setSaving(true); setSaveError('');
     const patch = {
-      name: name.trim() || agent.name, character: scenario === 'tasca' ? agent.character : character, accent,
+      name: scenario === 'tasca' ? agent.name : name.trim() || agent.name, character: scenario === 'tasca' ? agent.character : character, accent,
       description: description.trim() || uiText("a_fresh_harness_24e449"),
       goal: goal.trim() || undefined
     };
@@ -97,7 +97,10 @@ export function EditAgentModal({ agent, onClose }: EditAgentModalProps) {
         });
       }
       updateAgent(agent.id, patch);
-      if (scenario === 'tasca') useWorldScenario.getState().setCharacter(agent.id, character);
+      if (scenario === 'tasca') {
+        useWorldScenario.getState().setCharacter(agent.id, character);
+        useWorldScenario.getState().setName(agent.id, name);
+      }
       onClose();
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : t('agentModelPicker.switchFailed'));
