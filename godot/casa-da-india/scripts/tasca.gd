@@ -122,12 +122,20 @@ func architecture(room: Node3D, key: String) -> void:
 
 func counter(room: Node3D) -> void:
 	decor.shelving(room,Vector3(-3.4,0,-4.2),4.6)
-	box(room,"Balcao",Vector3(0,0.65,-1.4),Vector3(9.5,1.3,1.4),WOOD)
-	box(room,"Marmore",Vector3(0,1.36,-1.4),Vector3(9.8,0.16,1.6),CREAM)
+	decor.steel_box(room,"BalcaoInox",Vector3(0,0.65,-1.4),Vector3(9.5,1.3,1.4))
+	decor.steel_box(room,"TampoInox",Vector3(0,1.36,-1.4),Vector3(9.8,0.16,1.6))
+	decor.steel_rail(room,Vector3(0,1.37,-0.61),9.8,0.075)
+	decor.steel_box(room,"EspelhoInox",Vector3(0,1.51,-2.16),Vector3(9.8,0.22,0.075))
+	box(room,"RodapeBalcao",Vector3(0,0.13,-0.675),Vector3(9.46,0.20,0.035),Color("454f53"))
 	for x in [-3.8,-1.9,0.0,1.9,3.8]:
-		box(room,"AlmofadaBalcao",Vector3(x,0.65,-0.685),Vector3(1.65,0.94,0.055),TRIM)
-		box(room,"PainelRebaixado",Vector3(x,0.65,-0.647),Vector3(1.42,0.73,0.025),WOOD)
-	box(room,"BarraPesLatao",Vector3(0,0.24,-0.35),Vector3(9.4,0.075,0.075),Color("b69254"))
+		decor.steel_box(room,"PainelInoxEscovado",Vector3(x,0.72,-0.681),Vector3(1.86,0.94,0.055))
+		for y in [0.32,1.12]:
+			for dx in [-0.82,0.82]:
+				h.ball(room,Vector3(x+dx,y,-0.641),Vector3(0.025,0.025,0.008),Color("626b70"))
+	decor.steel_rail(room,Vector3(0,0.24,-0.35),9.4,0.055)
+	for x in [-4.4,0.0,4.4]: decor.steel_box(room,"SuporteBarra",Vector3(x,0.24,-0.5),Vector3(0.055,0.055,0.3))
+	for i in range(15):
+		box(room,"RanhuraEscorredor",Vector3(-3.4+i*0.12,1.448,-1.0),Vector3(0.035,0.008,0.38),Color("616e74"))
 	box(room,"MaquinaCafe",Vector3(-2.5,1.82,-1.4),Vector3(1.7,0.76,0.7),Color("9faea9"))
 	box(room,"FrenteMaquina",Vector3(-2.5,1.82,-1.03),Vector3(1.5,0.5,0.04),BLUE)
 	for x in [-2.9,-2.2]:
@@ -148,7 +156,8 @@ func dining(room: Node3D) -> void:
 		decor.table(room,Vector3(x,0,-0.7),1.8,true)
 		decor.chair(room,Vector3(x,0,-3.1),0)
 		decor.chair(room,Vector3(x,0,1.7),PI)
-	for x in [-4.7,-2.35,2.35,4.7]: decor.photograph(room,Vector3(x,2.67,-4.69),int(abs(x)))
+	decor.saying(room,"FIADO\nSÓ AMANHÃ",Vector3(-3.5,2.67,-4.65),Vector2(3.5,1.15),0.007)
+	decor.saying(room,"QUEM NÃO É PARA COMER,\nNÃO É PARA TRABALHAR",Vector3(3.5,2.67,-4.65),Vector2(3.5,1.15),0.0048)
 	for x in [-1.05,1.05]: decor.wall_plate(room,Vector3(x,2.58,-4.64),0.32)
 	box(room,"Aparador",Vector3(-4.4,0.58,3.9),Vector3(3.5,1.16,0.75),WOOD)
 	for x in [-5.3,-4.4,-3.5]:
@@ -162,9 +171,10 @@ func private_room(room: Node3D) -> void:
 	for x in [-3.0,0.0,3.0]:
 		decor.chair(room,Vector3(x,0,-2.85),0)
 		decor.chair(room,Vector3(x,0,2.25),PI)
-	decor.photograph(room,Vector3(-4.6,2.6,-4.69),0)
+	decor.saying(room,"PÃO E VINHO\nFAZEM CAMINHO",Vector3(-4.6,2.6,-4.65),Vector2(2.3,1.10),0.0045)
 	decor.guitar(room,Vector3(-2.35,2.55,-4.57))
-	for x in [0.0,1.1,2.2]: decor.wall_plate(room,Vector3(x,2.6,-4.65),0.38)
+	decor.saying(room,"A BOA MESA\nJUNTA A GENTE",Vector3(0.65,2.6,-4.65),Vector2(3.05,1.1),0.0055)
+	decor.wall_plate(room,Vector3(2.75,2.6,-4.65),0.33)
 	box(room,"ConsolaRadio",Vector3(4.8,1.9,-4.35),Vector3(2.3,0.14,0.8),WOOD)
 	box(room,"RadioAntigo",Vector3(4.8,2.28,-4.23),Vector3(1.7,0.68,0.5),TRIM)
 	for x in [4.28,5.32]:

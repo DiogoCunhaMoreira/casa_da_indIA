@@ -120,3 +120,9 @@ Os azulejos usam um shader procedural original, com rosetas, losangos, leques no
 As paredes de fundo decoradas mantêm-se visíveis em corte, como na Casa; as divisórias do corredor e paredes da frente alternam com o botão Paredes. As portas e os percursos foram verificados com os novos móveis.
 
 Verificação desta revisão: TypeScript e build passaram; testes nativos da Casa e da Tasca confirmaram percursos, identidade e 21 lugares. O Electron percorreu as seis salas da tasca e a troca Casa → Tasca → Casa sem erros, com 60 FPS nas amostras locais de 1/16/24 agentes. Capturas de todas as salas foram geradas; planta, sala de mesas, balcão, cozinha e reservado foram inspecionados. O ensaio do divisor lateral passou, incluindo arrasto sobre Godot, redimensionamento e preservação da instância do terminal. O seu handshake foi atualizado para a versão 2 da ponte.
+
+### Balcão em inox e dizeres
+
+O balcão usa inox acetinado com escovado direcional, rebordo tubular, espelho traseiro, painéis aparafusados, apoio de pés e escorredor. O acabamento é local e procedural. A sala de mesas tem placas cerâmicas com «Fiado só amanhã» e «Quem não é para comer, não é para trabalhar»; o reservado tem «Pão e vinho fazem caminho» e «A boa mesa junta a gente». Os lugares e percursos mantêm-se.
+
+Verificado em 24/09/2026: exportação Web e ensaio Electron Casa → Tasca → Casa concluídos sem erros; 60 FPS nas amostras locais de 1/16/24 agentes. Balcão e placas inspecionados nas capturas. O teste nativo de lugares e percursos passou após a alteração do balcão.

@@ -6,9 +6,12 @@ const CREAM = Color("e8dfc8")
 const BLUE = Color("234a85")
 const BRASS = Color("b69254")
 var h: Node3D
+var inox: ShaderMaterial
 
 func _init(host: Node3D) -> void:
 	h = host
+	inox = ShaderMaterial.new()
+	inox.shader = preload("res://scripts/tasca_inox.gdshader")
 
 func b(p: Node3D, name: String, at: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
 	return h.box(p,name,at,size,color)
@@ -169,3 +172,26 @@ func guitar(p: Node3D, at: Vector3) -> void:
 	b(instrument,"Braco",Vector3(0,0.6,0.04),Vector3(0.10,0.82,0.10),WOOD)
 	b(instrument,"Cabeca",Vector3(0,1.05,0.04),Vector3(0.17,0.22,0.1),TRIM)
 	for x in [-0.035,0.0,0.035]: b(instrument,"Corda",Vector3(x,0.3,0.12),Vector3(0.006,1.37,0.008),CREAM)
+
+func steel_box(p: Node3D, title: String, at: Vector3, size: Vector3) -> MeshInstance3D:
+	var node = b(p,title,at,size,Color("a0aaae"))
+	node.material_override = inox
+	return node
+
+func steel_rail(p: Node3D, at: Vector3, length: float, radius: float) -> void:
+	var rail = h.round_shape(p,"TuboInox",at,radius,length,Color("a0aaae"))
+	rail.rotation.z = PI/2
+	rail.material_override = inox
+
+func saying(p: Node3D, words: String, at: Vector3, size: Vector2, pixel: float = 0.0045) -> void:
+	var plaque = h.pivot(p,"DizerPortugues",at)
+	b(plaque,"PlacaCeramica",Vector3.ZERO,Vector3(size.x,size.y,0.095),CREAM)
+	for side in [-1.0,1.0]:
+		b(plaque,"CercaduraVertical",Vector3(side*(size.x/2-0.07),0,0.06),Vector3(0.035,size.y-0.1,0.018),BLUE)
+		b(plaque,"CercaduraHorizontal",Vector3(0,side*(size.y/2-0.07),0.06),Vector3(size.x-0.1,0.035,0.018),BLUE)
+		for end in [-1.0,1.0]:
+			var corner := Vector3(side*(size.x/2-0.16),end*(size.y/2-0.16),0.075)
+			for i in range(4):
+				var a := i*PI/2
+				h.ball(plaque,corner+Vector3(cos(a)*0.045,sin(a)*0.045,0),Vector3(0.045,0.045,0.012),BLUE)
+	lettering(plaque,words,Vector3(0,0,0.078),pixel,BLUE)
