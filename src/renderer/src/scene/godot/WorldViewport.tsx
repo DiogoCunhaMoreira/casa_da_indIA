@@ -47,6 +47,7 @@ export function WorldViewport() {
       save(`${storagePrefix}.seats`, JSON.stringify(seats.current));
       post({ type: 'snapshot', scenario, room: room.current, tasks, humanQuestions, visible: !document.hidden && !state.fullscreenAgentId,
         agents: state.agents.map(a => ({ id: a.id, name: visualName(a, scenario), character: visualCharacter(a, scenario), status: a.status, station: a.currentStation,
+          action: a.action?.slice(0, 240), lastPrompt: a.lastPrompt?.trim().split(/\s+/).slice(0, 6).join(' ').slice(0, 80), carrying: a.carrying,
           appearance: (() => { const c = visualPerson(visualCharacter(a, scenario)); return c ? { skin: c.pele, hair: c.cabelo, cloth: c.corCorpo, beard: c.barba, hat: c.cabeca, cape: c.capa, capeColor: c.corCapa, outfit: 'outfit' in c ? c.outfit : undefined } : undefined; })(),
           isGod: !!a.isGod, selected: a.id === state.selectedId, seat: seats.current[a.id] ?? null })) });
     };

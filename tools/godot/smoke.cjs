@@ -1,9 +1,9 @@
 // Runs the real isolated protocol and Web export without starting providers or touching user data.
 const { app, BrowserWindow } = require('electron');
 const { join, resolve } = require('node:path');
-const { writeFileSync } = require('node:fs');
+const { writeFileSync, mkdtempSync } = require('node:fs');
 const root = resolve(__dirname, '../..');
-app.setPath('userData', '/tmp/casa-world-smoke-profile');
+app.setPath('userData', mkdtempSync('/tmp/casa-world-smoke-'));
 app.setAppPath(root);
 const { registerWorldProtocol } = require('../../test/load-ts.cjs')('src/main/worldProtocol.ts');
 const delay = ms => new Promise(r => setTimeout(r, ms));
@@ -51,8 +51,17 @@ app.whenReady().then(async () => {
       const stats = await subframe.executeJavaScript('window.casaBridge.stats');
       console.log('PERFORMANCE', JSON.stringify(stats));
       if (stats.agents !== count || stats.scenario !== scenario) throw new Error('Roster/scenario mismatch');
+      if (count > 1 && !stats.bubbles) throw new Error('Activity clouds are missing');
     }
     writeFileSync(`/tmp/${scenario}-world-room.png`, (await win.webContents.capturePage()).toPNG());
+    {
+      await win.webContents.executeJavaScript('window.sendIdle()');
+      await delay(4000);
+      const idleStats = await subframe.executeJavaScript('window.casaBridge.stats');
+      if (!idleStats.walking) throw new Error('Idle workers did not start wandering');
+      console.log('IDLE BEHAVIOUR', JSON.stringify(idleStats));
+      writeFileSync(`/tmp/${scenario}-world-idle.png`, (await win.webContents.capturePage()).toPNG());
+    }
     for (const room of (scenario === 'tasca' ? ['balcao','reservado','cozinha','despensa','patio'] : ['gabinete','conselho','cartografia','tesouraria','refeitorio'])) {
       await win.webContents.executeJavaScript(`window.sendSnapshot(16, '${room}')`);
       await delay(1100);

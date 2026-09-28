@@ -20,6 +20,7 @@ export function isScenarioRoom(scenario: WorldScenario, room: unknown): room is 
 export interface WorldAgent {
   id: string; name: string; character: string; status: string; seat: number | null;
   station?: 'shelf' | 'terminal' | 'web' | 'board' | 'mailbox' | 'mcp' | 'desk';
+  action?: string; lastPrompt?: string; carrying?: string;
   selected: boolean; isGod: boolean;
   appearance?: { skin: string; hair: string; cloth: string; beard: string; hat: string; cape: string; capeColor: string; outfit?: string };
 }

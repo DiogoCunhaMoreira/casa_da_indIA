@@ -36,8 +36,8 @@ func run() -> void:
 		assert(not live.navigation.route(Vector3(0,0,14),live.CENTRES.refeitorio+point).is_empty(),"Refeitório inacessível")
 	roster[1].status = "idle"
 	live.apply_snapshot({"version":2,"type":"snapshot","room":"casa","visible":true,"agents":roster})
-	live.tick(live.agents["test-1"],40.0)
-	assert(live.agents["test-1"].break_stage == "serve")
+	live.life.start_break(live.agents["test-1"])
+	assert(live.agents["test-1"].break_stage == "table")
 	roster[1].status = "working"
 	live.apply_snapshot({"version":2,"type":"snapshot","room":"casa","visible":true,"agents":roster})
 	assert(live.agents["test-1"].break_stage == "")

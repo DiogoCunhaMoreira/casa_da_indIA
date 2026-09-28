@@ -12,6 +12,8 @@ var envelopes: Array = []
 var metrics_time := 0.0
 const SEAT_IDS = [0,1,2,3,4,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21]
 const CAPTIONS = {"idle":"Disponível", "working":"A trabalhar", "thinking":"A pensar", "compacting":"A organizar contexto", "waiting":"À espera", "blocked":"Precisa de ajuda", "success":"Concluído", "ghost":"Desligado", "looping":"A repetir", "typing":"A escrever"}
+var life: RefCounted
+var bubbles: CanvasLayer
 var definition: RefCounted
 var CENTRES: Dictionary
 
@@ -20,6 +22,9 @@ func _ready() -> void:
 	definition = host.world_definition
 	CENTRES = definition.CENTRES
 	room = definition.OVERVIEW
+	life = preload("res://scripts/world_life.gd").new(self)
+	bubbles = preload("res://scripts/world_bubbles.gd").new()
+	add_child(bubbles)
 	for actor in host.officials:
 		actor.node.queue_free()
 	host.officials.clear()
@@ -62,6 +67,11 @@ func apply_snapshot(data: Variant) -> void:
 		return
 	if not data.get("agents") is Array:
 		return
+	life.done_counts.clear()
+	for task in data.get("tasks",[]):
+		if task is Dictionary and task.get("status")=="done":
+			var assignee: String = str(task.get("assignee",""))
+			life.done_counts[assignee] = life.done_counts.get(assignee,0)+1
 	var keep := {}
 	for item in data.agents:
 		if not item is Dictionary or not item.get("id") is String:
@@ -74,6 +84,8 @@ func apply_snapshot(data: Variant) -> void:
 			previous_position = agents[id].node.position
 			host.officials.erase(agents[id])
 			agents[id].node.queue_free()
+			life.remove_actor(agents[id])
+			bubbles.remove_actor(id)
 			agents.erase(id)
 		if not agents.has(id):
 			var variant := absi(str(item.get("character", "")).hash()) % 3
@@ -87,42 +99,34 @@ func apply_snapshot(data: Variant) -> void:
 			created.idle_time = 0.0
 			created.break_stage = ""
 			created.destination = pos
+			life.init_actor(created)
 			agents[id] = created
+			bubbles.add_actor(id)
 		var actor: Dictionary = agents[id]
 		actor.name = str(item.get("name", ""))
 		var old_state: String = actor.state
 		actor.state = str(item.get("status", "idle"))
 		if old_state != actor.state:
 			actor.idle_time = 0.0
-		actor.role = ("Taberneiro" if definition.ID == "tasca" else "Feitor") if item.get("isGod", false) else "Agente"
+		actor.is_god = bool(item.get("isGod", false))
+		actor.has_seat = item.get("seat") != null
+		actor.role = ("Taberneiro" if definition.ID == "tasca" else "Feitor") if actor.is_god else "Agente"
 		actor.caption = CAPTIONS.get(actor.state, actor.state)
-		actor.label.text = "%s · %s" % [actor.name, actor.caption]
+		actor.action = str(item.get("action", "")).strip_edges().left(240)
+		actor.prompt = str(item.get("lastPrompt", "")).strip_edges().left(240)
+		actor.tool = str(item.get("carrying", ""))
 		actor.ring.visible = item.get("selected", false)
-		actor.label.visible = actor.ring.visible or actor.state in ["blocked","ghost"]
-		# Working actors never run the autonomous demonstration routine.
-		actor.live_working = actor.state in ["working", "thinking", "compacting", "typing", "looping"]
-		var destination := seat_position(item.get("seat"))
-		if item.get("seat") == null:
-			actor.role = "À espera de lugar"
-			actor.caption = "À espera de lugar"
-			actor.label.text = "%s · À espera de lugar" % actor.name
-			actor.label.visible = true
-		actor.home = destination
-		if actor.live_working:
-			destination = definition.station_position(str(item.get("station", "desk")), actor.home)
-		if actor.state == "blocked":
-			destination = definition.blocked_position(agents.keys().find(id))
-		if item.get("seat") == null:
-			destination = definition.waiting_position(agents.keys().find(id))
-		if actor.state != "idle":
-			actor.break_stage = ""
-			break_places.erase(id)
-		if actor.break_stage == "":
-			move_to(actor,destination)
+		actor.label.visible = false # Screen-space thought clouds replace the old selected-only label.
+		actor.live_working = actor.state in ["working", "thinking", "compacting", "typing"]
+		actor.home = seat_position(item.get("seat"))
+		life.apply_state(actor,old_state)
+
 	for id in agents.keys():
 		if not keep.has(id):
 			host.officials.erase(agents[id])
 			agents[id].node.queue_free()
+			life.remove_actor(agents[id])
+			bubbles.remove_actor(id)
 			agents.erase(id)
 			break_places.erase(id)
 	host.selected = -1
@@ -164,38 +168,7 @@ func move_to(actor: Dictionary, target: Vector3) -> void:
 	actor.wait = 0.0
 
 func tick(actor: Dictionary, delta: float) -> void:
-	if actor.state != "idle":
-		return
-	actor.idle_time += delta
-	var id: String = actor.live_id
-	if actor.break_stage == "" and actor.idle_time > 18.0 + float(absi(id.hash())%15):
-		if break_places.size() >= 4:
-			return
-		var used := break_places.values()
-		for place in range(4):
-			if place not in used:
-				break_places[id] = place
-				break
-		actor.break_stage = "serve"
-		actor.idle_time = 0.0
-		move_to(actor,definition.break_position("serve"))
-	elif actor.break_stage != "" and actor.node.position.distance_to(actor.destination) < 0.15:
-		var place: int = break_places.get(id,0)
-		if actor.break_stage == "serve" and actor.idle_time > 4.0:
-			actor.break_stage = "eat"
-			actor.idle_time = 0.0
-			move_to(actor,definition.break_position("eat",place))
-		elif actor.break_stage == "eat" and actor.idle_time > 18.0:
-			actor.break_stage = "wash"
-			actor.idle_time = 0.0
-			move_to(actor,definition.break_position("wash"))
-		elif actor.break_stage == "wash" and actor.idle_time > 5.0:
-			actor.break_stage = "return"
-			move_to(actor,actor.home)
-		elif actor.break_stage == "return":
-			actor.break_stage = ""
-			actor.idle_time = -60.0
-			break_places.erase(id)
+	life.tick(actor,delta)
 
 func show_message(data: Dictionary) -> void:
 	if data.get("id") in message_ids or not agents.has(data.get("from")):
@@ -216,7 +189,10 @@ func show_message(data: Dictionary) -> void:
 		tween.tween_callback(func(): envelopes.erase(letter); letter.queue_free())
 
 func _process(delta: float) -> void:
+	if not host.paused:
+		life.update(delta)
+		bubbles.update_bubbles(agents,host.camera,life)
 	metrics_time += delta
 	if metrics_time >= 1.0 and bridge != null:
 		metrics_time = 0.0
-		bridge.metrics(JSON.stringify({"fps":Engine.get_frames_per_second(),"agents":agents.size(),"room":room,"scenario":definition.ID,"nodes":get_tree().get_node_count(),"drawCalls":Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)}))
+		bridge.metrics(JSON.stringify({"fps":Engine.get_frames_per_second(),"agents":agents.size(),"room":room,"scenario":definition.ID,"nodes":get_tree().get_node_count(),"drawCalls":Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),"walking":agents.values().filter(func(a): return a.node.position.distance_to(a.destination)>0.15).size(),"bubbles":bubbles.cards.values().filter(func(c): return c.panel.visible).size(),"breaks":break_places.size()}))

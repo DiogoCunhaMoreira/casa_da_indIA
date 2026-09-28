@@ -368,6 +368,8 @@ func animate_official(a: Dictionary, delta: float) -> void:
 	var idle := elapsed+float(a.index)*2.3
 	var body: Node3D = a.body
 	body.position.y = 0.015 + (1.0-cos(stride*2.0))*0.013*blend+sin(idle*1.8)*0.007*(1.0-blend)
+	if a.get("cheer_time",0.0)>0:
+		body.position.y += absf(sin(float(a.cheer_time)*7))*0.14
 	body.rotation.z = sin(stride)*0.035*blend
 	body.rotation.x = -0.035*blend
 	a.head.rotation.y = sin(idle*0.65)*0.1*(1.0-blend)
@@ -566,7 +568,7 @@ func _unhandled_input(event: InputEvent) -> void:
 					selected = i
 			for i in range(officials.size()):
 				officials[i].ring.visible = i == selected
-				officials[i].label.visible = i == selected
+				officials[i].label.visible = i == selected and not is_instance_valid(live_world)
 			if is_instance_valid(live_world) and selected >= 0:
 				live_world.emit({"type":"openTerminal" if camera_double_click else "select", "id":officials[selected].live_id})
 			if selected < 0 and not is_instance_valid(live_world):

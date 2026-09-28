@@ -38,8 +38,8 @@ func run() -> void:
 		assert(not live.navigation.route(Vector3(0,0,8),live.definition.blocked_position(i)).is_empty())
 	roster[1].status = "idle"
 	live.apply_snapshot(snapshot)
-	live.tick(live.agents["agent-1"],40)
-	assert(live.agents["agent-1"].break_stage == "serve")
+	live.life.start_break(live.agents["agent-1"])
+	assert(live.agents["agent-1"].break_stage == "table")
 	roster[1].status = "working"
 	live.apply_snapshot(snapshot)
 	assert(live.agents["agent-1"].break_stage == "")

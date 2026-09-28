@@ -7,8 +7,8 @@ A aplicação abre diretamente a Casa em 3D dentro do Electron. A vista Godot é
 - As seis salas partilham um único mundo. Mudar de sala move a câmara; não recria os agentes.
 - Cada agente mantém o ID, o nome personalizado e a personagem escolhida. As cores, cabelo, pele, barba, cobertura da cabeça e capa vêm do elenco da aplicação.
 - A aplicação atribui e guarda os lugares: gabinete (1), escrivães (7), cartografia (3), tesouraria (4), conselho (6 de reserva). O refeitório não ocupa lugares de trabalho. Acima de 21, os restantes aguardam lugar.
-- Os estados vêm do store existente. Bloqueio e espera de lugar são diferentes. As estações de ferramentas orientam as deslocações. Os percursos são calculados a partir da geometria, com margem para a personagem.
-- Quatro lugares de pausa no refeitório, com serviço, refeição e lavagem. Uma mudança para trabalho cancela a pausa. Isto é animação: nunca suspende PTYs ou tarefas reais.
+- Os estados vêm do store existente. Bloqueio e espera de lugar são diferentes. Trabalhar mantém o agente no posto, independentemente da ferramenta. Os trabalhadores disponíveis passeiam; o coordenador fica normalmente no seu posto. Os percursos são calculados a partir da geometria, com margem para a personagem.
+- Quatro lugares de pausa no refeitório, com conversas a dois e canecas que podem ser preparadas, levadas ao posto, reabastecidas ou lavadas. Uma mudança para trabalho cancela a pausa. Isto é animação: nunca suspende PTYs ou tarefas reais.
 - A barra fixa acima do cenário apresenta contagens reais de tarefas e botões para abrir Tarefas e perguntas para o utilizador. Correspondência real produz envelopes, sem transmitir o conteúdo das mensagens ao Godot.
 - Clique seleciona um agente; duplo clique abre o seu terminal. Roda/pinça e botões +/− fazem zoom, arrastar com o botão esquerdo, direito ou central move a câmara; a roda/pinça aproxima a zona sob o ponteiro, F foca o agente, R repõe a vista. O seletor de sala e a opção de paredes ficam na aplicação.
 - Quando o cenário está oculto ou o terminal está em foco, o desenho pausa. O backend continua ativo. O regresso envia um snapshot completo.
@@ -17,7 +17,7 @@ A aplicação abre diretamente a Casa em 3D dentro do Electron. A vista Godot é
 
 `src/shared/worldBridge.ts` define o contrato versionado. O renderer só aceita pedidos do iframe esperado, com origem `casa-world://app`, versão e ações conhecidas. Os IDs são confirmados contra os agentes existentes antes de selecionar ou abrir um terminal.
 
-O protocolo local só serve os ficheiros conhecidos da exportação. Não tem APIs de sistema nem acesso remoto. O iframe tem sandbox e não recebe preload, Node, credenciais, caminhos de projetos, prompts ou transcrições. A CSP permite WebAssembly apenas nesse iframe. A capacidade de consultar o registo de service workers evita um erro do runtime Godot; a CSP continua a proibir a criação de workers.
+O protocolo local só serve os ficheiros conhecidos da exportação. Não tem APIs de sistema nem acesso remoto. O iframe tem sandbox e não recebe preload, Node, credenciais ou transcrições de terminal. Recebe o resumo da atividade (máximo de 240 caracteres) e, como alternativa, apenas as primeiras seis palavras do pedido (máximo de 80 caracteres) para os balões. O resumo pode incluir o nome ou caminho do ficheiro que o agente está a usar. A CSP permite WebAssembly apenas nesse iframe. A capacidade de consultar o registo de service workers evita um erro do runtime Godot; a CSP continua a proibir a criação de workers.
 
 Estado durável, tarefas, providers, custos, permissões e terminais continuam no Electron/React. O armazenamento `casa.world.*` guarda apenas preferências visuais e lugares, na sessão da janela respetiva. Os protocolos e identificadores legados de compatibilidade foram preservados.
 
@@ -84,7 +84,7 @@ A secretária junto à entrada dos Escrivães foi retirada: há agora 15 lugares
 
 O seletor acima do mundo permite alternar entre **Casa da Índia** e **Tasca Portuguesa**. A Casa é a opção inicial; a última escolha fica em `casa.world.scenario`, na partição local da janela. A troca substitui apenas o iframe e envia um snapshot completo. IDs, nomes internos, tarefas, PTYs, providers e permissões não são alterados; os nomes apresentados acompanham o cenário.
 
-A tasca é uma planta original de bairro: balcão (coordenador), sala de mesas com 6 lugares, reservado com 6, cozinha com 4, despensa com 4 e pátio com 4 lugares de pausa. Mantém a capacidade de 21 agentes com lugar, espera para os restantes, estações de ferramentas, correspondência, estados e cancelamento das pausas ao retomar trabalho. Os modelos são procedurais, sem áudio ou recursos remotos.
+A tasca é uma planta original de bairro: balcão (coordenador), sala de mesas com 6 lugares, reservado com 6, cozinha com 4, despensa com 4 e pátio com 4 lugares de pausa. Mantém a capacidade de 21 agentes com lugar, espera para os restantes, correspondência, estados e cancelamento das pausas ao retomar trabalho. Os modelos são procedurais, sem áudio ou recursos remotos.
 
 `casa_world_config.gd` contém os destinos originais da Casa; `tasca.gd` constrói a tasca e define os seus destinos. O controlador `live_world.gd` é partilhado. A ponte visual está na versão 2: os snapshots e eventos `view` identificam o cenário, e as zonas são validadas por cenário. A origem `casa-world://app` e o isolamento permanecem os mesmos.
 
@@ -137,3 +137,19 @@ A cozinha tem um fogão em inox com seis queimadores e grelhas, seis comandos, d
 Verificação: os seis testes de ponte/preferências incluem troca repetida, renomeação, persistência após recarregar e preservação da identidade/sessão. TypeScript, build e ensaios nativos de ambos os mundos passaram. O ensaio visual Electron usa o resolvedor real de nomes sobre agentes simulados.
 
 O ensaio final Casa → Tasca → Casa terminou sem erros e com 60 FPS nas amostras locais de 1/16/24 agentes. Cozinha, sala de mesas, reservado, despensa e pátio foram inspecionados em captura. Os testes adicionais de identidade/i18n tiveram nove aprovações e as duas falhas já conhecidas de paridade/interpolação chinesa (`localModels`/`agentModelPicker`), sem alterações a esses ficheiros de tradução.
+
+
+### Comportamento original recuperado — 28/09/2026
+
+O controlador `world_life.gd` adapta as regras do [OfficeFloor original](https://github.com/chaitanyagiri/munder-difflin/blob/main/src/renderer/src/scene/office/OfficeFloor.tsx) aos cenários 3D. Substitui as anteriores deslocações por ferramenta e a pausa obrigatória após 18–32 segundos:
+
+- Trabalhar, pensar, escrever e organizar contexto: regressar ao posto e mostrar a atividade real. Esperar por outro agente: permanecer no posto sem animação de trabalho. Bloqueio: ir à entrada/corredor. Desligado ou repetição: parar no local; o desligado não mostra balão.
+- Trabalhadores disponíveis ou com sucesso: passear por pontos acessíveis. O coordenador permanece no posto, com pequenas saídas ocasionais. Não se atribuem tarefas reais a partir da animação.
+- O diretor de pausas considera um trabalhador a cada 6–12 segundos, com probabilidade de 70%, máximo de quatro lugares e preferência por companhia à mesa. A permanência de 8–16 segundos começa na chegada, não durante a caminhada. O limite de caminhada foi adaptado de 20 para 90 segundos, dada a dimensão das plantas 3D.
+- Conversas alternadas a cada 2,4 segundos, frases de pausa próprias do ambiente, pequenas visitas à janela/plantas/arquivo e comentários ao coordenador com contagens reais de tarefas concluídas. As falas decorativas são assinaladas como «Pausa» ou «Conversa».
+- Oito canecas: recolher, preparar, levar para o posto; na pausa seguinte reabastecer ou lavar e devolver. O trabalho interrompe a pausa, a visita ou a conversa imediatamente e liberta o lugar; uma caneca já recolhida acompanha o agente. Só um período de trabalho de pelo menos 60 segundos produz a breve celebração visual.
+- `world_bubbles.gd` desenha balões acima das personagens, mesmo sem seleção, com tamanho legível independente do zoom, limites de ecrã e tratamento de sobreposições. Dá prioridade ao agente selecionado e aos pedidos de ajuda; se não houver espaço, alguns balões ficam ocultos até aproximar a vista.
+
+Verificação nativa adicional: `--script res://tests/world_behavior_test.gd`. Testa ambos os cenários, posto fixo para todas as ferramentas, atividade e resumo do pedido, passeio que resiste aos snapshots, elegibilidade de pausas, contagem após chegada, conversa/interrupção, ciclo e inventário de canecas, pequenas visitas, bloqueio, desligado, celebração, suspensão quando oculto e conservação da identidade. O ensaio Electron também verifica balões visíveis e trabalhadores disponíveis em movimento, com sessões simuladas.
+
+Resultado desta revisão: TypeScript, build, seis testes Node de ponte/preferências e os três ensaios nativos passaram. Electron confirmou Casa → Tasca → Casa, balões de atividade, cinco trabalhadores disponíveis em movimento e 60 FPS nas amostras locais de 1/16/24 agentes, sem erros do renderer. Capturas dos balões: `/tmp/casadaindia-world-room.png` e `/tmp/tasca-world-room.png`; passeios: `/tmp/casadaindia-world-idle.png` e `/tmp/tasca-world-idle.png`. Não foram iniciados providers reais.
