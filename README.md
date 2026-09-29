@@ -16,6 +16,7 @@ armadas: o Feitor despacha, as naus partem, e tudo se regista.*
   <a href="#como-funciona">Como funciona</a> ·
   <a href="#funcionalidades">Funcionalidades</a> ·
   <a href="#o-elenco">O elenco</a> ·
+  <a href="#a-tasca-portuguesa">A Tasca</a> ·
   <a href="#português">Português</a> ·
   <a href="#começar">Começar</a>
 </p>
@@ -26,7 +27,7 @@ armadas: o Feitor despacha, as naus partem, e tudo se regista.*
 
 ## O que é
 
-Uma aplicação de secretária que transforma as CLIs de código que já usas — **Claude Code**,
+Uma aplicação para o computador que transforma as CLIs de código que já usas — **Claude Code**,
 **Codex** e **OpenCode** — numa equipa. Cada agente é um processo real num terminal real,
 com a sua pasta, o seu modelo e a sua memória. Por cima deles, um orquestrador — o
 **Feitor** — reparte o trabalho, responde ao que é rotina e só te chama a ti para o que
@@ -36,7 +37,7 @@ Tu vês tudo: os terminais, o quadro de tarefas, as mensagens que os agentes tro
 si, o que custam, e um mundo 3D em Godot onde cada oficial da Casa anda pelas salas
 conforme o que o seu agente está a fazer.
 
-Corre tudo localmente. Não há servidor nosso, nem conta para criar.
+Corre tudo na tua máquina. Não há servidor nosso, nem é preciso criar conta.
 
 É um *fork* português do [**Munder Difflin**](https://github.com/chaitanyagiri/munder-difflin),
 de Chaitanya Giri. O upstream é uma paródia do *The Office*; este troca-a pela **Casa da
@@ -86,7 +87,7 @@ O desenho completo está em [`HIVE.md`](./HIVE.md) e [`SPEC.md`](./SPEC.md).
 
 - **Três motores:** Claude Code, Codex (ChatGPT) e OpenCode — este último para modelos
   locais em LM Studio, Ollama, vLLM ou qualquer servidor compatível com OpenAI.
-- **Adicionar agente em quatro partes:** identidade (nome, personagem, cor), espaço de
+- **Novo agente em quatro partes:** identidade (nome, personagem, cor), espaço de
   trabalho (pasta, isolamento, retomar sessão), motor (fornecedor, modelo, comando) e
   instruções (descrição e objetivo).
 - **Worktrees isoladas:** um agente pode trabalhar na sua própria *git worktree*, sem pisar
@@ -94,19 +95,19 @@ O desenho completo está em [`HIVE.md`](./HIVE.md) e [`SPEC.md`](./SPEC.md).
 - **Mudar de modelo sem perder a conversa:** dentro do mesmo fornecedor, a sessão é
   retomada.
 - **Restaurar a equipa:** depois de fechares e voltares a abrir, **Reiniciar e continuar**
-  levanta todos os agentes em paralelo onde tinham ficado.
+  põe todos os agentes a trabalhar outra vez, ao mesmo tempo, a partir de onde tinham ficado.
 - **Nomes editáveis** e uma nota privada por agente, só para ti.
 
 ### 🧭 O Feitor — o orquestrador
 
 - Recebe o trabalho, reparte-o pelos agentes que já existem e resolve sozinho o que é
   rotina: esclarecimentos, pedidos de dados, ajustes ao plano.
-- **Contrata trabalhadores efémeros** para uma única tarefa: arrancam, fazem, reportam e
-  encerram. Estão todos à vista no separador **Trabalhadores**.
-- **Escala-te o que é crítico** — operações destrutivas, gastos, mudanças de âmbito,
+- **Contrata trabalhadores efémeros** para uma única tarefa: arrancam, fazem o trabalho,
+  dão conta do resultado e saem. Estão todos à vista no separador **Trabalhadores**.
+- **Passa-te a ti o que é crítico** — operações destrutivas, gastos, mudanças de âmbito,
   conflitos sem solução — no separador **Perguntas**, com markdown, respostas encadeadas e
   aviso de quando uma pergunta está a bloquear outras tarefas.
-- **Pausa 1:1:** diz ao Feitor que deixe um agente em paz enquanto falas com ele.
+- **Conversa a dois:** pede ao Feitor que deixe um agente em paz enquanto falas com ele.
 - O motor do Feitor é escolhido por ti, como o de qualquer outro agente.
 
 ### 📜 Coordenação — a colmeia
@@ -118,7 +119,7 @@ O desenho completo está em [`HIVE.md`](./HIVE.md) e [`SPEC.md`](./SPEC.md).
 - **Equipa:** o estado de cada agente num relance — *a pensar*, *a trabalhar*, *à espera*,
   *precisa de ti*, *a compactar*, *em ciclo* — com a ocupação do contexto.
 - **Fila de mensagens:** escreve enquanto o agente está ocupado e a mensagem sai quando ele
-  puder recebê-la. Aceita anexos (ficheiros e imagens), e mostra porque está retida.
+  puder recebê-la. Aceita anexos (ficheiros e imagens), e mostra porque é que está retida.
 
 ### 🛡️ Controlo e segurança
 
@@ -127,9 +128,9 @@ O desenho completo está em [`HIVE.md`](./HIVE.md) e [`SPEC.md`](./SPEC.md).
 - **Parar após este passo:** deixa acabar o que está a fazer e para, com a sessão intacta.
 - **Orientar:** envia uma nota que lhe chega como contexto na vez seguinte, sem o
   interromper.
-- **Pausar a entrega** de mensagens a toda a equipa com um clique.
-- **Disjuntor:** deteta agentes em ciclo ou a gastar de mais e sobe uma escada —
-  corrigir → restringir → parar. Configurável por inteiro em **Autonomia e limites**.
+- **Suspender a entrega** de mensagens a toda a equipa com um clique.
+- **Disjuntor:** deteta agentes em ciclo ou a gastar de mais e vai subindo o tom —
+  corrigir → restringir → parar. Tudo se ajusta em **Autonomia e limites**.
 - **Limites de tokens por agente**, medidos em trabalho feito e não em contexto em cache.
 - **Servidores MCP por níveis:** os de só leitura vêm ligados; os que escrevem ou pedem
   credenciais ficam desligados até os ativares tu.
@@ -151,16 +152,18 @@ O desenho completo está em [`HIVE.md`](./HIVE.md) e [`SPEC.md`](./SPEC.md).
 
 ### ⏰ Automações
 
-- **Agendamentos:** envia instruções a um agente ou à equipa inteira a cada *N* minutos,
-  ou a uma hora certa em dias da semana escolhidos (seguro com a mudança de hora).
+- **Agendamentos:** envia instruções a um agente ou à equipa inteira de *N* em *N*
+  minutos,
+  ou a uma hora certa nos dias da semana que escolheres (sem se baralhar com a mudança
+  da hora).
 - **Regras de contexto:** compacta ou limpa o contexto dos agentes quando passa um
   intervalo e a ocupação atinge um limiar.
-- **Recupera o que perdeu:** se o computador adormeceu, os agendamentos em falta correm ao
-  acordar e os terminais encravados são revividos.
+- **Recupera o que ficou para trás:** se o computador entrou em suspensão, os agendamentos
+  em falta correm quando ele volta, e os terminais encravados são reanimados.
 
 ### 🛠️ As ferramentas de trabalho
 
-- **Terminais a sério** (xterm.js + WebGL): seguem o tema claro/escuro, fazem zoom ao
+- **Terminais a sério** (xterm.js + WebGL): seguem o tema claro/escuro, ampliam o
   painel inteiro, e todos os caminhos impressos são clicáveis — markdown abre na
   pré-visualização, código no editor, o resto no Finder.
 - **Modo de foco:** um agente em ecrã completo, com a lista da equipa ao lado.
@@ -180,10 +183,9 @@ O desenho completo está em [`HIVE.md`](./HIVE.md) e [`SPEC.md`](./SPEC.md).
 - **A Casa em 3D, feita em Godot:** Gabinete do Feitor, Escrivães, Conselho, Cartografia,
   Tesouraria, Refeitório e a Planta geral. Tudo procedural — modelos, materiais e
   personagens gerados em GDScript, sem arte de terceiros.
-- **As personagens vivem o estado dos agentes:** andam pelas salas, sentam-se a trabalhar e
-  mostram balões com o que estão a pensar.
-- **Um segundo cenário, a Tasca:** balcão, sala de mesas, sala reservada, cozinha,
-  despensa e garrafeira, e pátio — com azulejos e inox a condizer.
+- **As personagens acompanham o estado dos agentes:** andam pelas salas, vão para o seu
+  posto quando esperam ou precisam de ti, e mostram balões com o que estão a pensar.
+- **Um segundo cenário, a Tasca Portuguesa** — ver [mais abaixo](#a-tasca-portuguesa).
 - Câmara livre: aproximar, afastar, arrastar, e clicar num oficial para ver quem é e o que
   está a fazer.
 
@@ -192,7 +194,7 @@ O desenho completo está em [`HIVE.md`](./HIVE.md) e [`SPEC.md`](./SPEC.md).
 - **Configuração inicial em quatro passos:** espaço de trabalho, motor do Feitor, os teus
   repositórios, e permissões (quanto podem os agentes fazer sozinhos, e manter o
   computador acordado).
-- **Pré-requisitos verificados por ti:** a aplicação vê o que falta e instala o Node e as
+- **Pré-requisitos tratados por ela:** a aplicação vê o que falta e instala o Node e as
   CLIs dos motores quando não os encontra.
 - **Atualizações automáticas**, do aviso à instalação, com a página de novidades na
   primeira abertura depois de atualizar.
@@ -207,7 +209,7 @@ reais da Casa:
 | Na aplicação | Na Casa da Índia |
 |---|---|
 | orquestrador | **Feitor** — Fernão Lourenço ocupou o cargo c. 1481–1504 |
-| tu, a quem se escala | **Vedor da Fazenda**, e acima dele o Rei |
+| tu, a quem se leva a decisão | **Vedor da Fazenda**, e acima dele o Rei |
 | *system prompt* / manual | **Regimento** — o de 1509 dizia a cada oficial o que fazer e o que registar |
 | relatórios, PRs | **Escrivão** — era o cargo de Caminha na feitoria de Calecute |
 | orçamento | **Tesoureiro** |
@@ -267,6 +269,50 @@ Duas ressalvas assumidas, ditas em vez de escondidas:
 2. **Gama, Albuquerque, Almeida, Pires e Barbosa** estavam no Índico e não em Lisboa — que
    é precisamente o que os torna bons agentes destacados.
 
+## A Tasca Portuguesa
+
+Nem só de armadas vive a Casa. Em **Mudar de cenário**, o mundo troca o século XVI por uma
+tasca de bairro: a mesma equipa, os mesmos terminais, o mesmo Feitor — só muda o que se vê.
+
+### As salas
+
+| Sala | O que lá está |
+|---|---|
+| **Balcão e gerência** | balcão de inox escovado e o quadro dos pratos do dia: *bacalhau à Brás, pataniscas, sopa de legumes, moelas, vinho da casa* |
+| **Cozinha** | panelas ao lume, frigideiras e caldo a apurar |
+| **Sala de mesas** | toalhas de papel, guardanapeiros e cadeiras de espaldar |
+| **Sala reservada** | para as conversas que não são para toda a gente |
+| **Adega e despensa** | prateleiras de mantimentos e garrafas com rolha e rótulo |
+| **Pátio dos habituais** | cá fora, para os de sempre |
+
+Tudo com azulejos azuis de padrão floral, uma guitarra pendurada na parede, relógio,
+candeeiros e, claro, os ditados de sempre:
+
+> *Fiado só amanhã.*
+> *Quem não é para comer, não é para trabalhar.*
+> *Pão e vinho fazem caminho.*
+> *A boa mesa junta a gente.*
+> *Casa onde não há pão, todos ralham e ninguém tem razão.*
+
+### Quem lá trabalha
+
+| Personagem | Ofício |
+|---|---|
+| **Manuel** | taberneiro — é o Feitor, atrás do balcão |
+| **Lurdes** | cozinheira |
+| **Rosa** | empregada de mesa |
+| **Joaquim** | empregado de mesa |
+| **António** | carteiro |
+| **Amélia** | vizinha |
+| **Celeste** | comerciante |
+| **Zé** | cliente habitual |
+
+Cada agente recebe uma personagem e um nome de gente da terra — *Rosa Ferreira*,
+*Joaquim Teixeira* — que podes trocar ao editar o agente. Estas alcunhas são só de
+cenário: não mexem na identidade do agente, no terminal nem na orquestração, e o elenco é
+fictício, puramente decorativo. Ao voltar à Casa da Índia, volta tudo aos oficiais de D.
+Manuel.
+
 ## Português
 
 Há duas camadas, e só uma delas é frágil.
@@ -299,8 +345,8 @@ foi feita por ele.
 
 ## Começar
 
-Precisas de Node, de pelo menos uma das CLIs (`claude`, `codex` ou `opencode`) e, no
-macOS, das Xcode Command Line Tools. O Godot só é preciso para exportar o mundo.
+Precisas do Node, de pelo menos uma das CLIs (`claude`, `codex` ou `opencode`), do Godot 4.6
+(para exportar o mundo) e, no macOS, das Xcode Command Line Tools.
 
 ```bash
 npm install          # o postinstall faz electron-rebuild — precisa das Xcode CLT no macOS
