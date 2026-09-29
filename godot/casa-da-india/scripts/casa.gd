@@ -628,17 +628,6 @@ func room_rug(parent: Node3D, center: Vector3, size: Vector3, color: Color) -> v
 		box(parent,"Bordo",center+Vector3(side*(size.x/2-0.10),0.10,0),Vector3(0.045,0.01,size.z-0.15),GOLD)
 		box(parent,"Bordo",center+Vector3(0,0.10,side*(size.z/2-0.10)),Vector3(size.x-0.15,0.01,0.045),GOLD)
 
-func room_sign(parent: Node3D, title: String, pos: Vector3) -> void:
-	var label := Label3D.new()
-	label.text = title
-	label.font_size = 42
-	label.pixel_size = 0.022
-	label.modulate = CREAM
-	label.outline_modulate = INK
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	parent.add_child(label)
-	label.position = pos
-
 func build_layout(world: Node3D) -> void:
 	preload("res://scripts/planta.gd").new().build(self,world)
 

@@ -62,7 +62,6 @@ func build(h: Node3D, world: Node3D) -> void:
 			h.box(door,"Ferragem",Vector3(0.075,y,0.97),Vector3(0.035,0.095,1.87),h.INK)
 		h.ball(door,Vector3(0.14,1.4,1.72),Vector3(0.13,0.12,0.12),h.GOLD)
 		h.box(anchor,"Soleira",Vector3(inner_x,0.065,2.7),Vector3(0.70,0.05,2.2),h.CREAM)
-		h.room_sign(anchor,data[0],Vector3(0,4.9,-3.8))
 		h.plan_rooms.append({"id":data[1],"bounds":Rect2(Vector2(data[2].x-8.25,data[2].z-5.25),Vector2(16.5,10.5))})
 	# Patamar e cais prolongam o eixo principal da Casa.
 	h.box(site,"Patio",Vector3(0,-0.10,17.8),Vector3(38,0.25,2.8),Color("c6b99d"))
