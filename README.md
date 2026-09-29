@@ -188,30 +188,6 @@ faz fica registado, com histórico.
 - **Notificações** no ambiente de trabalho quando alguém precisa de ti.
 - **Português e inglês**, à escolha em Definições → Geral.
 
-## Duas coisas que este fork faz de diferente
-
-**1. A nomenclatura é histórica, não inventada.** Os cargos da aplicação são os cargos
-reais da Casa:
-
-| Na aplicação | Na Casa da Índia |
-|---|---|
-| orquestrador | **Feitor** — Fernão Lourenço ocupou o cargo c. 1481–1504 |
-| tu, a quem se leva a decisão | **Vedor da Fazenda**, e acima dele o Rei |
-| *system prompt* / manual | **Regimento** — o de 1509 dizia a cada oficial o que fazer e o que registar |
-| relatórios, PRs | **Escrivão** — era o cargo de Caminha na feitoria de Calecute |
-| orçamento | **Tesoureiro** |
-| índice semântico | **Padrão Real** — o mapa-mestre, guardado sob sigilo |
-| infraestrutura | **Armazéns da Guiné e Índia** |
-| agente remoto | **feitoria** — entreposto longe da sede, com correio irregular |
-| tarefa de longo curso | **Carreira da Índia** |
-
-O *regimento* é o achado: era a instrução escrita entregue a cada oficial. É um system
-prompt, em 1509.
-
-**2. Fala português a sério.** A interface está traduzida para PT-PT, e os agentes são
-instruídos a responder, documentar e escrever commits em português europeu — em qualquer
-motor, não só nos locais. Ver [Português](#português) abaixo.
-
 ## O elenco
 
 Quinze oficiais documentados, todos vivos e ativos na mesma janela: **Lisboa, c. 1500–1516**,
@@ -238,33 +214,13 @@ no reinado de D. Manuel I.
 ## A Tasca Portuguesa
 
 Nem só de armadas vive a Casa. Em **Mudar de cenário**, o mundo troca o século XVI por uma
-tasca de bairro: a mesma equipa, os mesmos terminais, o mesmo Feitor — só muda o que se vê.
+tasca de bairro. O Feitor é agora o **taberneiro**, e as personagens ajustadas a uma verdadeira tasca portuguesa.
 
-### As salas
-
-| Sala | O que lá está |
-|---|---|
-| **Balcão e gerência** | balcão de inox escovado e o quadro dos pratos do dia: *bacalhau à Brás, pataniscas, sopa de legumes, moelas, vinho da casa* |
-| **Cozinha** | panelas ao lume, frigideiras e caldo a apurar |
-| **Sala de mesas** | toalhas de papel, guardanapeiros e cadeiras de espaldar |
-| **Sala reservada** | para as conversas que não são para toda a gente |
-| **Adega e despensa** | prateleiras de mantimentos e garrafas com rolha e rótulo |
-| **Pátio dos habituais** | cá fora, para os de sempre |
-
-Tudo com azulejos azuis de padrão floral, uma guitarra pendurada na parede, relógio,
-candeeiros e, claro, os ditados de sempre:
-
-> *Fiado só amanhã.*
-> *Quem não é para comer, não é para trabalhar.*
-> *Pão e vinho fazem caminho.*
-> *A boa mesa junta a gente.*
-> *Casa onde não há pão, todos ralham e ninguém tem razão.*
-
-### Quem lá trabalha
+### Elenco
 
 | Personagem | Ofício |
 |---|---|
-| **Manuel** | taberneiro — é o Feitor, atrás do balcão |
+| **Manuel** | taberneiro |
 | **Lurdes** | cozinheira |
 | **Rosa** | empregada de mesa |
 | **Joaquim** | empregado de mesa |
@@ -278,34 +234,6 @@ Cada agente recebe uma personagem e um nome de gente da terra — *Rosa Ferreira
 cenário: não mexem na identidade do agente, no terminal nem na orquestração, e o elenco é
 fictício, puramente decorativo. Ao voltar à Casa da Índia, volta tudo aos oficiais de D.
 Manuel.
-
-## Português
-
-Há duas camadas, e só uma delas é frágil.
-
-**A interface** está em PT-PT. Escolhe *Português* em
-Definições → Geral.
-
-**Os agentes** recebem no **regimento** a instrução de escrever em português europeu. É
-instrução, não modelo — e por isso funciona em qualquer motor, incluindo os que não se
-podem apontar a um servidor local.
-
-### Amália
-
-O [Amália](https://ia.gov.pt) (9B, aberto, PT-PT) serve-se localmente por LM Studio, Ollama
-ou vLLM, e liga-se em **Definições → Agentes e modelos** como ligação local, que o OpenCode
-usa.
-
-**O aviso que interessa:** o Amália não foi treinado como agente de código. Esses motores
-correm ciclos de ferramentas de várias voltas (ler → editar → correr → observar), e um
-modelo de 9B tende a falhar esse ciclo de forma suja — chamadas mal formadas, ciclos, ou
-conteúdo de ficheiros inventado. A lista de modelos locais do próprio upstream começava
-nos **20B**.
-
-Dá-lhe antes o que ele faz bem, que é a língua: relatórios e PRs (o papel do Caminha),
-tradução, e condensação de memória. A tradução da interface foi feita por ele.
-
-> **Arquitetura honesta:** o código conduzido por uma CLI de código, a língua pelo Amália.
 
 ## Começar
 
@@ -323,21 +251,6 @@ Na primeira vez abre a configuração inicial: escolhes a pasta onde a Casa guar
 dados, o motor do Feitor e os teus projetos. Se ainda não tiveres nenhum motor
 (**Claude Code**, **Codex** ou **OpenCode**), a aplicação oferece-se para o instalar.
 
-### Para mexer no mundo 3D
-
-O mundo já vem exportado no repositório, por isso o Godot só é preciso a quem o altera.
-Nesse caso:
-
-1. Instala o **Godot 4.6.2** — tem de ser esta versão. No macOS é encontrado sozinho em
-   `/Applications` ou em `Transferências`; noutro sítio, indica-o com `GODOT_BIN`.
-2. Descarrega `Godot_v4.6.2-stable_export_templates.tpz` das
-   [versões oficiais do Godot](https://github.com/godotengine/godot-builds/releases/tag/4.6.2-stable).
-   É um zip com outra extensão: tira de lá `web_nothreads_release.zip` e
-   `web_nothreads_debug.zip` e põe os dois em `.cache/godot/`.
-
-A partir daí, o `npm run dev` volta a exportar o mundo sempre que arranca. Faz commit da
-pasta `src/renderer/public/godot` junto com as alterações ao mundo.
-
 ### Gerar a aplicação instalável
 
 ```bash
@@ -348,8 +261,7 @@ npm run dist:mac     # ou dist:win, dist:linux
 
 Este projeto é um fork de **[Munder Difflin](https://github.com/chaitanyagiri/munder-difflin)**,
 de **Chaitanya Giri**, sob licença MIT. O trabalho difícil — o harness e a coordenação dos
-agentes — é dele. Aqui mudou-se o tema, o elenco, a língua e o mundo, que
-passou a ser em Godot.
+agentes — é dele. Aqui mudou-se o tema, o elenco, a língua, o mundo e algumas funcionalidades.
 
 - **Código:** MIT. Ver [`LICENSE`](./LICENSE), que se mantém intacto, com o aviso de
   direitos de autor do autor original.
@@ -357,15 +269,3 @@ passou a ser em Godot.
   pela MIT. Versões anteriores usavam tilesets *Modern Interiors* do
   **[LimeZu](https://limezu.itch.io/)**; já não são distribuídos.
 - **Figuras históricas:** domínio público.
-
-## Sobre o registo
-
-Isto é uma paródia de escritório com fato de época — não uma celebração do império.
-
-A Casa da Índia administrava um monopólio régio que incluía o tráfico de escravos. Um
-projeto que faz questão de acertar nos nomes dos cargos não deve ter pudor em nomear
-também isso. As figuras aqui são funcionários de uma burocracia, tratados como colegas de
-escritório: alguém que resolve o problema errado com muita confiança, alguém que parte
-numa investigação e nunca mais dá notícias, alguém que se passa para a concorrência.
-
-Se o tom escorregar para épico-nacionalista, é para corrigir.
