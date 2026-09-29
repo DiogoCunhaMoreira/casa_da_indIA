@@ -138,7 +138,10 @@ export function MessageQueueComposer({ agent }: MessageQueueComposerProps) {
   // Delivery can be held back by the agent's own terminal (a half-typed draft or
   // an open slash-command picker owns the prompt). That used to be invisible —
   // the hint claimed it was sending while nothing moved — so poll it and say so.
-  const block = useTerminalBlock(agent.ptyId, queue.length > 0 && idle);
+  // Poll whenever something is queued, busy or not: a busy agent is exactly when
+  // a user might have half-typed in the terminal above, and it is when the queue
+  // is in use — so the hold must be reported then, not only once the agent idles.
+  const block = useTerminalBlock(agent.ptyId, queue.length > 0);
 
   // Floor-wide auto-delivery pause (Command Center switch) also holds the queue.
   // Without saying so — and without the per-row "send now" override — messages
@@ -147,16 +150,16 @@ export function MessageQueueComposer({ agent }: MessageQueueComposerProps) {
 
   const statusHint = queue.length === 0
     ? null
-    : !idle
-    ? t('queueComposer.busyQueued', { name: displayName(agent), count: queue.length })
-    : deliveryPaused && !queue[0]?.manual
-    ? t('queueComposer.heldFloor')
     : block === 'draft'
     ? t('queueComposer.heldDraft', { name: displayName(agent) })
     : block === 'picker'
     ? t('queueComposer.heldPicker', { name: displayName(agent) })
     : block === 'exited'
     ? t('queueComposer.heldExited', { name: displayName(agent) })
+    : !idle
+    ? t('queueComposer.busyQueued', { name: displayName(agent), count: queue.length })
+    : deliveryPaused && !queue[0]?.manual
+    ? t('queueComposer.heldFloor')
     : t('queueComposer.sendingOneByOne', { name: displayName(agent) });
 
   return (
