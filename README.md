@@ -5,7 +5,7 @@
 ### Harness à portuguesa
 
 <p>
-  <em>Claude Code · Codex · OpenCode · Godot</em>
+  <em>Electron · React · TypeScript · Vite · Godot · xterm.js · node-pty · SQLite · Monaco</em>
 </p>
 
 <p>
