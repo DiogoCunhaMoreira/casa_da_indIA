@@ -7,58 +7,22 @@
  * Adding a language: drop a `locales/<code>.json` with the exact same key
  * tree as `en.json`, register it in `resources` and `supportedLngs`, and add
  * an entry to `LANGUAGES` (Settings → General exposes the picker from that
- * list). Give it `dir: 'rtl'` if it is a right-to-left script. No other code
- * needs to change.
+ * list). No other code needs to change. Only left-to-right scripts are
+ * supported.
  */
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { DEFAULT_GOD_NAME } from '@shared/godIdentity';
 import en from './locales/en.json';
-import zhCN from './locales/zh-CN.json';
-import ar from './locales/ar.json';
 import ptPT from './locales/pt-PT.json';
 
-/**
- * The languages the Settings picker offers, in display order.
- *
- * `dir` is the language's WRITING DIRECTION, and it is the ONLY thing the app
- * keys right-to-left layout off. Not the OS locale, not the content of a
- * document, not a system font — the language the user picked here, and nothing
- * else. That is what makes RTL inert for everybody who has not picked an RTL
- * language: `dir` is 'ltr' for every one of them, so every `isRtl` branch in
- * the renderer takes the same path it took before Arabic existed.
- */
+/** The languages the Settings picker offers, in display order. */
 export const LANGUAGES = [
-  { code: 'en', label: 'English', dir: 'ltr' },
-  { code: 'pt-PT', label: 'Português (Portugal)', dir: 'ltr' },
-  { code: 'zh-CN', label: '简体中文', dir: 'ltr' },
-  { code: 'ar', label: 'العربية', dir: 'rtl' }
+  { code: 'en', label: 'English' },
+  { code: 'pt-PT', label: 'Português (Portugal)' }
 ] as const;
 
 export type LanguageCode = (typeof LANGUAGES)[number]['code'];
-
-/** Language codes that read right-to-left, derived from LANGUAGES itself so a
- *  new locale cannot be registered with a direction and then forgotten here. */
-const RTL_CODES: ReadonlySet<string> = new Set(
-  LANGUAGES.filter((l) => l.dir === 'rtl').map((l) => l.code)
-);
-
-/**
- * Does this language code read right-to-left?
- *
- * Deliberately EXACT-MATCH on a registered code rather than a prefix or a
- * script guess. An unknown code is left-to-right, which is the direction every
- * user had before this shipped — an unrecognised value must never be able to
- * mirror somebody's UI.
- */
-export function isRtlLanguage(lng: string | undefined | null): boolean {
-  return !!lng && RTL_CODES.has(lng);
-}
-
-/** `'rtl'` or `'ltr'` for a language code, for a `dir` attribute. */
-export function directionFor(lng: string | undefined | null): 'rtl' | 'ltr' {
-  return isRtlLanguage(lng) ? 'rtl' : 'ltr';
-}
 
 const STORAGE_KEY = 'cth.language';
 
@@ -111,13 +75,11 @@ void i18n
   .init({
     resources: {
       en: { translation: en },
-      'pt-PT': { translation: ptPT },
-      'zh-CN': { translation: zhCN },
-      ar: { translation: ar }
+      'pt-PT': { translation: ptPT }
     },
     lng: detectLanguage(),
     fallbackLng: 'en',
-    supportedLngs: ['en', 'pt-PT', 'zh-CN', 'ar'],
+    supportedLngs: SUPPORTED,
     // Resources are bundled inline, so nothing ever suspends — the string is
     // there at init time. Keeping this false lets every component call
     // useTranslation() without wrapping the tree in <Suspense>.

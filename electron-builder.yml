@@ -56,12 +56,9 @@ files:
   - "!**/*.{md,map,ts,tsx}"
   - "!**/{.eslintrc,.prettierrc,tsconfig*.json,electron.vite.config.*}"
 
-# Ship the standalone Slack reply helper as a plain file under the app's
-# resources dir (process.resourcesPath). It runs under `node`, NOT inside the
-# asar, so the office worker can invoke `node <resources>/md-slack-reply.cjs`.
+# Plain files under the app's resources dir (process.resourcesPath), outside
+# the asar so agents can run them under `node`.
 extraResources:
-  - from: resources/md-slack-reply.cjs
-    to: md-slack-reply.cjs
   # Knowledge Graph agent CLI + its pure-JS core. Agents invoke `node
   # <resources>/kg.cjs` out-of-process; kg-core.cjs ships beside it so the CLI's
   # `require('./kg-core.cjs')` resolves outside the asar.

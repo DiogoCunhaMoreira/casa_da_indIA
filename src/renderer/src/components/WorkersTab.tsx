@@ -5,8 +5,8 @@ import { PixelButton } from './PixelButton';
 import { useStore } from '@/store/store';
 
 /**
- * WORKERS — live god-triggered ephemeral Slack workers (the Phase-1 spawn loop):
- * fresh isolated worktree → does a job → replies in-thread → safe teardown. This
+ * WORKERS — live god-triggered ephemeral workers (the Phase-1 spawn loop):
+ * fresh isolated worktree → does a job → reports to god → safe teardown. This
  * tab reads main's `liveWorkers` map (via workers:list) so a human can SEE what's
  * running and stop one by hand; it also surfaces worktrees PRESERVED at teardown
  * (held until their work integrates, then auto-GC'd) so nothing silently piles up.
@@ -122,12 +122,6 @@ export function WorkersTab() {
                       fontFamily: 'var(--cth-font-ui)', fontSize: 12, fontWeight: 600, color: 'var(--cth-ink-900)',
                       whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
                     }}>{w.name}</span>
-                    {w.hasSlack && (
-                      <span title={t('workersTab.repliesToSlack')} style={{
-                        fontFamily: 'var(--cth-font-mono)', fontSize: 12, color: 'var(--cth-ink-700)',
-                        boxShadow: 'inset 0 0 0 1px var(--cth-ink-100)', padding: '0 5px'
-                      }}>slack</span>
-                    )}
                   </div>
                   <PixelButton
                     onClick={() => stop(w.workerId)}

@@ -104,8 +104,7 @@ const BASE_TOOLS: ToolSpec[] = [
  */
 export function toolCatalog(): ToolSpec[] {
   const engines: ToolSpec[] = AGENT_PROVIDER_PRESETS
-    // `custom` is whatever the user typed — there is nothing to detect or install.
-    .filter((p) => p.id !== 'custom' && !!p.defaultCommand)
+    .filter((p) => !!p.defaultCommand)
     .map((p) => ({
       id: `engine:${p.id}`,
       bin: p.defaultCommand,

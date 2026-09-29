@@ -5,7 +5,7 @@
  * Electron's ABI and therefore unloadable from plain Node).
  *
  * Mirrors the app's REAL quit flow (src/main/index.ts) to pin two Windows quit
- * bugs at once:
+ * behaviours at once:
  *
  * 1. The tree leak: spawn a real PTY whose child has a child of its own,
  *    record the live tree's PIDs to --pid-file, then run PtyManager.killAll()
@@ -13,17 +13,9 @@
  *    never fire before the process exited (~1.2s after killAll), so the tree
  *    survived the app; the synchronous win32 sweep must kill it here.
  *
- * 2. The quit hang: in the real app, quitting teardownAndQuit-style (killAll +
- *    app.quit() inside the confirm-close IPC invoke, window still open) with
- *    will-quit's preventDefault-and-flush deferral left Electron's internal
- *    is-quitting state wedged — the re-entrant app.quit() finisher was a
- *    silent no-op and the main process idled forever with zero windows. The
- *    fix is finishing with app.exit(0). This fixture runs the same flow
- *    end-to-end (window, IPC-triggered teardown, will-quit latch, app.exit
- *    finisher) and the outer test requires a clean exit 0 — though note the
- *    wedge itself only reproduces with the full app (this minimal flow
- *    recovers even with an app.quit() finisher), so the coverage here is the
- *    fixed pattern completing, not a red/green repro of the hang.
+ * 2. A clean exit: quitting teardownAndQuit-style (killAll + app.quit() inside
+ *    the confirm-close IPC invoke, window still open) must finish with exit 0.
+ *    (An earlier will-quit analytics flush could wedge this; the flush is gone.)
  */
 const { app, BrowserWindow } = require('electron');
 const { execFileSync } = require('node:child_process');
@@ -77,21 +69,6 @@ let teardown = () => app.quit(); // rebound once the PtyManager exists
 app.on('before-quit', () => { /* app checks allowQuit + pty count here */ });
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') teardown();
-});
-
-// Mirror src/main/index.ts's will-quit flush: preventDefault ONCE, race the
-// flush (worst case here: it never settles) against a 1.2s cap, then exit.
-// app.exit(0), NOT app.quit() — see header point 2.
-let analyticsFlushed = false;
-app.on('will-quit', (e) => {
-  if (analyticsFlushed) return;
-  analyticsFlushed = true;
-  e.preventDefault();
-  const finish = () => app.exit(0);
-  Promise.race([
-    new Promise(() => { /* a flush that never settles */ }),
-    new Promise((r) => setTimeout(r, 1_200))
-  ]).then(finish, finish);
 });
 
 app.whenReady().then(async () => {

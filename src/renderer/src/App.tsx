@@ -3,13 +3,10 @@ import { useEffect, useState } from 'react';
 import { useStore, selectedAgent } from '@/store/store';
 import { startMockLoop, stopMockLoop } from '@/store/mockEvents';
 import type { HarnessConfig } from '@/store/config';
-import { DEFAULT_ORG_TRIGGER } from '@shared/triggers';
 import { WorldViewport } from '@/scene/godot/WorldViewport';
 import { useHive } from '@/hooks/useHive';
 import { useResolvedGodName } from '@/hooks/useResolvedGodName';
 import { useGodNameSync } from '@/i18n/useGodNameSync';
-import { useDirectionSync } from '@/i18n/useDirection';
-import { useArabicTerminalSync } from '@/terminal/useArabicTerminalSync';
 import { MemoryPanel } from '@/components/MemoryPanel';
 import { AgentDetailPanel } from '@/components/AgentDetailPanel';
 import { AgentStrip } from '@/components/AgentStrip';
@@ -18,7 +15,6 @@ import { FeitorAChegar } from '@/components/FeitorAChegar';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { HivePicker } from '@/components/HivePicker';
 import { QuitWarningModal, type ClosingTimeState } from '@/components/QuitWarningModal';
-import { CompletionToast } from '@/realtime/CompletionToast';
 import { UpdateToast } from '@/components/UpdateToast';
 import { UpdateBadge } from '@/components/UpdateBadge';
 import { useAppTheme, toggleAppTheme } from '@/design/theme';
@@ -32,7 +28,6 @@ import { acquireTerminal, notifyThemeChangeAll } from '@/components/terminalPool
 import { FullscreenTerminal } from '@/components/FullscreenTerminal';
 import { TaskDetailOverlay } from '@/components/TaskDetailOverlay';
 import { IdePanel } from '@/ide/IdePanel';
-import { useHoldOptionToTalk } from '@/freeflow/holdOption';
 import brandLogo from '@brand/logo.png?url';
 
 // Injected at build time from package.json (see electron.vite.config.ts).
@@ -42,17 +37,12 @@ export function App() {
   useUiLanguage();
   // Point every {{godName}} string at the orchestrator's real, renameable name.
   useGodNameSync();
-  // Mirror the document only for a user who has picked an RTL app language.
-  useDirectionSync();
-  // Let terminals that are ALREADY open follow a language switch too.
-  useArabicTerminalSync();
   const agent = useStore(selectedAgent);
   const agents = useStore(s => s.agents);
   const agentCount = agents.length;
   const bootingGodName = useResolvedGodName();
   const addAgentOpen = useStore(s => s.addAgentOpen);
   const setAddAgentOpen = useStore(s => s.setAddAgentOpen);
-  const clearPendingHires = useStore(s => s.clearPendingHires);
   const godStatus = useStore(s => s.godStatus);
   const fullscreenAgentId = useStore(s => s.fullscreenAgentId);
   const appThemeNow = useAppTheme();
@@ -107,37 +97,9 @@ export function App() {
     window.cth.getConfig().then(c => {
       if (cancelled) return;
       setConfig(c);
-      // Mirror the Free Flow flag into the store so the composer mic button shows
-      // only when enabled (Settings keeps this in sync on save).
-      useStore.getState().setFreeflowEnabled(!!c.freeflowEnabled);
-      // Mirror boolean key-presence ONLY (never the key value) so the composer can
-      // show the voice button disabled-with-tooltip when Free Flow is on but no
-      // Groq key is set (Settings keeps this in sync on save).
-      useStore.getState().setHasGroqKey(!!c.groqApiKey);
-      // Mirror the triggers so Settings → Connections and the Command Center's
-      // Triggers tab read one list, not two copies that drift — whichever surface
-      // saves calls these same setters and the other repaints. No extra IPC: main
-      // deep-fills both fields on every config read (withTriggerDefaults), so
-      // getConfig() already serves what listWebhooks()/getOrgTrigger() would.
-      // `c` is typed as the PRELOAD's HarnessConfig, which hasn't picked the two
-      // fields up yet (another lane's file); the renderer mirror type declares them.
-      const withTriggers = c as HarnessConfig;
-      useStore.getState().setWebhookTriggers(withTriggers.webhookTriggers ?? []);
-      useStore.getState().setOrgTrigger(withTriggers.orgTrigger ?? DEFAULT_ORG_TRIGGER);
-    });
-    // Mirror BYOK OpenAI key presence (boolean only; the key never leaves main) so the
-    // Realtime Michael voice toggle can gate on it. Lives in the secret broker, not
-    // config — so fetch it rather than derive from c.
-    window.cth.realtimeHasOpenAiKey().then(has => {
-      if (!cancelled) useStore.getState().setHasOpenAiKey(has);
     });
     return () => { cancelled = true; };
   }, []);
-
-  // Free Flow entry point B — hold-Option (⌥) to talk. In-renderer push-to-talk
-  // for whichever agent the user is viewing; gated on the flag, terminal-safe
-  // (solo-hold threshold, aborts on any other key). See freeflow/holdOption.ts.
-  useHoldOptionToTalk();
 
   // Config subscription — the copy loaded above would otherwise go stale the
   // moment anything saves a setting.
@@ -145,32 +107,6 @@ export function App() {
 
   // Quit warning subscription
   useEffect(() => window.cth.onCloseRequested((info) => setQuitWarn(info)), []);
-
-  // Shareable hires: a validated manifest arriving via the casadaindia://
-  // deep link (or file import) pre-fills the Add-Agent modal. Never spawns by itself.
-  const enqueuePendingHires = useStore(s => s.enqueuePendingHires);
-  const closeAddAgentReview = () => {
-    clearPendingHires();
-    setAddAgentOpen(false);
-  };
-  useEffect(() => {
-    const unsub = window.cth.onHireImport?.((m) => {
-      enqueuePendingHires([m]);
-      setAddAgentOpen(true);
-    });
-    // Pull anything that arrived before this subscription existed (cold-start
-    // deep links; packaged renderers load too fast for push-on-load).
-    void window.cth.drainPendingHires?.().then((queued) => {
-      if (queued && queued.length > 0) {
-        enqueuePendingHires(queued);
-        setAddAgentOpen(true);
-      }
-    });
-    return unsub;
-  }, [enqueuePendingHires, setAddAgentOpen]);
-  useEffect(() => window.cth.onHireError?.((info) => {
-    console.error('[hire] import failed:', info.error);
-  }), []);
 
   // Closing-time progress: drives the quit dialog's "wrapping up" view. The
   // dialog stays up through the whole protocol; on 'complete' the main process
@@ -281,7 +217,6 @@ export function App() {
     }}>
       {/* rt-12: global fixed-overlay toast for voice-Michael completions ("Oscar
           finished X"). Self-positions bottom-right; renders null until one arrives. */}
-      <CompletionToast />
       {/* v0.3.4: background-update toast ("restart to update"); renders null until
           main's updater pushes a status. */}
       <UpdateToast />
@@ -479,7 +414,7 @@ export function App() {
 
       {addAgentOpen && (
         <AddAgentModal
-          onClose={closeAddAgentReview}
+          onClose={() => setAddAgentOpen(false)}
           config={config}
           onConfigChange={setConfig}
         />

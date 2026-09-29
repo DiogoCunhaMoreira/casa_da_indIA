@@ -1,6 +1,6 @@
 import type { LocalConnection } from '../shared/localModels';
 import { app } from 'electron';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 import {
@@ -14,15 +14,7 @@ import { defaultMcpDefaults } from '../shared/mcpCatalog';
 import { MAX_AGENT_TOKEN_CAP } from '../shared/tokenCaps';
 import { expandTilde, normalizeHiveHome } from './fs';
 import type { IntegrationRecord } from '../shared/integrations';
-import {
-  DEFAULT_CONTEXT_TRIGGER,
-  DEFAULT_ORG_TRIGGER,
-  DEFAULT_TRIGGER_MODE,
-  DEFAULT_WEBHOOK_SCHEMA,
-  type ContextTriggerConfig,
-  type OrgTriggerConfig,
-  type WebhookTrigger
-} from '../shared/triggers';
+import { DEFAULT_CONTEXT_TRIGGER, type ContextTriggerConfig } from '../shared/triggers';
 
 /** A recurring auto-dispatched mission fired on an interval by the scheduler. */
 export interface ScheduledMission {
@@ -154,7 +146,7 @@ export interface CircuitBreakerConfig {
 
 /** Enterprise Knowledge Graph (multimodal context store + agent access tool).
  *  The user ingests their own documents/images/PDFs; agents query them on demand
- *  via the `kg` CLI. Opt-in like the heartbeat/Slack features — `enabled` gates
+ *  via the `kg` CLI. Opt-in like the heartbeat feature — `enabled` gates
  *  everything (no env injected, no prompt line, no store touched when off). See
  *  docs/design/knowledge-graph.md. */
 export interface KnowledgeGraphConfig {
@@ -198,7 +190,7 @@ export interface HarnessConfig {
   defaultModel?: string;
   /** Which provider powers the GOD orchestrator ("Michael"). The persona is
    *  constant; only its engine is selectable. Default 'claude'. Eligible providers
-   *  are those that can receive inbox (claude/codex/antigravity/qwen). */
+   *  are those that can receive inbox (claude/codex/opencode). */
   godProvider?: AgentProvider;
   /** The model GOD runs on. Unset falls back to the provider preset's
    *  `recommendedOrchestratorModel`, then MODEL_GOD. Default 'claude-opus-4-8'. */
@@ -247,7 +239,7 @@ export interface HarnessConfig {
   /** Passed to every spawned agent as `--max-turns <n>` when set; unset = no cap
    *  (Claude Code's default). A coarse runaway guard independent of the breaker. */
   maxTurns?: number;
-  /** Max concurrent god-triggered ephemeral Slack workers; extra spawn-requests
+  /** Max concurrent god-triggered ephemeral workers; extra spawn-requests
    *  wait in the queue (natural backpressure, a resource backstop). Default 4. */
   maxConcurrentWorkers?: number;
   /** Minutes an ephemeral worker may produce NO output before the reaper kills it
@@ -298,94 +290,15 @@ export interface HarnessConfig {
    *  ("theme" key) at spawn so the TUI's truecolor palette matches. Scoped to
    *  harness agents only; the user's global Claude theme is never touched. */
   terminalTheme?: 'light' | 'dark';
-  /** Anonymous product analytics (PostHog) — the exact events/properties are
-   *  documented in TELEMETRY.md. Default ON (opt-out, like autoUpdate); builds
-   *  without an injected key and environments with DO_NOT_TRACK set never send
-   *  regardless of this flag. (Mirrored in preload + renderer config.) */
-  telemetryEnabled?: boolean;
-  /** Per-CLI-provider local/self-hosted base URL (Ollama/LM Studio/vLLM, …) for the
-   *  OpenCode/Crush/pi/qwen engines; applied at spawn (config-injection or proxy
-   *  upstream). API KEYS are NOT stored here — they live write-only in the secret
-   *  broker (integrations.ts), read MAIN-ONLY at spawn. */
-  providerBaseUrls?: Partial<Record<AgentProvider, string>>;
-  /** Per-CLI-provider default model slug, used to pre-fill the model picker. */
-  providerDefaultModels?: Partial<Record<AgentProvider, string>>;
   localConnections?: LocalConnection[];
-  /** Master toggle for the Slack → Michael's-queue integration. */
-  slackEnabled?: boolean;
-  /** Slack app signing secret (Basic Information → Signing Secret). Never logged. */
-  slackSigningSecret?: string;
-  /** Bot token (xoxb-…) — only needed if the bot ever replies; optional for now. */
-  slackBotToken?: string;
-  /** Restrict ingestion to one channel id; empty/undefined = any channel. */
-  slackChannelId?: string;
-  /** Local HTTP port the webhook server binds to (default 3847). */
-  slackPort?: number;
-  /** Opt-in: allow APP/VOICE-INITIATED proactive posting into Slack (e.g. the
-   *  renderer's "queued" acknowledgement). DEFAULT OFF per the human directive
-   *  "stop posting into Slack by default". This does NOT gate the Slack-ORIGIN
-   *  done-reply round-trip (a user @-mention → task → result posted back to that
-   *  thread) or an agent's own direct in-thread reply — those always stay on. */
-  slackProactivePosting?: boolean;
-
-  // ─── Free Flow (voice dictation → message queue) ───────────────────────────
-  /** Master toggle for Free Flow push-to-talk dictation. Default OFF: with it off
-   *  the composer shows no mic button, no getUserMedia runs, and no Groq call is
-   *  ever made (zero behavior change). */
-  freeflowEnabled?: boolean;
-  /** User-pasted Groq API key (the user supplies their own free key). Used ONLY in
-   *  the main process for the Groq STT call; NEVER logged, and never crosses IPC
-   *  for the request. Treated like `slackBotToken`. */
-  groqApiKey?: string;
-  /** Groq Whisper model id. Default 'whisper-large-v3-turbo' (fast, multilingual). */
-  freeflowModel?: string;
-
-  // ─── Realtime Michael (premium speech-to-speech voice orchestrator) ─────────
-  /** True ONLY while a Realtime Michael voice session is live: the renderer
-   *  session flips this on at start() (before getUserMedia) and off at stop().
-   *  The main-process mic permission gate reads it so the Electron media
-   *  permission is open EXACTLY while the voice loop holds the mic — never just
-   *  because an OpenAI key exists (that key is shared with the CLI engines).
-   *  Default off; absence ⇒ mic denied, mirroring `freeflowEnabled`. */
-  realtimeVoiceEnabled?: boolean;
-  /** How long (ms) a realtime voice session may sit with no voice activity before
-   *  it auto-disconnects (the rt-9 idle guard). Default 180000 (3 min). 0 = never
-   *  auto-disconnect on idle — the spend cap remains the runaway guard. The user
-   *  tunes this in Settings → Realtime Michael. */
-  realtimeIdleDisconnectMs?: number;
-
-  // ─── Generic inbound webhook + status API (LEGACY, single-endpoint) ─────────
-  // Superseded by `webhookTriggers`, which allows many endpoints over one server
-  // and one tunnel. These three are kept because they are the MIGRATION SOURCE
-  // (`migrateTriggersV1` folds them into a `WebhookTrigger`) and because the main
-  // process still reads them until the server is rewired onto the new list.
-  // Nothing new should be written here.
-  /** @deprecated Use `webhookTriggers[].enabled`. */
-  webhookEnabled?: boolean;
-  /** App-generated shared secret callers echo in `x-md-webhook-secret`. Never
-   *  logged, and never forwarded into the routed message/card/response.
-   *  @deprecated Use `webhookTriggers[].secret` (one secret per endpoint, so
-   *  revoking one caller never disturbs the others). */
-  webhookSecret?: string;
-  /** Local HTTP port the generic webhook server binds to (default 3849).
-   *  @deprecated The port is a property of the shared server, not of any one
-   *  trigger; `webhookTriggers` are multiplexed over it by id. */
-  webhookPort?: number;
-
   // ─── Triggers (src/shared/triggers.ts owns every type here) ────────────────
   /** Auto-compaction / auto-clearing of agent terminal context. Both halves ship
    *  in DEFAULT_CONTEXT_TRIGGER; `readConfig` deep-fills them, because the
    *  top-level merge below is one level deep and a half-written sub-object would
    *  otherwise reach consumers with `undefined` thresholds. */
   contextTrigger?: ContextTriggerConfig;
-  /** Inbound HTTP endpoints, one entry per caller. Replaces the legacy single
-   *  webhook above; several coexist on one port, told apart by `id` in the path. */
-  webhookTriggers?: WebhookTrigger[];
-  /** Peer messaging between teammates' clone nodes. Persistence + UI only today —
-   *  no transport service reads `apiKey` yet. */
-  orgTrigger?: OrgTriggerConfig;
-  /** One-time guard for `migrateTriggersV1` (legacy webhook → webhookTriggers,
-   *  1h → 2h compact cadence). Set once the migration has run to completion. */
+  /** One-time guard for `migrateTriggersV1` (1h → 2h compact cadence). Set once
+   *  the migration has run to completion. */
   triggersMigratedV1?: boolean;
 
   // ─── Memory reflection (the janitor's condense half) ───────────────────────
@@ -433,28 +346,11 @@ const DEFAULTS: HarnessConfig = {
   notifications: false,
   strongKeepalive: false,
   autoUpdate: true,
-  telemetryEnabled: true,
   multiWindow: true,
-  slackEnabled: false,
-  slackSigningSecret: undefined,
-  slackBotToken: undefined,
-  slackChannelId: undefined,
-  slackPort: undefined,
-  slackProactivePosting: false,
-  freeflowEnabled: true,
-  groqApiKey: undefined,
-  freeflowModel: 'whisper-large-v3-turbo',
-  realtimeVoiceEnabled: false,
-  realtimeIdleDisconnectMs: 180_000,
-  webhookEnabled: false,
-  webhookSecret: undefined,
-  webhookPort: undefined,
   // Triggers. These three are the ONLY object/array defaults that get handed
   // straight back out of `readConfig` for a config that never persisted them, so
   // `withTriggerDefaults` re-copies them on every read — see the note there.
   contextTrigger: DEFAULT_CONTEXT_TRIGGER,
-  webhookTriggers: [],
-  orgTrigger: DEFAULT_ORG_TRIGGER,
   triggersMigratedV1: false,
   // Memory reflection — preventive; nobody is over threshold today, so it sits
   // dark until an agent's memory crosses one of these (the verify gate is the
@@ -497,11 +393,7 @@ function withTriggerDefaults(cfg: HarnessConfig): HarnessConfig {
     contextTrigger: {
       compact: { ...DEFAULT_CONTEXT_TRIGGER.compact, ...cfg.contextTrigger?.compact },
       clear: { ...DEFAULT_CONTEXT_TRIGGER.clear, ...cfg.contextTrigger?.clear }
-    },
-    orgTrigger: { ...DEFAULT_ORG_TRIGGER, ...cfg.orgTrigger },
-    webhookTriggers: Array.isArray(cfg.webhookTriggers)
-      ? cfg.webhookTriggers.map((t) => ({ ...t }))
-      : []
+    }
   };
 }
 
@@ -516,16 +408,9 @@ let triggersMigrationRan = false;
  *
  * Runs from `readConfig`, so it is complete before any consumer can observe the
  * config — there is no boot ordering to get wrong and no window in which half
- * the app sees the old shape. Two things move:
- *
- *   1. The single legacy webhook (`webhookEnabled`/`webhookSecret`) becomes one
- *      `WebhookTrigger` with the stable id `legacy`, so the caller that already
- *      holds that secret keeps working across the upgrade. Skipped when
- *      `webhookTriggers` is already populated — the user has moved on, and
- *      re-adding a synthesised entry would resurrect a revoked endpoint.
- *   2. The seeded `compact-maintenance` mission moves from the old 1h cadence to
- *      2h, but ONLY if it still reads exactly 1h. A user-chosen interval is a
- *      decision, not a stale default, and is left alone.
+ * the app sees the old shape. The seeded `compact-maintenance` mission moves
+ * from the old 1h cadence to 2h, but ONLY if it still reads exactly 1h. A
+ * user-chosen interval is a decision, not a stale default, and is left alone.
  *
  * Wrapped end-to-end in a try/catch: a config that is corrupt in some unrelated
  * way must still boot the app, and a migration is never worth a failed launch.
@@ -535,21 +420,6 @@ function migrateTriggersV1(cfg: HarnessConfig): HarnessConfig {
   triggersMigrationRan = true;
   try {
     const next: HarnessConfig = { ...cfg, triggersMigratedV1: true };
-
-    const legacySecret = typeof cfg.webhookSecret === 'string' ? cfg.webhookSecret.trim() : '';
-    if (legacySecret && (cfg.webhookTriggers?.length ?? 0) === 0) {
-      next.webhookTriggers = [
-        {
-          id: 'legacy',
-          name: 'Default webhook',
-          secret: legacySecret,
-          enabled: cfg.webhookEnabled ?? false,
-          mode: DEFAULT_TRIGGER_MODE,
-          schema: DEFAULT_WEBHOOK_SCHEMA,
-          createdAt: Date.now()
-        }
-      ];
-    }
 
     const missions = Array.isArray(cfg.missions) ? cfg.missions : [];
     const stale = (m: ScheduledMission): boolean =>
@@ -610,7 +480,7 @@ function normalizeStoredHomes(cfg: HarnessConfig): HarnessConfig {
 
 /** Announces every saved setting, so a screen showing one can update.
  *
- *  Settings, Slack, voice and notifications each save by their own route, and
+ *  Settings and notifications each save by their own route, and
  *  all of them end up writing the file below — so one subscription here covers
  *  every setting rather than the ones anybody remembered to wire up. */
 type ConfigWriteListener = (next: HarnessConfig) => void;
@@ -624,7 +494,20 @@ export function onConfigWritten(listener: ConfigWriteListener): () => void {
 function persistConfig(next: HarnessConfig): HarnessConfig {
   const p = configPath();
   mkdirSync(dirname(p), { recursive: true });
-  writeFileSync(p, JSON.stringify(next, null, 2), 'utf8');
+  // Temp + rename: `rename` is atomic within a filesystem, so a crash mid-write
+  // leaves either the old config.json or the new one, never half of either. A
+  // bare writeFileSync truncates the live file first, and readConfig maps any
+  // unparseable config.json to factory defaults — one torn write would wipe
+  // harnessHome and every saved setting. Same discipline as roster.ts and
+  // hive.ts atomicWriteJson.
+  const tmp = `${p}.tmp-${Math.random().toString(36).slice(2, 10)}`;
+  try {
+    writeFileSync(tmp, JSON.stringify(next, null, 2), 'utf8');
+    renameSync(tmp, p);
+  } catch (e) {
+    try { rmSync(tmp, { force: true }); } catch { /* the tmp file is disposable */ }
+    throw e;
+  }
   // Saving one setting stores only that setting, so fill the rest back in first:
   // subscribers must see the same complete config a read gives them, never a
   // half-filled one. Skip the migration — it saves in its own right, and has

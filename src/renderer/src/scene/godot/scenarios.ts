@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { create } from 'zustand';
 import { isWorldScenario, type WorldScenario } from '@shared/worldBridge';
-import { ELENCO as CASA_CAST } from '../office/casadaindia/elenco';
+import { ELENCO as CASA_CAST } from '../../elenco/pessoas';
 import { TASCA_CAST, defaultTascaCharacter } from './tascaCast';
 
 export const SCENARIO_LABELS = { casadaindia: 'Casa da Índia', tasca: 'Tasca Portuguesa' };

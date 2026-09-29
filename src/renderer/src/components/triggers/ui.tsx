@@ -2,7 +2,6 @@ import { uiText, uiLocale } from '@/i18n/uiText';
 import { catalogText } from '@/i18n/catalog';
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TRIGGER_MODES, type TriggerMode } from '@shared/triggers';
 import {
   formatMinute, normalizeWeekly,
   type WeeklySchedule
@@ -236,23 +235,6 @@ export function SubHeader({ open, onToggle, title, sub, right }: {
       </button>
       {right}
     </div>
-  );
-}
-
-/* ──────────────────────────── trigger mode ───────────────────────────────── */
-
-/** The shared `strict / allow-all / communication-only` gate. Labels and blurbs
- *  come from `TRIGGER_MODES` so webhooks and org can never drift apart. */
-export function ModePicker({ value, onChange }: { value: TriggerMode; onChange: (m: TriggerMode) => void }) {
-  useTranslation();
-  const current = TRIGGER_MODES.find((m) => m.value === value) ?? TRIGGER_MODES[0];
-  return (
-    <>
-      <Select value={value} onChange={(v) => onChange(v as TriggerMode)} style={{ width: '100%' }}>
-        {TRIGGER_MODES.map((m) => <option key={m.value} value={m.value}>{catalogText(m.label)}</option>)}
-      </Select>
-      <Hint>{catalogText(current.blurb)}</Hint>
-    </>
   );
 }
 

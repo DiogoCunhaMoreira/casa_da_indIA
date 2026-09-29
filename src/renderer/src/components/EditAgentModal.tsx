@@ -10,9 +10,9 @@ import { PixelPanel } from './PixelPanel';
 import { PixelButton } from './PixelButton';
 import { SpritePortrait } from './SpritePortrait';
 import { useStore, type Agent } from '@/store/store';
-import type { CharacterName } from '@/scene/office/cast';
+import type { CharacterName } from '@/elenco';
 import { TASCA_ROSTER, useWorldScenario, visualCharacter, visualName } from '@/scene/godot/scenarios';
-import { ELENCO as CASA_ROSTER } from '@/scene/office/themeRegistry';
+import { ELENCO as CASA_ROSTER } from '@/elenco';
 import { type AccentColorName } from '@/design/tokens';
 import {
   type AgentProvider,

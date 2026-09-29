@@ -12,7 +12,6 @@ import { MessageQueueComposer } from './MessageQueueComposer';
 import { TasksKanban } from './TasksKanban';
 import { AskMeTab } from './AskMeTab';
 import { TriggersTab } from './triggers/TriggersTab';
-import { TriggerHistoryTab } from './triggers/TriggerHistoryTab';
 import { WorkersTab } from './WorkersTab';
 import { SkillsTab } from './SkillsTab';
 import { acquireTerminal, disposeTerminal, resetTerminal } from './terminalPool';
@@ -22,7 +21,7 @@ import { MemoryGraphPanel } from './MemoryGraphPanel';
 import { useFleetTelemetry } from '@/hooks/useTelemetry';
 import { COMMAND_GROUPS } from '@shared/claudeCommands';
 import { roleForHiveSpawn } from '@shared/agentRole';
-import { useStore, triggerHistoryVisible, type Agent } from '@/store/store';
+import { useStore, type Agent } from '@/store/store';
 import { usePtyParser } from '@/hooks/usePtyParser';
 import {
   buildSpawnCommand,
@@ -37,9 +36,7 @@ import {
   AGENT_PROVIDER_PRESETS,
   type AgentProvider
 } from '@/store/config';
-import { canReceiveInbox } from '@shared/agentProvider';
 import { isComposingKey } from '@shared/imeGuard';
-import { useRtl } from '@/i18n/useDirection';
 
 /** Michael's control surface. Shown instead of the plain terminal/files panel
  *  when the god agent is selected: terminal + queue, the floor roster (with
@@ -47,9 +44,9 @@ import { useRtl } from '@/i18n/useDirection';
  *  activity feed / board / usage meter. */
 
 // Both the AskMe (#human) tab and the Triggers tab live here. Triggers replaced
-// the old Schedules tab: schedules are now one of four trigger types, and the
+// the old Schedules tab: schedules are now one of two trigger types, and the
 // whole surface lives in ./triggers (see src/shared/triggers.ts for the contract).
-type CCTab = 'terminal' | 'floor' | 'tasks' | 'human' | 'triggers' | 'trigger-history'
+type CCTab = 'terminal' | 'floor' | 'tasks' | 'human' | 'triggers'
   | 'memory' | 'graph' | 'activity' | 'skills' | 'workers';
 
 /** Fallback denominator for the per-agent token meter when no floor token budget
@@ -67,14 +64,13 @@ interface GHIssue {
   assignees: string[];
 }
 
-/** Canonical tab order. Not every entry is always shown — see `visibleTabs`. */
+/** Canonical tab order. */
 const TABS: { key: CCTab; labelKey: string; icon: Parameters<typeof Icon>[0]['name'] }[] = [
   { key: 'terminal', labelKey: 'commandCenter.tabs.terminal', icon: 'terminal' },
   { key: 'floor', labelKey: 'commandCenter.tabs.floor', icon: 'mcp' },
   { key: 'tasks', labelKey: 'commandCenter.tabs.tasks', icon: 'check' },
   { key: 'human', labelKey: 'commandCenter.tabs.human', icon: 'bell' },
   { key: 'triggers', labelKey: 'commandCenter.tabs.triggers', icon: 'clock' },
-  { key: 'trigger-history', labelKey: 'commandCenter.tabs.history', icon: 'ledger' },
   { key: 'memory', labelKey: 'commandCenter.tabs.memory', icon: 'sparkle' },
   { key: 'graph', labelKey: 'commandCenter.tabs.graph', icon: 'web' },
   { key: 'activity', labelKey: 'commandCenter.tabs.activity', icon: 'bell' },
@@ -91,18 +87,6 @@ export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent
   const displayName = useAgentNames();
   const { t } = useTranslation();
   const [tab, setTab] = useState<CCTab>('terminal');
-  // The trigger-history ledger has nothing to say until an outside party can
-  // reach us, so its tab appears only once an org key or a webhook exists. This
-  // is the first config-gated tab in the panel: TABS stays the canonical order
-  // and the gate is applied at render, so nothing else has to know about it.
-  // The rule itself lives in the store (`triggerHistoryVisible`) beside the two
-  // mirrors it reads — a second copy here would drift from Settings.
-  const showHistory = useStore(triggerHistoryVisible);
-  // Never leave the panel parked on a tab that has just been hidden.
-  useEffect(() => {
-    if (!showHistory && tab === 'trigger-history') setTab('terminal');
-  }, [showHistory, tab]);
-  const visibleTabs = TABS.filter((t) => t.key !== 'trigger-history' || showHistory);
 
   // External tab requests (the office task board → 'tasks', the boss-room
   // calendar → 'triggers'). seq-keyed so clicking again re-opens the tab even
@@ -112,9 +96,6 @@ export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent
     if (!ccTabRequest) return;
     const key = ccTabRequest.tab as CCTab;
     if (!TABS.some((t) => t.key === key)) return;
-    // Read the gate live rather than depending on it — as a dependency it would
-    // re-fire a stale request the moment the tab appeared.
-    if (key === 'trigger-history' && !triggerHistoryVisible(useStore.getState())) return;
     setTab(key);
   }, [ccTabRequest]);
   // A task-detail "assign" pre-fills the Floor dispatch box and jumps to it.
@@ -265,7 +246,7 @@ export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent
         padding: '12px', background: 'var(--cth-cream-100)',
         borderBottom: '1px solid var(--cth-ink-100)', flexShrink: 0
       }}>
-        {visibleTabs.map((tabDef) => (
+        {TABS.map((tabDef) => (
           <button
             key={tabDef.key}
             aria-pressed={tab === tabDef.key}
@@ -329,7 +310,6 @@ export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent
         {tab === 'tasks' && <TasksKanban />}
         {tab === 'human' && <AskMeTab />}
         {tab === 'triggers' && <TriggersTab />}
-        {tab === 'trigger-history' && <TriggerHistoryTab />}
         {tab === 'memory' && (
           <MemoryTab godId={agent.id} who={selectedMemoryAgent ?? undefined} onWho={setSelectedMemoryAgent} />
         )}
@@ -353,7 +333,6 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
   useUiLanguage();
   const displayName = useAgentNames();
   const { t } = useTranslation();
-  const rtl = useRtl();
   const agents = useStore((s) => s.agents);
   const god = agents.find(a => a.isGod);
   const godName = god ? displayName(god) : uiText("the_orchestrator_fc0fec");
@@ -430,7 +409,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
     try {
       const cfg = await window.cth.getConfig();
       // Respawn on the same CLI this agent already runs on (inferred from its
-      // command if not explicitly tagged) so an Antigravity/Codex worker stays
+      // command if not explicitly tagged) so a Codex/OpenCode worker stays
       // on its own binary. tokenizeCommand keeps quoted model labels one arg.
       // opts.provider overrides the inferred provider — used when changing GOD's engine.
       const previousProvider = inferAgentProvider(a.command, a.provider);
@@ -478,19 +457,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
       if (!killed.ok && !/^no pty:/.test(killed.error ?? '')) {
         throw new Error(killed.error ?? uiText("Could_not_stop_the_current_process_36d806"));
       }
-      if (resume) {
-        // A blank xterm can retain corrupt renderer/DOM/subscription state even
-        // after its PTY is healthy. Throw that one terminal away, acquire its
-        // replacement BEFORE spawning (so startup output has a listener), then
-        // bump the key so React remounts only this agent's terminal card.
-        disposeTerminal(a.ptyId);
-        acquireTerminal(a.ptyId);
-        updateAgent(a.id, {
-          terminalGeneration: (a.terminalGeneration ?? 0) + 1,
-          status: 'idle',
-          action: uiText("recreating_terminal_f433b1")
-        });
-      } else {
+      if (!resume) {
         resetTerminal(a.ptyId);
       }
       const command = buildSpawnCommand(cfg, model, provider);
@@ -520,6 +487,25 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
       if (!res.ok) throw new Error(res.error ?? uiText("Restart_failed_5d4996"));
       if (resume && res.resumed !== true) {
         throw new Error(uiText("Resume_was_refused_no_replacement_session_was_e2204c"));
+      }
+      if (resume) {
+        // The replacement is accepted, so NOW it is safe to throw the old
+        // terminal away. (It used to run BEFORE spawnPty, so one of the throws
+        // above left a fresh blank xterm in the pool with the scrollback gone
+        // forever — node-pty keeps none — and the label stuck at
+        // 'recreating terminal…'.) A blank xterm can retain corrupt
+        // renderer/DOM/subscription state even after its PTY is healthy, which
+        // is why the resume path replaces it at all; the spawn answer beat the
+        // CLI's first frame, so no startup output can be missed.
+        disposeTerminal(a.ptyId);
+        acquireTerminal(a.ptyId);
+        // Bump the key so React remounts only this agent's terminal card; the
+        // remount's attach re-requests a PTY redraw for anything it raced.
+        updateAgent(a.id, {
+          terminalGeneration: (a.terminalGeneration ?? 0) + 1,
+          status: 'idle',
+          action: uiText("recreating_terminal_f433b1")
+        });
       }
       if (res.ok) {
         // Record the model even on a resume. A same-provider model change now
@@ -660,7 +646,6 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
           </Select>
         </div>
         <textarea
-          dir={rtl ? 'auto' : undefined}
           value={dispatchText}
           onChange={(e) => setDispatchText(e.target.value)}
           rows={2}
@@ -820,7 +805,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
                     {agentPreset.label} · {a.model ?? 'current'}
                   </option>
                 )}
-                {modelProvidersForAgent(a.isGod).map((preset) => (
+                {modelProvidersForAgent().map((preset) => (
                   <optgroup key={preset.id} label={preset.label}>
                     {modelsForProvider(preset.id).map((model) => {
                       // `defaultModel` is a Claude model id, so it can only mark
@@ -881,7 +866,7 @@ function FloorTab({ seed }: { seed: { text: string; seq: number } }) {
                     setEngineModel(preset?.recommendedOrchestratorModel);
                   }}
                 >
-                  {AGENT_PROVIDER_PRESETS.filter((p) => canReceiveInbox(p.id)).map((p) => (
+                  {AGENT_PROVIDER_PRESETS.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.label}{p.id === 'claude' ? ' ★' : ''}
                     </option>
@@ -1336,14 +1321,13 @@ function Muted({ children }: { children: React.ReactNode }) {
 
 function Pre({ children }: { children: React.ReactNode }) {
   useUiLanguage();
-  const rtl = useRtl();
   return (
     <pre style={{
       margin: '6px 0 0', padding: 8, maxHeight: 200, overflow: 'auto',
       background: 'var(--cth-paper-100)', boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)',
       fontFamily: 'var(--cth-font-mono)', fontSize: 12, lineHeight: '18px',
       color: 'var(--cth-ink-900)', whiteSpace: 'pre-wrap', wordBreak: 'break-word'
-    }} dir={rtl ? 'auto' : undefined}>{children}</pre>
+    }}>{children}</pre>
   );
 }
 

@@ -8,14 +8,9 @@
  *    the main process ~1.2s after killAll, so the sweep never ran and agent
  *    trees survived the app. Pre-fix, the recorded PIDs outlive Electron and
  *    the survivor assertion fails.
- * 2. The quit hang: in the real app, quitting teardownAndQuit-style with a
- *    window still open, plus will-quit's preventDefault-and-flush deferral,
- *    left Electron's internal is-quitting state wedged — a re-entrant
- *    app.quit() finisher was a silent no-op and the main process idled
- *    forever. The fix finishes with app.exit(0); the fixture runs that same
- *    flow and this test requires a clean exit 0 within the timeout. (The
- *    wedge itself only reproduces with the full app, so this guards the fixed
- *    pattern completing rather than red/green-reproducing the hang.)
+ * 2. A clean exit: the teardownAndQuit-style flow with a window still open
+ *    must finish with exit 0 within the timeout. (A will-quit analytics flush
+ *    used to be able to wedge it; that flush no longer exists.)
  *
  * Both bugs live in the ELECTRON lifecycle (early exit killing unref'd timers;
  * quit state machine interleaving) and node-pty here is rebuilt for Electron's

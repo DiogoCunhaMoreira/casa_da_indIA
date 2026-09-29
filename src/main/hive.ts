@@ -26,16 +26,14 @@ import {
 } from 'node:fs';
 import { join, dirname, basename, isAbsolute, relative } from 'node:path';
 import { homedir } from 'node:os';
-import { spawnSync, spawn, type ChildProcess } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { randomBytes, createHash } from 'node:crypto';
 import type { AgentUsageSample } from './usage';
 import { COMMAND_GROUPS } from '../shared/claudeCommands';
 import {
   isClaudeProvider,
   isHiveAwareProvider,
-  canReceiveInbox,
   providerPreset,
-  bridgeOf,
   type AgentProvider
 } from '../shared/agentProvider';
 import { MCP_CATALOG } from '../shared/mcpCatalog';
@@ -70,31 +68,6 @@ export interface HiveMessage {
   created_at: string;
 }
 
-/** One hive message reshaped for the voice read-layer (`hive:messages`): the
- *  operator-briefing view of an inbox/outbox message. `subject` and `body` are
- *  REDACTED main-side (see {@link redactSecrets}) before this ever leaves the
- *  main process — the renderer/voice layer never sees a raw body, and never a
- *  secret. PII-free + secret-free by construction. */
-export interface VoiceMessage {
-  id: string;
-  conversation: string;
-  from: string;
-  to: string;
-  act: MessageAct;
-  /** REDACTED subject line. */
-  subject: string;
-  /** REDACTED message body. */
-  body: string;
-  requires_reply: boolean;
-  /** Which mailbox folder this copy was read from, relative to `owner`. */
-  direction: 'inbox' | 'outbox';
-  /** The agent whose mailbox this copy lives in. */
-  owner: string;
-  /** True when read from an archived/handled subfolder (inbox/.done, outbox/.sent). */
-  archived: boolean;
-  created_at: string;
-}
-
 /** One question→answer exchange with the human, recorded ON the task card so
  *  the decision trail stays with the work it unblocked. */
 export interface HumanQA {
@@ -118,18 +91,8 @@ export interface HiveTask {
    *  proceed with the human's input (status goes blocked); the harness UI
    *  fills in {a}. The full history stays on the card forever. */
   humanQA?: HumanQA[];
-  /** Outcome summary, surfaced by the Slack done-notifier when this card reaches
-   *  'done'. Optional; the notifier falls back to description/title. */
+  /** Outcome summary written by the agent when this card reaches 'done'. */
   result?: string;
-  /** Set when this task originated from a Slack message — the thread the
-   *  done-summary reply is posted back into. Consumed OUTBOUND only; populating
-   *  it is the inbound/kanban side's job and does not affect routing. */
-  slack?: { channel: string; thread_ts: string };
-  /** Set when this task originated from a generic webhook POST. Stores the SHA-256
-   *  of the capability token (never the raw token — that's returned to the caller
-   *  once and never persisted), so a GET status lookup can match by hashing the
-   *  presented token. Read-only capability: it never widens routing or exposure. */
-  webhook?: { tokenHash: string };
 }
 
 export interface AgentMeta {
@@ -180,15 +143,6 @@ export interface Registry {
 export interface SpawnInjection {
   args: string[];
   env: Record<string, string>;
-  /** The hive-protocol seed to TYPE into the TUI after boot rather than pass on
-   *  argv — set only for `seedDelivery:'type-into-tui'` providers (Crush), whose
-   *  bare TUI rejects a positional seed. The renderer types it through the same
-   *  per-pty write-chain as the inbox-wake nudge. (ondev-b) */
-  seedPrompt?: string;
-  /** Set when the agent spawned in a DEGRADED posture the user should know about
-   *  (today: the proxy-bridge sidecar never bound after retries, so a proxy-tier
-   *  agent such as Crush runs without hive events). Human-readable, one line. */
-  degraded?: string;
 }
 
 const HOP_CAP = 12;
@@ -221,10 +175,6 @@ function shortRand(): string {
  *  repack it and took 22GB of RAM doing so — the machine swapped, the app stopped
  *  responding. None of it was ever wanted in history: it is Codex's private
  *  scratch state, and it stays on disk (so resume still works) either way. */
-/** Proxy-bridge sidecar bind attempts per spawn, and the pause before each retry. */
-const PROXY_BIND_ATTEMPTS = 3;
-const PROXY_BIND_BACKOFF_MS = [250, 750];
-
 const MINE_IGNORE_LINES = ['settings.json', 'cursor.json', 'inbox/', 'outbox/', '.codex/'];
 
 /** Idempotently ensure `<agentDir>/.gitignore` excludes the non-memory files.
@@ -238,56 +188,6 @@ function ensureMineIgnore(agentDir: string): void {
   if (missing.length === 0) return;
   const prefix = existing && !existing.endsWith('\n') ? existing + '\n' : existing;
   try { writeFileSync(path, prefix + missing.join('\n') + '\n', 'utf8'); } catch { /* best-effort */ }
-}
-
-/**
- * Strip secret-shaped substrings out of free text before it leaves the main
- * process toward the voice / renderer layer. This is the MAIN-SIDE privacy gate
- * for the voice read-layer's message-content path (`hive:messages`): a message
- * body can quote a key, paste a token, or echo a credential, so every body and
- * subject is run through this before it crosses IPC. The renderer holds ZERO
- * redaction policy — it only ever receives the already-cleaned string.
- *
- * Deliberately CONSERVATIVE: it matches known credential SHAPES (provider key
- * prefixes, JWTs, PEM private keys, bearer tokens) and sensitive key=value /
- * key: value assignments, then replaces the secret with `[redacted]`. It does
- * NOT blanket-redact on entropy, so operator-meaningful content the briefing
- * needs — git SHAs, agent ids, file paths, ordinary prose — survives intact.
- * Over-redaction (e.g. a non-secret `apikey:openai` ref) is acceptable; leaking
- * a real secret is not.
- *
- * LOCKSTEP: the regex battery below is mirrored character-identically in
- * test/voice-messages.test.cjs (a .cjs test cannot import this TS module). If
- * you change a pattern here, mirror it there — the test is what PROVES a
- * secret-shaped value is stripped.
- */
-export function redactSecrets(text: unknown): string {
-  if (typeof text !== 'string' || !text) return typeof text === 'string' ? text : '';
-  let s = text;
-  // 1. PEM private-key blocks (RSA/EC/OPENSSH/PGP — header through footer).
-  s = s.replace(/-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z0-9 ]*PRIVATE KEY-----/g, '[redacted]');
-  // 2. JSON Web Tokens — three base64url segments separated by dots.
-  s = s.replace(/\beyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}/g, '[redacted]');
-  // 3. Known credential prefixes: OpenAI/Anthropic (sk-, sk-ant-), Slack
-  //    (xoxb/xoxp/xoxa/xoxr/xoxs-, xapp-), GitHub (ghp_/gho_/ghu_/ghs_/ghr_,
-  //    github_pat_), AWS access-key ids (AKIA…), Google API keys (AIza…).
-  s = s.replace(
-    /(?:sk-(?:ant-)?[A-Za-z0-9_-]{16,}|xox[bpaors]-[A-Za-z0-9-]{10,}|xapp-[A-Za-z0-9-]{10,}|gh[posru]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[A-Za-z0-9_-]{20,})/g,
-    '[redacted]'
-  );
-  // 4. Bearer tokens — keep the label, drop the credential.
-  s = s.replace(/\b(bearer)\s+[A-Za-z0-9._~+/=-]{8,}/gi, '$1 [redacted]');
-  // 5. Sensitive key = value / key: value — keep the key name, drop the value.
-  //    An optional namespace prefix (aws_, gcp_, …) is folded into the captured
-  //    key so a LABELED secret survives the \b boundary: `aws_secret_access_key`
-  //    is all word chars, so a bare `\b(secret)\b` never sees it. Listing
-  //    secret_access_key / private_key alone is not enough — the prefix run is
-  //    what lets `aws_secret_access_key=…` (no AKIA shape on the value) redact.
-  s = s.replace(
-    /\b((?:[a-z0-9]+[_-])*(?:api[_-]?key|secret[_-]?access[_-]?key|secret|token|password|passwd|pwd|access[_-]?token|refresh[_-]?token|client[_-]?secret|signing[_-]?secret|webhook[_-]?secret|auth[_-]?token|bot[_-]?token|private[_-]?key))(\s*[:=]\s*)(["']?)[^\s"',}]{6,}\3/gi,
-    (_m, k) => `${k}=[redacted]`
-  );
-  return s;
 }
 
 // ─── HiveManager ────────────────────────────────────────────────────────────
@@ -380,14 +280,6 @@ export class HiveManager {
     const root = this.root();
     return root ? join(root, 'bin', 'cth-hook.cjs') : null;
   }
-  /** The proxy-bridge sidecar (qwen). Pure-Node loopback reverse-proxy that
-   *  observes a hookless CLI's LLM traffic and synthesizes the same HIVE_SOCK
-   *  payloads the hook shims emit. Written in ensureHive alongside cth-hook.cjs. */
-  private proxyShimPath(): string | null {
-    const root = this.root();
-    return root ? join(root, 'bin', 'hive-proxy.cjs') : null;
-  }
-
   /**
    * The BUNDLED-NODE launcher: `<root>/bin/hive-node` (POSIX) / `hive-node.cmd`
    * (Windows). Every `.cjs` shim in the hive is executed through it.
@@ -510,18 +402,13 @@ export class HiveManager {
   }
 
   /** Same, but UNQUOTED — for the CLIs whose hook config mangles embedded quotes
-   *  (agy on cmd.exe) or stores the command in a quote-sensitive literal (codex's
+   *  or stores the command in a quote-sensitive literal (codex's
    *  single-quoted TOML). Safe because both the hive root and the launcher inside
    *  it are space-free by construction; this only preserves each installer's
    *  existing quoting convention while swapping `node` for the bundled runtime. */
   private nodeRunUnquoted(script: string, ...args: string[]): string {
     return [this.nodeLauncher() ?? 'node', script, ...args].join(' ');
   }
-
-  /** One proxy sidecar per live proxy-tier agent, keyed by agentId. Spawned in
-   *  ensureAgent, killed on PTY exit / removeAgent / app quit (index.ts) — so a
-   *  dead agent never leaks an orphan loopback listener. */
-  private proxyChildren = new Map<string, ChildProcess>();
 
   // — bootstrap —
 
@@ -575,8 +462,6 @@ export class HiveManager {
     // on every bootstrap so it tracks code changes.
     mkdirSync(join(root, 'bin'), { recursive: true });
     writeFileSync(this.shimPath()!, HOOK_SHIM, 'utf8');
-    // The proxy-bridge sidecar for hookless CLIs (qwen). Same refresh policy.
-    writeFileSync(this.proxyShimPath()!, PROXY_BRIDGE_SHIM, 'utf8');
     // The bundled-node launcher every shim above is invoked through — MUST be
     // written before any hook installer runs (they probe for it).
     this.writeNodeLauncher();
@@ -723,160 +608,61 @@ export class HiveManager {
     // we write for an agent to run bake `nodeCommand()`'s absolute path instead.
     env.HIVE_NODE = this.nodeCommand();
     // Generic light/dark hint for TUIs that paint their own background. The app
-    // defaults to light but every agent CLI assumed a dark terminal, so Crush and
-    // OpenCode looked pasted into a light window. COLORFGBG is the classic
+    // defaults to light but every agent CLI assumed a dark terminal, so OpenCode
+    // looked pasted into a light window. COLORFGBG is the classic
     // "fg;bg" convention (rxvt/konsole) that lipgloss/termenv fall back to when
     // an OSC 11 query gets no answer. Claude Code gets the same hint through its
-    // per-session settings.json (hookSettings); Crush and OpenCode through their
-    // per-agent config dirs below. A running TUI does not re-read this: new
+    // per-session settings.json (hookSettings); OpenCode through its per-agent
+    // config dir below. A running TUI does not re-read this: new
     // agents pick up the current theme, running ones keep the one they started with.
     if (opts.theme) env.COLORFGBG = opts.theme === 'dark' ? '15;0' : '0;15';
 
     const claudeProvider = isClaudeProvider(meta.provider ?? 'claude');
 
-    // Non-hive-aware providers (Antigravity's `agy`, OpenAI's `codex`, xAI's
-    // `grok`) don't
-    // understand Claude Code's flags (no `--append-system-prompt`, no telemetry,
-    // no `--settings`). Instead: (1) the hive identity+protocol rides in as the
-    // session's INITIAL prompt — the closest thing to `--append-system-prompt`
-    // these CLIs offer (after the first turn the session continues normally); and
-    // (2) lifecycle hooks are wired via the preset's `hookBridge` below. Together
-    // that makes a Gemini/Codex worker a full hive citizen — live status +
-    // Stop→inbox-drain — without Claude installed at all.
-    //
-    // How the prompt rides in differs by CLI:
-    //  - agy takes it under a flag (`agy -i "<prompt>"`) → push [flag, prompt].
-    //  - codex/grok take it POSITIONALLY (`codex|grok "<prompt>"`) → push the
-    //    bare prompt as a trailing arg (node-pty passes argv literally, so it
-    //    arrives as one positional argument after codex's own flags).
+    // Non-hive-aware providers (Codex, OpenCode) don't understand Claude Code's
+    // flags (no `--append-system-prompt`, no `--settings`). Instead: (1) the hive
+    // identity+protocol rides in as the session's INITIAL prompt — positionally for
+    // codex (`codex "<prompt>"`), under `--prompt` for opencode; and (2) lifecycle
+    // events come from the preset's `hookBridge`, so both get the same live status
+    // + Stop→inbox-drain Claude does.
     if (!isHiveAwareProvider(meta.provider)) {
       const preset = providerPreset(meta.provider ?? 'claude');
       const flag = preset.initialPromptFlag;
       const prompt = this.injectedPrompt(meta, dir, root, opts.semanticMemory ?? false, opts.knowledgeGraph ?? false, opts.kgCliPath, opts.agentLanguage);
-      // agy, codex, and grok expose a Claude-style lifecycle-hook surface, so each
-      // gets the SAME live status + Stop→inbox-drain Claude does — selected by the
-      // preset's `hookBridge`. agy needs a translating shim (its hook stdin/stdout
-      // shape differs from Claude's); codex reuses the Claude `cth-hook` shim
-      // verbatim (its hook payload + response contract are already Claude-shaped)
-      // and is isolated to a per-agent CODEX_HOME so the user's global Codex
-      // configuration is never mutated. Both share the HIVE_SOCK wiring below.
       const preArgs: string[] = [];
-      let degraded: string | undefined;
-      // Dispatch on the structured bridge descriptor (the foundation's `bridgeOf`
-      // derives {kind:'hooks'} from the legacy `hookBridge` for agy/codex, and
-      // returns the explicit {kind:'proxy'} for qwen). Two ways a hookless CLI
-      // becomes a hive citizen:
-      //   - 'hooks' → install a config-file hook shim (agy translator / codex verbatim).
-      //   - 'proxy' → spawn a loopback reverse-proxy sidecar that observes the CLI's
-      //               LLM traffic and SYNTHESIZES the same HIVE_SOCK payloads.
-      const desc = bridgeOf(meta.provider);
       const sock = this.sockPath();
-      if (desc && sock) {
+      if (preset.hookBridge && sock) {
         env.HIVE_SOCK = sock;
         try {
-          if (desc.kind === 'hooks') {
-            if (desc.shim === 'agy') this.installAgyHooks();
-            else if (desc.shim === 'codex') {
-              env.CODEX_HOME = this.installCodexHooks(dir, meta.id);
-              // Codex refuses to run hooks from a config dir without persisted
-              // "hook trust" (normally an interactive gate). Our hooks.json is
-              // hive-authored inside an isolated CODEX_HOME, so we bypass that gate
-              // for this automated spawn — the flag's documented use ("automation
-              // that already vets hook sources"). Without it the hooks silently
-              // never fire. Must precede the positional prompt.
-              preArgs.push('--dangerously-bypass-hook-trust');
-              // Auto mode keeps codex's OS sandbox (`-a never -s workspace-write`,
-              // agentProvider.ts). workspace-write only covers cwd, so the agent
-              // folder (inbox/.done, memory.md, outbox) and the shared hive root
-              // (research deliverables, the board for god) are added as extra
-              // writable roots. Harmless outside auto mode.
-              for (const d of this.sandboxWritableDirs(meta, dir, root, opts.extraWritableDirs)) preArgs.push('--add-dir', d);
-            }
-            else if (desc.shim === 'pi') {
-              // Pi (earendil-works) has a rich pi.on(event) lifecycle. We drop a
-              // bundled extension into a PER-AGENT PI_CODING_AGENT_DIR (so the user's
-              // global ~/.pi is never touched) that posts cth-hook-shaped payloads to
-              // HIVE_SOCK on tool_call/agent_end and auto-approves tools when the floor
-              // is in auto mode. HIVE_AUTO_APPROVE (set in spawnAgentCore from
-              // config.autoMode) gates the auto-allow — Pam guardrail #5.
-              // LIVE-UNVERIFIED: the exact extension API surface needs BYOK keys to
-              // prove; the renderer idle inbox-wake nudge is the guaranteed drain.
-              env.PI_CODING_AGENT_DIR = this.installPiHooks(dir);
-            }
-            else if (desc.shim === 'opencode') {
-              // OpenCode (anomalyco/opencode) has no Claude-shaped Stop hook, but its
-              // plugin API exposes a real session.idle event (god Decision 1). We drop
-              // a bundled plugin into a PER-AGENT OPENCODE config dir that posts
-              // HIVE_SOCK payloads on tool.execute.before/after + session.idle — the
-              // same Stop→drain semantics, provider-agnostic, no traffic interception.
-              // LIVE-UNVERIFIED (plugin auto-load + session.idle firing); the renderer
-              // idle inbox-wake nudge is the guaranteed drain fallback.
-              env.OPENCODE_CONFIG_DIR = this.installOpenCodePlugin(dir, opts.theme);
-            }
-            else if (desc.shim === 'gemini') {
-              // Point only this worker at a per-agent system settings file so
-              // the bridge is trusted and ~/.gemini/settings.json stays untouched.
-              env.GEMINI_CLI_SYSTEM_SETTINGS_PATH = this.installGeminiHooks(dir);
-            }
-            else if (desc.shim === 'grok') this.installGrokHooks();
-          } else if (desc.kind === 'proxy') {
-            // Stable per-spawn session id, stamped on every synthesized payload so
-            // recordSession (registry resume key) and the cost ledger persist.
-            const spawnTs = String(Date.now());
-            const sessionId = `proxy-${meta.id}-${createHash('sha1').update(root + meta.id + spawnTs).digest('hex').slice(0, 12)}`;
-            env.HIVE_PROXY_SESSION = sessionId;
-            // The CLI normally reads its upstream base URL from `baseUrlEnv`; capture
-            // the user's configured value as the sidecar's UPSTREAM, then point the
-            // CLI at the loopback proxy instead. Fall back to the cloud default if
-            // the user hasn't set one.
-            const upstream = process.env[desc.baseUrlEnv]
-              || (desc.api === 'anthropic' ? 'https://api.anthropic.com' : 'https://api.openai.com/v1');
-            // A loopback bind on port 0 fails only transiently (a busy moment, a
-            // slow sidecar start past the 4s ceiling), so try a few times before
-            // giving up: without this ONE bad moment at spawn cost the agent its
-            // hive events for the whole session.
-            const port = await this.startProxyBridgeWithRetry(meta.id, { sock, sessionId, api: desc.api, upstream });
-            // Only redirect the CLI through the proxy if the sidecar actually bound a
-            // port. On failure leave routing untouched → the CLI talks to its real
-            // upstream directly (degraded: no synthesized hive events, but it still
-            // runs). Deliberate degradation is fine; SILENT degradation is not, so
-            // the failure goes to log.jsonl, the renderer and the spawn result.
-            if (port > 0) {
-              const loopback = `http://127.0.0.1:${port}`;
-              if (meta.provider === 'crush') {
-                // Crush has NO base-URL env override, so the generic env-rewrite is a
-                // no-op for it. Route it instead via a per-agent CRUSH_GLOBAL_CONFIG
-                // whose chosen provider's base_url points at the loopback proxy
-                // (installCrushConfig — sibling of installCodexHooks). `upstream`
-                // (captured above from the inert sentinel env or cloud default) is the
-                // proxy's real target. Per-agent CRUSH_GLOBAL_DATA isolates session
-                // state from the user's global ~/.config/crush.
-                const crush = this.installCrushConfig(dir, loopback, desc.api, opts.theme);
-                env.CRUSH_GLOBAL_CONFIG = dir;
-                env.CRUSH_GLOBAL_DATA = crush.data;
-              } else {
-                env[desc.baseUrlEnv] = loopback;
-              }
-            }
-            else {
-              degraded = `${meta.name} is running without hive events: its proxy bridge did not bind after ${PROXY_BIND_ATTEMPTS} attempts. Live status, cost and inbox wake will not work for this session. Respawn the agent to try again.`;
-              console.error(`[hive] proxy bridge for ${meta.id} did not bind — spawning without hive events`);
-              this.appendLog({ kind: 'proxy-degraded', agentId: meta.id, name: meta.name, provider: meta.provider, attempts: PROXY_BIND_ATTEMPTS });
-              this.emit?.('hive:degraded', { agentId: meta.id, name: meta.name, reason: 'proxy-bind', message: degraded });
-            }
+          if (preset.hookBridge === 'codex') {
+            // Codex reuses the Claude `cth-hook` shim verbatim, isolated to a
+            // per-agent CODEX_HOME so the user's global Codex config is never touched.
+            env.CODEX_HOME = this.installCodexHooks(dir, meta.id);
+            // Codex refuses to run hooks from a config dir without persisted
+            // "hook trust" (normally an interactive gate). Our hooks.json is
+            // hive-authored inside an isolated CODEX_HOME, so we bypass that gate
+            // for this automated spawn — the flag's documented use ("automation
+            // that already vets hook sources"). Without it the hooks silently
+            // never fire. Must precede the positional prompt.
+            preArgs.push('--dangerously-bypass-hook-trust');
+            // Auto mode keeps codex's OS sandbox (`-a never -s workspace-write`,
+            // agentProvider.ts). workspace-write only covers cwd, so the agent
+            // folder (inbox/.done, memory.md, outbox) and the shared hive root
+            // (research deliverables, the board for god) are added as extra
+            // writable roots. Harmless outside auto mode.
+            for (const d of this.sandboxWritableDirs(meta, dir, root, opts.extraWritableDirs)) preArgs.push('--add-dir', d);
+          } else {
+            // OpenCode has no Claude-shaped Stop hook, but its plugin API exposes a
+            // real session.idle event. A bundled plugin in a PER-AGENT config dir
+            // posts HIVE_SOCK payloads on tool.execute.before/after + session.idle.
+            // The renderer idle inbox-wake nudge is the drain fallback.
+            env.OPENCODE_CONFIG_DIR = this.installOpenCodePlugin(dir, opts.theme);
           }
-        } catch (e) { console.error(`[hive] install ${desc.kind} bridge failed:`, e); }
+        } catch (e) { console.error(`[hive] install ${preset.hookBridge} bridge failed:`, e); }
       }
-      // Inject the protocol text whichever way the CLI accepts it.
-      // type-into-tui (Crush): the bare TUI reads a positional as a Cobra subcommand
-      // → `Unknown command`. So DROP the positional and hand the protocol back as
-      // seedPrompt; the renderer types it into the TUI after boot (ondev-b).
-      const deg = degraded ? { degraded } : {};
-      if (preset.seedDelivery === 'type-into-tui') return { args: [...preArgs], env, seedPrompt: prompt, ...deg };
-      // If a provider somehow exposes neither a flag nor a positional prompt, spawn bare.
-      if (flag) return { args: [...preArgs, flag, prompt], env, ...deg };
-      if (preset.positionalInitialPrompt) return { args: [...preArgs, prompt], env, ...deg };
-      return { args: preArgs, env, ...deg };
+      if (flag) return { args: [...preArgs, flag, prompt], env };
+      if (preset.positionalInitialPrompt) return { args: [...preArgs, prompt], env };
+      return { args: preArgs, env };
     }
 
     // Stage 7A — first-party Claude Code telemetry → the embedded loopback OTLP
@@ -1210,100 +996,6 @@ export class HiveManager {
   }
 
   /**
-   * W1 — start a proxy-bridge sidecar for a hookless proxy-tier agent (qwen).
-   * Spawns `<root>/bin/hive-proxy.cjs` under Node, which binds a loopback port and
-   * reports it back as a one-line `{"port":N}` on stdout. Resolves the bound port
-   * (or 0 on failure, so the caller degrades gracefully without redirecting the
-   * CLI). Idempotent: any prior sidecar for the agent is killed first, so a respawn
-   * never leaks a listener. Tracked in `proxyChildren` for teardown.
-   */
-  /** startProxyBridge with a short retry ladder. Every attempt kills the previous
-   *  sidecar first (startProxyBridge is idempotent), so a retry never leaks a
-   *  listener. Resolves the bound port, or 0 once every attempt has failed. */
-  private async startProxyBridgeWithRetry(
-    agentId: string,
-    cfg: { sock: string; sessionId: string; api: 'openai' | 'anthropic'; upstream: string }
-  ): Promise<number> {
-    for (let attempt = 1; attempt <= PROXY_BIND_ATTEMPTS; attempt++) {
-      const port = await this.startProxyBridge(agentId, cfg);
-      if (port > 0) return port;
-      if (attempt < PROXY_BIND_ATTEMPTS) {
-        console.warn(`[hive] proxy bridge for ${agentId} did not bind (attempt ${attempt}/${PROXY_BIND_ATTEMPTS}), retrying`);
-        await new Promise((r) => setTimeout(r, PROXY_BIND_BACKOFF_MS[attempt - 1] ?? 1000));
-      }
-    }
-    return 0;
-  }
-
-  private startProxyBridge(
-    agentId: string,
-    cfg: { sock: string; sessionId: string; api: 'openai' | 'anthropic'; upstream: string }
-  ): Promise<number> {
-    this.stopProxyBridge(agentId);
-    const script = this.proxyShimPath();
-    if (!script) return Promise.resolve(0);
-    return new Promise<number>((resolve) => {
-      let settled = false;
-      const settle = (port: number): void => { if (!settled) { settled = true; resolve(port); } };
-      let child: ChildProcess;
-      try {
-        child = spawn(process.execPath, [script], {
-          env: {
-            ...process.env,
-            // Run the .cjs under Electron's bundled Node, not as a second app window.
-            ELECTRON_RUN_AS_NODE: '1',
-            HIVE_SOCK: cfg.sock,
-            AGENT_ID: agentId,
-            UPSTREAM_BASE_URL: cfg.upstream,
-            HIVE_PROXY_SESSION: cfg.sessionId,
-            HIVE_PROXY_API: cfg.api
-          },
-          // Read the port line from stdout; never inherit stdio (the sidecar must
-          // never write into the agent's terminal or leak request bodies to a log).
-          stdio: ['ignore', 'pipe', 'ignore']
-        });
-      } catch (e) {
-        console.error(`[hive] startProxyBridge spawn failed for ${agentId}:`, e);
-        return settle(0);
-      }
-      this.proxyChildren.set(agentId, child);
-      let buf = '';
-      child.stdout?.setEncoding('utf8');
-      child.stdout?.on('data', (d: string) => {
-        if (settled) return;
-        buf += d;
-        const nl = buf.indexOf('\n');
-        if (nl === -1) return;
-        try {
-          const msg = JSON.parse(buf.slice(0, nl));
-          if (typeof msg.port === 'number' && msg.port > 0) settle(msg.port);
-          else settle(0);
-        } catch { settle(0); }
-      });
-      child.on('error', () => settle(0));
-      child.on('exit', () => {
-        if (this.proxyChildren.get(agentId) === child) this.proxyChildren.delete(agentId);
-        settle(0); // never hang the spawn if the sidecar dies before reporting
-      });
-      // Hard ceiling: if the sidecar never reports a port, degrade rather than hang.
-      setTimeout(() => settle(0), 4000).unref?.();
-    });
-  }
-
-  /** Kill the proxy sidecar for an agent, if any. Idempotent; never throws. */
-  stopProxyBridge(agentId: string): void {
-    const child = this.proxyChildren.get(agentId);
-    if (!child) return;
-    this.proxyChildren.delete(agentId);
-    try { child.kill(); } catch { /* already gone */ }
-  }
-
-  /** Kill every live proxy sidecar (app quit). Best-effort. */
-  stopAllProxyBridges(): void {
-    for (const id of [...this.proxyChildren.keys()]) this.stopProxyBridge(id);
-  }
-
-  /**
    * Drain an agent's inbox for the Stop hook. Returns whether to block-to-continue
    * and the message text to feed back. Uses the per-agent cursor so a message is
    * surfaced exactly once (no infinite loop).
@@ -1425,7 +1117,7 @@ export class HiveManager {
     // saying nothing, and COMMANDS.md documents it either way for the case where
     // the operator turns it on after god was already running.
     const spawnQueueLine = meta.isGod && this.orchestratorMaySpawn()
-      ? `SPAWNING A WORKER: you can start an ephemeral worker yourself by writing ONE JSON file into ${inRoot('spawn-requests')}/<id>.json. Required: \`objective\` (what the worker must do) and \`cwd\` (the repo it runs in). Optional: \`name\`, \`command\`, \`provider\`, \`model\`, \`isolate\` (default true = its own git worktree), \`tokenCap\`, and \`slack\` ({channel, thread_ts}) to route its failures back to a thread. The harness polls that directory, spawns \`worker-<id>\`, and moves the request to \`spawn-requests/.done/\` on success or \`.failed/\` with a reason. This is the ONLY way you can spawn; a hire manifest under research/hires/ needs the human to confirm it in the UI, so it is not a route you can complete on your own. Reuse an existing agent first, as above — a worker is a fresh spend every time.`
+      ? `SPAWNING A WORKER: you can start an ephemeral worker yourself by writing ONE JSON file into ${inRoot('spawn-requests')}/<id>.json. Required: \`objective\` (what the worker must do) and \`cwd\` (the repo it runs in). Optional: \`name\`, \`command\`, \`provider\`, \`model\`, \`isolate\` (default true = its own git worktree), and \`tokenCap\`. The harness polls that directory, spawns \`worker-<id>\`, and moves the request to \`spawn-requests/.done/\` on success or \`.failed/\` with a reason. This is the ONLY way you can spawn. Reuse an existing agent first, as above — a worker is a fresh spend every time.`
       : '';
     const godLine = meta.isGod
       ? 'You are the GOD / ORCHESTRATOR of this hive — your job is to ORCHESTRATE, not to implement: maintain live situational awareness and delegate the work. (1) AWARENESS — always know what is going on: keep an accurate picture of every agent (active vs archived/idle), the task board, and all in-flight work; drain your inbox continually and triage every other agent\'s requests, answering clarifications so the team runs autonomously. (2) DELEGATE — decompose work and fan it out to the hive agents via their inboxes (route messages and assign owners; do not do their jobs); do NOT take on grunt implementation yourself. Stay aware of who is already on the floor and delegate OPPORTUNISTICALLY: BEFORE you spawn anything, CHECK THE LIVE ROSTER (active agents in registry.json + their state in fleet.json) and prefer routing to an EXISTING agent that fits — above all when the request names one ("ask Pam to…", "have Jim…"), route to that agent instead of reflexively creating a new one. Reuse an idle or already-running agent whose role matches; only spawn a fresh agent when no existing one is a sensible fit, and say that you checked. One capable owner beats a duplicate. (3) OWN ONLY THE IMPORTANT, high-leverage things — task decomposition, dispatch decisions, sign-offs, conflict resolution, branch integration, and final QA — and remain the sole scribe of board.md. You are otherwise fully autonomous — there is NO separate approval queue. For the genuinely critical (destructive actions, spending real money, scope changes, unresolvable conflicts), ask the human directly in your own session and let the tool-permission prompt gate the action; the human approves natively, including remotely from their phone via /remote-control. Keep the team unblocked. When you DISPATCH a task, write it as a 4-part contract so the agent can run autonomously: (1) OBJECTIVE — the concrete goal; (2) OUTPUT — the expected deliverable/format; (3) TOOLS — what to use or avoid, and any references to read instead of re-deriving; (4) BOUNDARIES — scope limits + the definition of done. Pass references (file paths, message ids, board sections), not pasted content — keep dispatches short.'
@@ -1434,9 +1126,6 @@ export class HiveManager {
       ? `You are ${godNameForPrompt}'s PREP ASSISTANT. You will be handed short, possibly vague instructions (each begins with "ENRICH TASK:"). For each one: (1) figure out which project it concerns and cd into the most relevant repo — you start in ${godNameForPrompt}'s home directory; (2) gather concrete context READ-ONLY (exact file paths, current state, relevant code, conventions, active branch, gotchas) — NEVER modify, create, or delete files; (3) rewrite the instruction into ONE clear, self-contained prompt that ${godNameForPrompt} can execute autonomously, preserving the user's original intent without inventing scope. Then deliver it: write ONE message JSON into your outbox with "to":"god", "act":"request", a short subject, and the finished prompt as the body. Do NOT perform the task yourself — your only output is the improved prompt sent to ${godNameForPrompt}.`
       : 'For anything ambiguous, cross-cutting, or needing sign-off, address a message to "god".';
     const guardrailsLine = 'Guardrails: a circuit breaker watches the floor — a "Circuit breaker: steer/constrain" message means you are looping or overspending, so STOP repeating, summarize what you tried, and follow it. Be token-frugal (a floor-wide or per-agent token budget can pause you). The shared plan has two parts: board.md (freeform; god is the sole scribe) and tasks.json (structured kanban — todo/doing/blocked/done).';
-    const slackLine = meta.isGod
-      ? 'SLACK REPLIES: When composing a Slack reply (or writing the `result` field of a Slack-origin kanban card), you MUST: (1) directly address what the user asked — never a bare "done"; (2) include the relevant specifics, outcome, and details; (3) format for Slack mrkdwn — open with a short *bold* headline, use bullet points for multiple items, wrap code/paths in `backtick` blocks, keep it concise (no walls of text). When finishing a Slack-origin task, always write a complete, user-facing, well-formatted `result` on the kanban card — the system posts it verbatim to Slack as the done reply.'
-      : `SLACK REPLIES: If god dispatches you a task that came from Slack, it will include an exact \`"${hiveNode}" "<helper>" --channel … --thread … --text "…"\` reply command — when you finish, run it VERBATIM to post your result back to that thread yourself. The reply must be SUBSTANTIVE Slack mrkdwn (a short *bold* headline + the actual outcome/specifics/links), NEVER a bare "done".`;
     return [
       `You are "${meta.name}" (${meta.id}), an assistant working with other agents in casa_da_indIA.`,
       DIRECT_CONVERSATION_RULES,
@@ -1453,7 +1142,6 @@ export class HiveManager {
       godLine,
       spawnQueueLine,
       runtimeLine,
-      slackLine,
       ctxLine,
       `Env vars available to you: AGENT_ID, AGENT_NAME, HIVE_ROOT, AGENT_DIR.`,
       regimentoLine(agentLanguage)
@@ -1544,38 +1232,6 @@ export class HiveManager {
         }, godId);
         continue;
       }
-      // A provider without safe-idle lifecycle state (a hookless custom command)
-      // would let direct mail rot unread. Claude and bridged Antigravity/Codex
-      // receive directly into inbox/ for guarded renderer delivery. Otherwise try
-      // a terminal work-order handoff to its REPL (#53);
-      // if the renderer is unavailable, bounce to god to relay. God is exempt
-      // (the bounce target).
-      if (t !== godId && !canReceiveInbox(reg.agents[t]?.provider)) {
-        if (!this.emitTerminalHandoff(msg, t)) {
-          this.deliver({
-            ...msg,
-            to: godId,
-            subject: `[undeliverable — "${t}" runs ${reg.agents[t]?.provider ?? 'a hookless CLI'} and the terminal handoff failed (renderer unavailable); relay this to it] ${msg.subject}`
-          }, godId);
-        } else delivered.push(t);
-        continue;
-      }
-      // 1d — proxy-tier providers (qwen) CAN receive inbox, but only via a
-      // SYNTHESIZED Stop, which just advances the cursor — the sidecar observes the
-      // CLI's stream and can't inject a drain reason back into its turn. So the real
-      // mail rides the terminal work-order path verbatim, exactly like a hookless
-      // provider; the synthesized Stop→drain keeps the cursor in step.
-      const proxyDesc = bridgeOf(reg.agents[t]?.provider);
-      if (t !== godId && proxyDesc?.kind === 'proxy' && proxyDesc.inboxDelivery === 'terminal') {
-        if (!this.emitTerminalHandoff(msg, t)) {
-          this.deliver({
-            ...msg,
-            to: godId,
-            subject: `[undeliverable — "${t}" runs ${reg.agents[t]?.provider ?? 'a proxy-tier CLI'} and the terminal handoff failed (renderer unavailable); relay this to it] ${msg.subject}`
-          }, godId);
-        } else delivered.push(t);
-        continue;
-      }
       if (this.deliver(msg, t)) { delivered.push(t); continue; }
       // No agents/<t>/inbox — an id that isn't on the floor. This was the one
       // delivery failure with neither bounce nor log, so the sender saw a routed
@@ -1618,31 +1274,6 @@ export class HiveManager {
       // human (now routed to the god proxy). Cosmetic only — no queue behind it.
       needsHuman: msg.to === 'human'
     });
-  }
-
-  /** Non-Claude providers cannot drain hive inbox; hand direct mail to the
-   *  renderer so it can queue a terminal work order for the target PTY. */
-  private emitTerminalHandoff(msg: HiveMessage, targetId: string): boolean {
-    const delivered = this.emit?.('hive:terminalHandoff', {
-      id: msg.id,
-      from: msg.from,
-      to: targetId,
-      act: msg.act,
-      subject: msg.subject,
-      body: msg.body,
-      requiresReply: msg.requires_reply,
-      createdAt: msg.created_at
-    }) === true;
-    this.appendLog({
-      kind: 'terminal-handoff',
-      from: msg.from,
-      to: targetId,
-      act: msg.act,
-      subject: msg.subject,
-      id: msg.id,
-      delivered
-    });
-    return delivered;
   }
 
   // — router: drain outboxes → inboxes —
@@ -1728,19 +1359,8 @@ export class HiveManager {
     this.commit(`hive: tasks (${merged.length})`);
   }
 
-  /** Append one card against the latest on-disk ledger. Renderer callers must
-   *  use this instead of re-writing a collection they read before another
-   *  source (webhook, Slack, god, voice) added work. Idempotent by task id. */
-  addTask(task: HiveTask): boolean {
-    const ledger = this.tasks() as { tasks?: HiveTask[] };
-    const tasks = Array.isArray(ledger?.tasks) ? ledger.tasks : [];
-    if (tasks.some((current) => current?.id === task.id)) return false;
-    this.writeTasks([...tasks, task]);
-    return true;
-  }
-
   /** Patch one card against the latest on-disk ledger, preserving unrelated
-   *  cards and fields (notably webhook.tokenHash and Slack thread metadata). */
+   *  cards and fields. */
   patchTask(id: string, patch: Partial<Omit<HiveTask, 'id'>>): boolean {
     const ledger = this.tasks() as { tasks?: HiveTask[] };
     const tasks = Array.isArray(ledger?.tasks) ? ledger.tasks : [];
@@ -1790,185 +1410,20 @@ export class HiveManager {
     return this.listMessages(join(this.agentDir(id), 'outbox'));
   }
 
-  /**
-   * Voice read-layer: recent message CONTENT (inbox + outbox bodies) for the
-   * operator briefing, REDACTED main-side. This is the message-content half of
-   * the voice query surface (the activity half is logTail()).
-   *
-   * Modes:
-   *   - { id }                → the single message with that id, wherever it lives.
-   *   - { agentId }           → recent messages in that agent's mailbox only.
-   *   - {}                    → recent messages across the whole floor, newest first.
-   * `limit` caps the list (default 12, max 40); `includeArchived` (default true)
-   * also reads the handled subfolders (inbox/.done, outbox/.sent).
-   *
-   * SECURITY: every subject + body is passed through redactSecrets() here, in
-   * main, so no secret and no raw body ever crosses IPC. Delivered messages exist
-   * in both the sender's outbox/.sent and the recipient's inbox/.done; we dedup
-   * by message id so each appears once.
-   */
-  voiceMessages(opts: { agentId?: string; id?: string; limit?: number; includeArchived?: boolean } = {}): VoiceMessage[] {
-    const root = this.root();
-    if (!root) return [];
-    const agentsDir = join(root, 'agents');
-    if (!existsSync(agentsDir)) return [];
-
-    const wantId = typeof opts.id === 'string' ? opts.id.trim() : '';
-    const onlyAgent = typeof opts.agentId === 'string' ? opts.agentId.trim() : '';
-    const includeArchived = opts.includeArchived !== false; // default true
-
-    let owners: string[];
-    try {
-      owners = onlyAgent
-        ? [onlyAgent]
-        : readdirSync(agentsDir).filter((id) => !id.startsWith('.') && existsSync(this.agentDir(id)));
-    } catch {
-      return [];
-    }
-
-    const seen = new Set<string>();
-    const out: VoiceMessage[] = [];
-    for (const owner of owners) {
-      const base = this.agentDir(owner);
-      const folders: Array<{ dir: string; direction: 'inbox' | 'outbox'; archived: boolean }> = [
-        { dir: join(base, 'inbox'), direction: 'inbox', archived: false },
-        { dir: join(base, 'outbox'), direction: 'outbox', archived: false }
-      ];
-      if (includeArchived) {
-        folders.push({ dir: join(base, 'inbox', '.done'), direction: 'inbox', archived: true });
-        folders.push({ dir: join(base, 'outbox', '.sent'), direction: 'outbox', archived: true });
-      }
-      for (const f of folders) {
-        for (const m of this.listMessages(f.dir)) {
-          if (!m || typeof m.id !== 'string' || seen.has(m.id)) continue;
-          seen.add(m.id);
-          if (wantId && m.id !== wantId) continue;
-          out.push({
-            id: m.id,
-            conversation: m.conversation,
-            from: m.from,
-            to: m.to,
-            act: m.act,
-            subject: redactSecrets(m.subject),
-            body: redactSecrets(m.body),
-            requires_reply: !!m.requires_reply,
-            direction: f.direction,
-            owner,
-            archived: f.archived,
-            created_at: m.created_at
-          });
-        }
-      }
-    }
-
-    // Newest first by ISO created_at (lexicographic == chronological for ISO-8601).
-    out.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
-    if (wantId) return out.slice(0, 1);
-    const lim = typeof opts.limit === 'number' && isFinite(opts.limit)
-      ? Math.max(1, Math.min(40, Math.round(opts.limit)))
-      : 12;
-    return out.slice(0, lim);
-  }
   /** Count undrained inbox messages for an agent (cheap — for the fleet snapshot). */
   inboxBacklog(id: string): number {
     const dir = join(this.agentDir(id), 'inbox');
     if (!existsSync(dir)) return 0;
     try { return readdirSync(dir).filter((f) => f.endsWith('.json')).length; } catch { return 0; }
   }
-  /** Install the Antigravity (`agy`) lifecycle-hook bridge: write the normalizer
-   *  shim and merge a `munder-hive` hook group into agy's global hooks.json so a
-   *  Gemini worker reports PreToolUse/PostToolUse/Stop/PreInvocation/PostInvocation
-   *  to this HookServer (live status + guarded idle delivery), reusing the Claude pipeline.
-   *
-   *  Two agy-isms handled: (1) antigravity-cli#49 — agy LOADS hooks from
-   *  `~/.gemini/antigravity-cli/hooks.json` but TRIGGERS from `~/.gemini/config/
-   *  hooks.json`, so we write BOTH; (2) commands go to cmd.exe and agy mangles
-   *  embedded quotes, so the shim path must be space-free (hive roots are).
-   *  Runtime-scoped by AGENT_ID (the shim no-ops for non-hive agy sessions), so
-   *  this global config never disturbs the user's own `agy` usage. Best-effort,
-   *  idempotent (only our own group is overwritten). */
-  private installAgyHooks(): void {
-    const root = this.root();
-    if (!root) return;
-    const shim = join(root, 'bin', 'agy-hook.cjs');
-    mkdirSync(join(root, 'bin'), { recursive: true });
-    writeFileSync(shim, AGY_HOOK_SHIM, 'utf8');
-    // Bundled node, not bare `node` — agy's hooks run with a stripped PATH too.
-    const tool = (event: string) => ({
-      matcher: '*',
-      hooks: [{ type: 'command', command: this.nodeRunUnquoted(shim, event), timeout: 0 }]
-    });
-    const plain = (event: string) => ({
-      hooks: [{ type: 'command', command: this.nodeRunUnquoted(shim, event), timeout: 0 }]
-    });
-    const group = {
-      PreToolUse: [tool('PreToolUse')],
-      PostToolUse: [tool('PostToolUse')],
-      PreInvocation: [plain('PreInvocation')],
-      PostInvocation: [plain('PostInvocation')],
-      Stop: [plain('Stop')]
-    };
-    const gem = join(homedir(), '.gemini');
-    for (const p of [join(gem, 'config', 'hooks.json'), join(gem, 'antigravity-cli', 'hooks.json')]) {
-      try {
-        mkdirSync(dirname(p), { recursive: true });
-        let existing: Record<string, unknown> = {};
-        if (existsSync(p)) {
-          try { existing = JSON.parse(readFileSync(p, 'utf8')) as Record<string, unknown>; } catch { existing = {}; }
-        }
-        existing['munder-hive'] = group;
-        writeFileSync(p, JSON.stringify(existing, null, 2), 'utf8');
-      } catch { /* best-effort per file */ }
-    }
-  }
-
-  /** Official Google Gemini CLI lifecycle bridge. Gemini's hook payload is
-   *  already snake_case; the shim maps event names into HookServer's common
-   *  vocabulary and translates deny/steering replies back to Gemini.
-   *
-   *  The system settings path is per agent. Gemini merges object and array
-   *  settings across layers, so auth and user settings remain in their normal
-   *  GEMINI_CLI_HOME while this trusted bridge stays isolated. */
-  private installGeminiHooks(dir: string): string {
-    const home = join(dir, '.gemini-hive');
-    const settingsPath = join(home, 'system-settings.json');
-    try {
-      mkdirSync(home, { recursive: true });
-      const shim = join(home, 'gemini-hook.cjs');
-      writeFileSync(shim, GEMINI_HOOK_SHIM, 'utf8');
-      const hook = (name: string, matcher?: string) => ({
-        ...(matcher ? { matcher } : {}),
-        sequential: true,
-        hooks: [{
-          name: `munder-hive-${name}`,
-          type: 'command',
-          command: this.nodeRunUnquoted(shim),
-          timeout: 30000
-        }]
-      });
-      const settings = {
-        hooksConfig: { enabled: true, notifications: false },
-        hooks: {
-          SessionStart: [hook('session-start')],
-          BeforeAgent: [hook('before-agent')],
-          BeforeTool: [hook('before-tool', '.*')],
-          AfterTool: [hook('after-tool', '.*')],
-          AfterAgent: [hook('after-agent')]
-        }
-      };
-      writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf8');
-    } catch (e) { console.error('[hive] installGeminiHooks failed:', e); }
-    return settingsPath;
-  }
-
   /** Codex lifecycle-hook bridge → full hive parity for a `codex` worker (live
-   *  status + Stop→inbox-drain), the codex counterpart of installAgyHooks().
+   *  status + Stop→inbox-drain).
    *
    *  Codex's hook contract is already Claude-shaped: snake_case stdin
    *  (hook_event_name/tool_name/tool_input/session_id/cwd) and a matching response
    *  contract, where `Stop` honoring {decision:'block',reason} means "continue,
    *  using reason as the next prompt" — exactly what drainForStop() returns. So we
-   *  reuse the Claude `cth-hook` shim VERBATIM (no translator, unlike agy) and let
+   *  reuse the Claude `cth-hook` shim VERBATIM (no translator) and let
    *  HookServer handle everything unchanged.
    *
    *  ISOLATION: rather than mutate the user's global Codex configuration (which
@@ -2159,35 +1614,7 @@ export class HiveManager {
     }
   }
 
-  /** Pi (earendil-works) bridge. Pi has a rich `pi.on(event, …)` lifecycle but no
-   *  Claude-shaped hook file; instead we drop a bundled EXTENSION into a PER-AGENT
-   *  PI_CODING_AGENT_DIR (so the user's global ~/.pi is never mutated) that, when Pi
-   *  loads it, posts cth-hook-shaped payloads to HIVE_SOCK on tool_call/agent_end and
-   *  auto-approves tool calls when the floor is in auto mode (HIVE_AUTO_APPROVE).
-   *  Emitting an `agent_end`→`Stop` keeps the harness status in step (→ idle), which
-   *  lets the renderer idle inbox-wake nudge deliver mail. Returns the per-agent dir
-   *  for PI_CODING_AGENT_DIR.
-   *
-   *  LIVE-UNVERIFIED: Pi's exact extension-discovery path + event API need BYOK keys
-   *  to confirm; this is written best-effort and wrapped so a wrong guess can never
-   *  break the spawn. The renderer nudge is the guaranteed drain regardless. */
-  private installPiHooks(dir: string): string {
-    const home = join(dir, '.pi-agent');
-    try {
-      // Pi discovers extensions under its agent dir; we write to the documented
-      // `extensions/` location (and keep it isolated per agent).
-      const extDir = join(home, 'extensions');
-      mkdirSync(extDir, { recursive: true });
-      writeFileSync(join(extDir, 'hive-bridge.js'), PI_EXTENSION, 'utf8');
-      // A manifest so Pi auto-loads the extension on start (best-effort; harmless if
-      // Pi ignores it). Kept minimal and hive-authored.
-      const manifest = { name: 'munder-hive-bridge', version: '0.3.1', main: 'extensions/hive-bridge.js', auto: true };
-      writeFileSync(join(home, 'extensions.json'), JSON.stringify(manifest, null, 2), 'utf8');
-    } catch (e) { console.error('[hive] installPiHooks failed:', e); }
-    return home;
-  }
-
-  /** OpenCode (anomalyco/opencode) bridge — god Decision 1 (native plugin, not proxy).
+  /** OpenCode (anomalyco/opencode) bridge — a native plugin.
    *  OpenCode has no Claude-shaped Stop hook, but its plugin API exposes a real
    *  `session.idle` lifecycle event. We drop a bundled PLUGIN into a PER-AGENT config
    *  dir's `plugin/` folder (OpenCode auto-loads `*.js` plugins from there) that posts
@@ -2228,94 +1655,6 @@ export class HiveManager {
       }
     } catch (e) { console.error('[hive] installOpenCodePlugin failed:', e); }
     return home;
-  }
-
-  /** Crush (charmbracelet/crush) proxy routing. Crush has NO base-URL env override, so
-   *  the generic proxy env-rewrite is a no-op for it; instead we write a per-agent
-   *  CRUSH_GLOBAL_CONFIG whose standard providers' `base_url` all point at the loopback
-   *  proxy (so whatever model the worker picks, its LLM traffic routes through the
-   *  sidecar → synthesized Status/Stop/cost → status goes idle → the terminal
-   *  work-order + renderer nudge deliver mail). A per-agent CRUSH_GLOBAL_DATA isolates
-   *  session state from the user's global ~/.config/crush. Keys ride BYOK env vars
-   *  (Crush reads ANTHROPIC_API_KEY/OPENAI_API_KEY/… directly), so none are written
-   *  here. `api` follows the proxy's wire shape (advisory). Returns the config + data
-   *  paths for the spawn env.
-   *
-   *  LIVE-UNVERIFIED: the single-upstream proxy serves one provider/endpoint shape at a
-   *  time — for full synthesized events pick a model whose provider matches the
-   *  configured upstream (or a local OpenAI-compatible endpoint). Cross-provider mixing
-   *  is humanQA; the renderer nudge still delivers mail regardless. */
-  private installCrushConfig(dir: string, loopbackUrl: string, api: 'openai' | 'anthropic', theme?: 'light' | 'dark'): { config: string; data: string } {
-    const config = join(dir, 'crush.json');
-    const data = join(dir, '.crush-data');
-    try {
-      mkdirSync(data, { recursive: true });
-      // Override base_url → loopback for ONLY the provider whose wire-shape matches
-      // the proxy (`api`): the single-upstream sidecar forwards bytes unchanged, so
-      // routing a different-wire/host provider (e.g. anthropic when api='openai', or
-      // openrouter/groq which are openai-wire but different hosts) through it would
-      // hit the wrong endpoint and the call would fail. Those are left to their real
-      // upstreams (working calls, un-proxied — no synthesized events, but mail still
-      // drains via the renderer nudge + the pty-quiescence idle fallback). For the
-      // default god (openai-wire) and a local OpenAI-compatible endpoint this routes
-      // through the proxy cleanly. Cross-provider Crush-via-proxy is on-device
-      // live-verify (Dwight verify-crush MF1; the default god model is openai-wire to
-      // match). Literal loopback (Dwight's b1 — no ${VAR} expansion edge cases);
-      // Crush merges config so only base_url is rewritten.
-      const wireProvider = api === 'anthropic' ? 'anthropic' : 'openai';
-      const providers: Record<string, { base_url: string }> = { [wireProvider]: { base_url: loopbackUrl } };
-      // Theme: Crush ships one (dark) palette and no light theme, but
-      // `options.tui.transparent` stops it painting its own background, so it
-      // sits on xterm's, which follows the app theme. Set whenever the app
-      // passes a theme, dark included, so both modes look the same way.
-      const options = theme ? { tui: { transparent: true } } : undefined;
-      writeFileSync(config, JSON.stringify(options ? { providers, options } : { providers }, null, 2), 'utf8');
-    } catch (e) { console.error('[hive] installCrushConfig failed:', e); }
-    return { config, data };
-  }
-
-  /** Grok lifecycle-hook bridge → live hive status, session capture, guarded
-   *  inbox delivery, and operator gates for `grok` workers.
-   *
-   *  Grok supports the same hook events and decision vocabulary as Claude Code,
-   *  but its stdin payload uses camelCase keys. A small adapter normalizes those
-   *  keys to HookServer's Claude-shaped contract. The hook is installed in the
-   *  user's global Grok hook directory because global hooks are trusted and
-   *  Grok sessions/resume stay in the user's normal GROK_HOME. The adapter is
-   *  strictly scoped by AGENT_ID, so ordinary Grok sessions exit without doing
-   *  anything. Best-effort and idempotent. */
-  private installGrokHooks(): void {
-    const root = this.root();
-    if (!root) return;
-    try {
-      const shim = join(root, 'bin', 'grok-hook.cjs');
-      mkdirSync(join(root, 'bin'), { recursive: true });
-      writeFileSync(shim, GROK_HOOK_SHIM, 'utf8');
-      const tool = (matcher?: string) => ({
-        ...(matcher ? { matcher } : {}),
-        // Let Grok apply its event-aware defaults (5s normally, 600s for Stop).
-        // Grok is a HOOK bridge (not a proxy sidecar), so it is hit by the same
-        // `node: command not found` 127 — bundled node here too.
-        hooks: [{ type: 'command', command: this.nodeRun(shim) }]
-      });
-      const hooks = {
-        PreToolUse: [tool('.*')],
-        PostToolUse: [tool('.*')],
-        Stop: [tool()],
-        SubagentStop: [tool('.*')],
-        SessionStart: [tool('.*')],
-        UserPromptSubmit: [tool()],
-        PreCompact: [tool('.*')],
-        PostCompact: [tool('.*')]
-      };
-      const hookDir = join(homedir(), '.grok', 'hooks');
-      mkdirSync(hookDir, { recursive: true });
-      writeFileSync(
-        join(hookDir, 'munder-hive.json'),
-        JSON.stringify({ hooks }, null, 2),
-        'utf8'
-      );
-    } catch (e) { console.error('[hive] installGrokHooks failed:', e); }
   }
 
   /** Write the live fleet snapshot Michael reads (`fleet.json`, gitignored).
@@ -2735,11 +2074,10 @@ the hive root:
   "cwd": "/absolute/path/to/the/repo (required)",
   "name": "display name (optional)",
   "command": "engine CLI (optional; defaults to the configured one)",
-  "provider": "claude | codex | cursor | antigravity | … (optional)",
+  "provider": "claude | codex | opencode (optional)",
   "model": "model override (optional)",
   "isolate": true,
   "tokenCap": 0,
-  "slack": { "channel": "C…", "thread_ts": "…" },
   "character": "meredith",
   "accent": "coral"
 }
@@ -2747,9 +2085,8 @@ the hive root:
 
 The harness polls that directory, spawns \`worker-<id>\`, and moves the request to
 \`spawn-requests/.done/\` once it starts or to \`spawn-requests/.failed/\` with a reason. \`isolate\`
-defaults to true, giving the worker its own git worktree. \`slack\` routes its failures back to a
-thread. This is the ONLY spawn route you can complete on your own: a hire manifest under
-\`research/hires/\` needs the human to confirm it in the UI.
+defaults to true, giving the worker its own git worktree. This is the ONLY spawn route you can
+complete on your own.
 
 \`character\` and \`accent\` set how the worker looks on the office floor, and both are optional.
 Naming a worker after a cast member already gets you that avatar, so you only need \`character\` when
@@ -2826,110 +2163,6 @@ process.stdin.on('end', () => {
 });
 `;
 
-// ─── agy-hook shim (written to <hive>/bin/agy-hook.cjs) ──────────────────────
-// Antigravity's `agy` CLI fires lifecycle hooks (PreToolUse/PostToolUse/Stop/
-// PreInvocation/PostInvocation) but with a DIFFERENT stdin shape than Claude
-// (conversationId / toolCall{name,args} / workspacePaths, and no hook_event_name
-// — the event arrives as argv from the hooks.json command). This shim normalizes
-// that into the same HookPayload the HookServer already consumes, so status,
-// inbox-drain-on-Stop, and tool gating are reused UNCHANGED, then translates the
-// server's Claude-shaped response back into agy's stdout contract (decision:
-// allow|deny|block + a message). Scoped by AGENT_ID: a personal agy session
-// (no AGENT_ID in env) is a no-op, so the global hooks.json never disturbs the
-// user's own agy usage — only hive workers (spawned with AGENT_ID set) bridge.
-// NOTE (agy bug, antigravity-cli#49): the loader reads ~/.gemini/antigravity-cli/
-// hooks.json but the trigger reads ~/.gemini/config/hooks.json — we write BOTH.
-const AGY_HOOK_SHIM = `#!/usr/bin/env node
-'use strict';
-const net = require('net');
-const event = process.argv[2] || 'Unknown';
-const agentId = process.env.AGENT_ID || null;
-let data = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (d) => { data += d; });
-process.stdin.on('end', () => {
-  const sock = process.env.HIVE_SOCK;
-  if (!agentId || !sock) { process.exit(0); } // not a hive worker → ignore
-  let agy = {};
-  try { agy = JSON.parse(data || '{}'); } catch (_) {}
-  const tc = agy.toolCall || {};
-  const payload = {
-    hook_event_name: event,
-    agent_id: agentId,
-    session_id: agy.conversationId,
-    transcript_path: agy.transcriptPath,
-    cwd: Array.isArray(agy.workspacePaths) ? agy.workspacePaths[0] : undefined,
-    tool_name: tc.name,
-    tool_input: tc.args
-  };
-  let resp = '';
-  const done = () => {
-    // Translate the HookServer's Claude-shaped reply into agy's contract. CRITICAL:
-    // agy treats ANY object written to stdout as a decision and FAIL-CLOSES (an
-    // empty/decision-less object = DENY). So emit JSON ONLY when there's a real
-    // directive (deny/block/steer); otherwise write NOTHING — no output = allow.
-    let out = null;
-    try {
-      const r = JSON.parse(resp || '{}');
-      if (r.decision === 'block') out = { decision: 'block', reason: r.reason, stopReason: r.reason, systemMessage: r.reason };
-      else if (r.hookSpecificOutput && r.hookSpecificOutput.permissionDecision === 'deny') out = { decision: 'deny', reason: r.hookSpecificOutput.permissionDecisionReason };
-      else if (r.continue === false) out = { decision: 'block', stopReason: r.stopReason };
-      else if (r.hookSpecificOutput && r.hookSpecificOutput.additionalContext) out = { systemMessage: r.hookSpecificOutput.additionalContext };
-    } catch (_) {}
-    if (out) { try { process.stdout.write(JSON.stringify(out)); } catch (_) {} }
-    process.exit(0);
-  };
-  try {
-    const c = net.createConnection(sock, () => c.write(JSON.stringify(payload) + '\\n'));
-    c.setEncoding('utf8');
-    c.on('data', (d) => { resp += d; });
-    c.on('end', done);
-    c.on('error', () => process.exit(0));
-    setTimeout(() => process.exit(0), 5000).unref();
-  } catch (_) { process.exit(0); }
-});
-`;
-
-// ─── pi bridge extension (written to <agentDir>/.pi-agent/extensions/) ───────
-// A bundled extension for Pi (earendil-works). Pi exposes a pi.on(event,…)
-// lifecycle; this posts cth-hook-shaped payloads to HIVE_SOCK on tool_call /
-// tool_result / agent_end and AUTO-APPROVES tool calls when the floor is in auto
-// mode (HIVE_AUTO_APPROVE, gated by config.autoMode — Pam guardrail #5). The
-// agent_end→Stop keeps the harness status in step (→ idle) so the renderer idle
-// inbox-wake nudge can deliver mail. Fully wrapped so a wrong API guess can never
-// break the spawn. LIVE-UNVERIFIED (Pi's exact extension surface needs BYOK keys).
-const PI_EXTENSION = `'use strict';
-var net = require('node:net');
-var SOCK = process.env.HIVE_SOCK;
-var AGENT = process.env.AGENT_ID || null;
-var AUTO = process.env.HIVE_AUTO_APPROVE === '1';
-function post(payload) {
-  try {
-    if (!SOCK) return;
-    payload.agent_id = payload.agent_id || AGENT;
-    var c = net.createConnection(SOCK, function () { try { c.end(JSON.stringify(payload) + '\\n'); } catch (e) {} });
-    c.on('error', function () {});
-  } catch (e) {}
-}
-function register(pi) {
-  if (!pi || typeof pi.on !== 'function') return false;
-  try {
-    pi.on('tool_call', function (ev) {
-      post({ hook_event_name: 'PreToolUse', tool_name: ev && (ev.name || (ev.tool && ev.tool.name)), tool_input: ev && (ev.args || ev.input) });
-      if (AUTO) { try { if (ev && typeof ev.approve === 'function') ev.approve(); } catch (e) {} return { approve: true }; }
-      return undefined;
-    });
-    pi.on('tool_result', function (ev) { post({ hook_event_name: 'PostToolUse', tool_name: ev && (ev.name || (ev.tool && ev.tool.name)) }); });
-    pi.on('agent_end', function () { post({ hook_event_name: 'Stop' }); });
-    return true;
-  } catch (e) { return false; }
-}
-try { if (typeof globalThis !== 'undefined' && globalThis.pi) register(globalThis.pi); } catch (e) {}
-module.exports = function (pi) { return register(pi); };
-module.exports.activate = function (pi) { return register(pi); };
-module.exports.default = module.exports;
-`;
-
 // ─── opencode bridge plugin (written to <agentDir>/.opencode/plugin/) ────────
 // A bundled plugin for OpenCode (anomalyco/opencode) — god Decision 1. OpenCode
 // has no Claude-shaped Stop hook but its plugin API exposes a real session.idle
@@ -2962,357 +2195,4 @@ export const HiveBridge = async () => {
   };
 };
 export default HiveBridge;
-`;
-
-// ─── proxy-bridge sidecar (written to <hive>/bin/hive-proxy.cjs) ─────────────
-// One per proxy-tier agent (qwen). A dependency-free, loopback-only reverse
-// proxy: the agent's CLI is pointed at this (via ANTHROPIC_BASE_URL/OPENAI_BASE_URL),
-// and it forwards every request to the user's real upstream UNCHANGED (headers,
-// body, streaming). It TEES each response to synthesize the same HIVE_SOCK payloads
-// the hook shims emit — Status (context gauge), PostToolUse (breaker), Stop (idle
-// drain), and the new CostSample (cost ledger) — so a hookless CLI becomes a hive
-// citizen. NEVER logs bodies or keys; the captured body is parsed in-memory and
-// dropped. Idle is heuristic: a turn that ends with no tool call and no new request
-// within an ~800ms debounce → Stop (a new request cancels it).
-const PROXY_BRIDGE_SHIM = `#!/usr/bin/env node
-'use strict';
-const http = require('http');
-const https = require('https');
-const net = require('net');
-const { URL } = require('url');
-
-const SOCK = process.env.HIVE_SOCK;
-const AGENT_ID = process.env.AGENT_ID || null;
-const UPSTREAM = process.env.UPSTREAM_BASE_URL || '';
-const SESSION = process.env.HIVE_PROXY_SESSION || null;
-const API = process.env.HIVE_PROXY_API === 'anthropic' ? 'anthropic' : 'openai';
-
-function trimSlash(s) { while (s.length && s.charAt(s.length - 1) === '/') s = s.slice(0, -1); return s; }
-
-// Per-model context-window size for the Status gauge; fallback 200k.
-function ctxSize(model) {
-  const m = String(model || '').toLowerCase();
-  if (m.indexOf('[1m]') !== -1 || m.indexOf('-1m') !== -1) return 1000000;
-  if (m.indexOf('claude') !== -1) return 200000;
-  if (m.indexOf('gpt-4o') !== -1 || m.indexOf('gpt-4.1') !== -1 || m.indexOf('o1') !== -1 || m.indexOf('o3') !== -1) return 128000;
-  if (m.indexOf('qwen') !== -1) return 262144;
-  return 200000;
-}
-
-// Fire-and-forget emit of a shim-shaped payload to the hive socket. Never throws.
-function emit(payload) {
-  if (!SOCK) return;
-  try {
-    const c = net.createConnection(SOCK, function () { c.end(JSON.stringify(payload) + '\\n'); });
-    c.on('error', function () {});
-  } catch (e) {}
-}
-
-let stopTimer = null;
-function armStop() {
-  if (stopTimer) clearTimeout(stopTimer);
-  stopTimer = setTimeout(function () {
-    stopTimer = null;
-    emit({ hook_event_name: 'Stop', agent_id: AGENT_ID, session_id: SESSION });
-  }, 800);
-  if (stopTimer.unref) stopTimer.unref();
-}
-function cancelStop() { if (stopTimer) { clearTimeout(stopTimer); stopTimer = null; } }
-
-function safeArgs(s) {
-  if (s == null) return {};
-  if (typeof s === 'object') return s;
-  try { return JSON.parse(s); } catch (e) { return { _raw: String(s).slice(0, 500) }; }
-}
-
-// Parse a completed response (single JSON or an SSE stream) and synthesize events.
-function parseAndEmit(bodyStr, isSse) {
-  const objs = [];
-  if (isSse) {
-    const lines = bodyStr.split('\\n');
-    for (let i = 0; i < lines.length; i++) {
-      const ln = lines[i];
-      const idx = ln.indexOf('data:');
-      if (idx === -1) continue;
-      const data = ln.slice(idx + 5).trim();
-      if (!data || data === '[DONE]') continue;
-      try { objs.push(JSON.parse(data)); } catch (e) {}
-    }
-  } else {
-    try { objs.push(JSON.parse(bodyStr)); } catch (e) {}
-  }
-  if (!objs.length) { armStop(); return; }
-
-  let model = null, input = 0, output = 0, cacheRead = 0, cacheCreation = 0, sawUsage = false;
-  const toolCalls = [];
-  const oaiTools = {}; // accumulate streaming openai tool_calls by index
-
-  for (let i = 0; i < objs.length; i++) {
-    const o = objs[i];
-    if (!o || typeof o !== 'object') continue;
-    if (o.model) model = o.model;
-    if (API === 'anthropic') {
-      if (o.type === 'message_start' && o.message) {
-        if (o.message.model) model = o.message.model;
-        const u = o.message.usage || {};
-        input += u.input_tokens || 0;
-        cacheRead += u.cache_read_input_tokens || 0;
-        cacheCreation += u.cache_creation_input_tokens || 0;
-        sawUsage = true;
-      } else if (o.type === 'message_delta' && o.usage) {
-        output += o.usage.output_tokens || 0;
-        sawUsage = true;
-      } else if (o.type === 'content_block_start' && o.content_block && o.content_block.type === 'tool_use') {
-        toolCalls.push({ name: o.content_block.name, input: o.content_block.input || {} });
-      } else if (o.usage && !o.type) {
-        // non-streaming full message body
-        const u = o.usage;
-        input += u.input_tokens || 0;
-        output += u.output_tokens || 0;
-        cacheRead += u.cache_read_input_tokens || 0;
-        cacheCreation += u.cache_creation_input_tokens || 0;
-        sawUsage = true;
-      }
-      if (Array.isArray(o.content)) {
-        for (let j = 0; j < o.content.length; j++) {
-          const blk = o.content[j];
-          if (blk && blk.type === 'tool_use') toolCalls.push({ name: blk.name, input: blk.input || {} });
-        }
-      }
-    } else {
-      if (o.usage) {
-        const u = o.usage;
-        input += u.prompt_tokens || 0;
-        output += u.completion_tokens || 0;
-        if (u.prompt_tokens_details && u.prompt_tokens_details.cached_tokens) cacheRead += u.prompt_tokens_details.cached_tokens;
-        sawUsage = true;
-      }
-      const choices = o.choices || [];
-      for (let c = 0; c < choices.length; c++) {
-        const ch = choices[c];
-        if (!ch) continue;
-        if (ch.message && Array.isArray(ch.message.tool_calls)) {
-          for (let t = 0; t < ch.message.tool_calls.length; t++) {
-            const tc = ch.message.tool_calls[t];
-            if (tc && tc.function) toolCalls.push({ name: tc.function.name, input: safeArgs(tc.function.arguments) });
-          }
-        }
-        if (ch.delta && Array.isArray(ch.delta.tool_calls)) {
-          for (let t = 0; t < ch.delta.tool_calls.length; t++) {
-            const tc = ch.delta.tool_calls[t];
-            if (!tc) continue;
-            const k = (tc.index != null ? tc.index : t);
-            if (!oaiTools[k]) oaiTools[k] = { name: null, args: '' };
-            if (tc.function) {
-              if (tc.function.name) oaiTools[k].name = tc.function.name;
-              if (tc.function.arguments) oaiTools[k].args += tc.function.arguments;
-            }
-          }
-        }
-      }
-    }
-  }
-  const keys = Object.keys(oaiTools);
-  for (let i = 0; i < keys.length; i++) {
-    const t = oaiTools[keys[i]];
-    if (t.name) toolCalls.push({ name: t.name, input: safeArgs(t.args) });
-  }
-
-  if (sawUsage) {
-    emit({ hook_event_name: 'Status', agent_id: AGENT_ID, context_window: { total_input_tokens: input + cacheRead + cacheCreation, context_window_size: ctxSize(model) } });
-    emit({ hook_event_name: 'CostSample', agent_id: AGENT_ID, session_id: SESSION, model: model, input: input, output: output, cache_read: cacheRead, cache_creation: cacheCreation });
-  }
-  if (toolCalls.length) {
-    cancelStop(); // a tool call means the turn continues
-    for (let i = 0; i < toolCalls.length; i++) {
-      emit({ hook_event_name: 'PostToolUse', agent_id: AGENT_ID, session_id: SESSION, tool_name: toolCalls[i].name, tool_input: toolCalls[i].input });
-    }
-  } else {
-    armStop();
-  }
-}
-
-let upstreamUrl = null;
-try { upstreamUrl = new URL(UPSTREAM); } catch (e) {}
-
-const server = http.createServer(function (req, res) {
-  cancelStop(); // a new request means the turn is still going
-  if (!upstreamUrl) { res.statusCode = 502; res.end('proxy: no upstream'); return; }
-  let target;
-  try { target = new URL(trimSlash(UPSTREAM) + req.url); } catch (e) { res.statusCode = 502; res.end('proxy: bad url'); return; }
-  const isHttps = target.protocol === 'https:';
-  const lib = isHttps ? https : http;
-  const headers = Object.assign({}, req.headers);
-  headers.host = target.host;
-  // Ask upstream for plaintext so the tee can parse SSE/JSON reliably; the client
-  // gets uncompressed bytes (loopback — negligible) and no content-encoding to undo.
-  delete headers['accept-encoding'];
-  const opts = {
-    protocol: target.protocol,
-    hostname: target.hostname,
-    port: target.port || (isHttps ? 443 : 80),
-    method: req.method,
-    path: target.pathname + target.search,
-    headers: headers
-  };
-  const upReq = lib.request(opts, function (upRes) {
-    res.writeHead(upRes.statusCode || 502, upRes.headers);
-    const ct = String((upRes.headers['content-type'] || ''));
-    const wantParse = ct.indexOf('json') !== -1 || ct.indexOf('event-stream') !== -1;
-    const isSse = ct.indexOf('event-stream') !== -1;
-    const chunks = [];
-    let total = 0;
-    upRes.on('data', function (chunk) {
-      res.write(chunk); // stream straight through to the CLI
-      if (wantParse && total < 4194304) { chunks.push(chunk); total += chunk.length; }
-    });
-    upRes.on('end', function () {
-      res.end();
-      if (wantParse && chunks.length) {
-        try { parseAndEmit(Buffer.concat(chunks).toString('utf8'), isSse); } catch (e) {}
-      }
-    });
-    upRes.on('error', function () { try { res.end(); } catch (e) {} });
-  });
-  upReq.on('error', function () { try { res.statusCode = 502; res.end('proxy: upstream error'); } catch (e) {} });
-  req.pipe(upReq);
-});
-
-server.on('error', function () {
-  try { process.stdout.write(JSON.stringify({ port: 0 }) + '\\n'); } catch (e) {}
-  process.exit(0);
-});
-server.listen(0, '127.0.0.1', function () {
-  const addr = server.address();
-  const port = (addr && typeof addr === 'object') ? addr.port : 0;
-  try { process.stdout.write(JSON.stringify({ port: port }) + '\\n'); } catch (e) {}
-});
-`;
-
-// Official Gemini CLI bridge. Gemini already sends snake_case payload fields;
-// normalize its event names, then translate HookServer decisions back into
-// Gemini's documented hook output contract.
-const GEMINI_HOOK_SHIM = `#!/usr/bin/env node
-'use strict';
-const net = require('net');
-const agentId = process.env.AGENT_ID || null;
-let data = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (d) => { data += d; });
-process.stdin.on('end', () => {
-  const sock = process.env.HIVE_SOCK;
-  if (!agentId || !sock) { process.exit(0); }
-  let gemini = {};
-  try { gemini = JSON.parse(data || '{}'); } catch (_) {}
-  const names = {
-    SessionStart: 'SessionStart',
-    BeforeAgent: 'UserPromptSubmit',
-    BeforeTool: 'PreToolUse',
-    AfterTool: 'PostToolUse',
-    AfterAgent: 'Stop'
-  };
-  const payload = {
-    ...gemini,
-    hook_event_name: names[gemini.hook_event_name] || gemini.hook_event_name || 'Unknown',
-    agent_id: agentId
-  };
-  let resp = '';
-  const done = () => {
-    let out = null;
-    try {
-      const r = JSON.parse(resp || '{}');
-      if (r.continue === false) out = { continue: false, stopReason: r.stopReason };
-      else if (r.decision === 'block') out = { decision: 'deny', reason: r.reason };
-      else if (r.hookSpecificOutput && r.hookSpecificOutput.permissionDecision === 'deny') {
-        out = { decision: 'deny', reason: r.hookSpecificOutput.permissionDecisionReason };
-      } else if (r.hookSpecificOutput && r.hookSpecificOutput.additionalContext) {
-        out = { hookSpecificOutput: { additionalContext: r.hookSpecificOutput.additionalContext } };
-      }
-    } catch (_) {}
-    if (out) { try { process.stdout.write(JSON.stringify(out)); } catch (_) {} }
-    process.exit(0);
-  };
-  try {
-    const c = net.createConnection(sock, () => c.write(JSON.stringify(payload) + '\\n'));
-    c.setEncoding('utf8');
-    c.on('data', (d) => { resp += d; });
-    c.on('end', done);
-    c.on('error', () => process.exit(0));
-    setTimeout(() => process.exit(0), 5000).unref();
-  } catch (_) { process.exit(0); }
-});
-`;
-
-// ─── grok-hook shim (written to <hive>/bin/grok-hook.cjs) ───────────────────
-// Grok's lifecycle events and decisions are Claude-compatible, but the wire
-// payload is camelCase and uses snake_case event values. Normalize the input for
-// HookServer and translate its Claude-style permission denial into Grok's direct
-// decision form. Scoped by AGENT_ID so the trusted global hook is inert outside
-// Munder-spawned workers.
-const GROK_HOOK_SHIM = `#!/usr/bin/env node
-'use strict';
-const net = require('net');
-const agentId = process.env.AGENT_ID || null;
-let data = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (d) => { data += d; });
-process.stdin.on('end', () => {
-  const sock = process.env.HIVE_SOCK;
-  if (!agentId || !sock) { process.exit(0); }
-  let grok = {};
-  try { grok = JSON.parse(data || '{}'); } catch (_) {}
-  const names = {
-    pre_tool_use: 'PreToolUse',
-    post_tool_use: 'PostToolUse',
-    post_tool_use_failure: 'PostToolUseFailure',
-    permission_denied: 'PermissionDenied',
-    stop: 'Stop',
-    stop_failure: 'StopFailure',
-    session_start: 'SessionStart',
-    session_end: 'SessionEnd',
-    user_prompt_submit: 'UserPromptSubmit',
-    notification: 'Notification',
-    subagent_start: 'SubagentStart',
-    subagent_stop: 'SubagentStop',
-    pre_compact: 'PreCompact',
-    post_compact: 'PostCompact'
-  };
-  const payload = {
-    hook_event_name: names[grok.hookEventName] || grok.hookEventName || 'Unknown',
-    agent_id: agentId,
-    session_id: grok.sessionId,
-    cwd: grok.cwd || grok.workspaceRoot,
-    tool_name: grok.toolName,
-    tool_input: grok.toolInput,
-    stop_hook_active: grok.stopHookActive,
-    prompt: grok.prompt,
-    source: grok.source,
-    notification_type: grok.notificationType,
-    message: grok.message
-  };
-  let resp = '';
-  const done = () => {
-    let out = null;
-    try {
-      const r = JSON.parse(resp || '{}');
-      if (r.continue === false) out = { continue: false, stopReason: r.stopReason };
-      else if (r.decision === 'block') out = { decision: 'block', reason: r.reason };
-      else if (r.hookSpecificOutput && r.hookSpecificOutput.permissionDecision === 'deny') {
-        out = { decision: 'deny', reason: r.hookSpecificOutput.permissionDecisionReason };
-      } else if (r.hookSpecificOutput && r.hookSpecificOutput.additionalContext) {
-        out = r;
-      }
-    } catch (_) {}
-    if (out) { try { process.stdout.write(JSON.stringify(out)); } catch (_) {} }
-    process.exit(0);
-  };
-  try {
-    const c = net.createConnection(sock, () => c.write(JSON.stringify(payload) + '\\n'));
-    c.setEncoding('utf8');
-    c.on('data', (d) => { resp += d; });
-    c.on('end', done);
-    c.on('error', () => process.exit(0));
-    setTimeout(() => process.exit(0), 5000).unref();
-  } catch (_) { process.exit(0); }
-});
 `;

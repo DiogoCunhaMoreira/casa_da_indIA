@@ -1,4 +1,4 @@
-import { godCharacter } from '@/scene/office/themeRegistry';
+import { godCharacter } from '@/elenco';
 import { SpritePortrait } from './SpritePortrait';
 import { useTranslation } from 'react-i18next';
 import { PixelPanel } from '@/components/PixelPanel';

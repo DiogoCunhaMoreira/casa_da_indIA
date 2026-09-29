@@ -16,11 +16,10 @@ import {
 } from '../../../shared/providerAutomation';
 import { DEFAULT_CONTEXT_TRIGGER, type ContextRule } from '../../../shared/triggers';
 import type { AgentProvider } from '../../../shared/agentProvider';
-import { bridgeOf, providerPreset } from '../../../shared/agentProvider';
 import { isDurableRole, preferredAgentRole, roleForHiveSpawn } from '../../../shared/agentRole';
 import { inboxNudgeText } from '../../../shared/hiveNudge';
 import { resolveGodName } from '../../../shared/godIdentity';
-import { CARA_POR_OMISSAO, ELENCO, godCharacter } from '@/scene/office/themeRegistry';
+import { CARA_POR_OMISSAO, ELENCO, godCharacter } from '@/elenco';
 import { acquireTerminal, resetTerminal, isTerminalAutomationSafe } from '@/components/terminalPool';
 import { canDeliverToAgent, deliverWithAcknowledgement, checkPrecondition } from './queueDelivery';
 
@@ -45,30 +44,6 @@ const QUIESCE_POLL_MS = 4000;
 // After a god/agent spawn, hold off the inbox-wake + queue-drain typers for this
 // long while the readiness handshake + provider-specific boot sequence runs.
 const BOOT_GRACE_MS = 35_000;
-// Delay before typing a one-time TUI protocol seed into a fresh worker (3b) —
-// long enough for the TUI to finish painting and surface any permission prompt.
-// submitToPty additionally waits for the terminal's readiness handshake.
-const SEED_BOOT_MS = 12_000;
-
-/** Hive-aware / hooks-bridge engines get standing goals via HookServer
- *  (SessionStart + UserPromptSubmit). Cursor and other no-hook engines need the
- *  goal prepended onto queued PTY deliveries so an Edit Agent save still lands
- *  on the next drain cycle without a restart. */
-function usesHookStandingGoal(agent: Agent): boolean {
-  const provider = inferAgentProvider(agent.command, agent.provider);
-  const preset = providerPreset(provider);
-  if (preset.hiveAware) return true;
-  return bridgeOf(provider)?.kind === 'hooks';
-}
-
-/** Prepend `<goal>…</goal>` for engines that cannot inject via hooks. Reads the
- *  live store field, so a just-saved goal is picked up on the next queue flush. */
-function withStandingGoal(agent: Agent, text: string): string {
-  const goal = agent.goal?.trim();
-  if (!goal || usesHookStandingGoal(agent)) return text;
-  if (text.includes('<goal>')) return text;
-  return `<goal>\n${goal}\n</goal>\n\n${text}`;
-}
 
 // A primeira coisa que se diz a deus num spawn de raiz — situá-lo e pô-lo a
 // governar o chão. Curto e virado à acção.
@@ -142,8 +117,8 @@ function submitToPty(
     await waitForTerminalReady(ptyId, provider);
     // Bracketed paste (ESC[200~ … ESC[201~) only matters for MULTI-LINE text, so a
     // stray "\n" doesn't submit early (#24). Single-line text (nudges, slash
-    // commands) is sent raw — some TUIs (Antigravity's agy) treat the paste
-    // markers as literal input and never submit, so skipping them is more robust.
+    // commands) is sent raw — some TUIs treat the paste markers as literal input
+    // and never submit, so skipping them is more robust.
     const payload = text.includes('\n') ? `\x1b[200~${text}\x1b[201~` : text;
     // writePty NEVER rejects for a dead pty — it resolves { ok:false, error:
     // 'no pty: …' } — so an unchecked await here made every failed delivery look
@@ -172,32 +147,6 @@ function enrichTaskPrompt(text: string): string {
   ].join('\n');
 }
 
-function terminalWorkOrderPrompt(msg: {
-  id: string;
-  from: string;
-  act: string;
-  subject: string;
-  body: string;
-  requiresReply: boolean;
-  createdAt: string;
-}): string {
-  return [
-    'WORK ORDER FROM HIVE',
-    `Message: ${msg.id}`,
-    `From: ${msg.from}`,
-    `Subject: ${msg.subject}`,
-    `Act: ${msg.act}${msg.requiresReply ? ' (reply expected)' : ''}`,
-    `Issued: ${msg.createdAt}`,
-    '',
-    msg.body,
-    '',
-    'Notes:',
-    '- This arrived through your terminal because this provider does not support hive inbox.',
-    '- Work in your current cwd.',
-    '- When done, report changes, validation, blockers, and next step in this terminal.'
-  ].join('\n');
-}
-
 /** Tool name → where the avatar walks + what it carries. */
 const TOOL_STATION: Record<string, { station: StationKind; carry?: ToolKind }> = {
   Read: { station: 'shelf', carry: 'Read' },
@@ -219,8 +168,8 @@ const TOOL_STATION: Record<string, { station: StationKind; carry?: ToolKind }> =
 function stationForTool(tool: string): { station: StationKind; carry?: ToolKind } {
   if (TOOL_STATION[tool]) return TOOL_STATION[tool];
   if (tool.startsWith('mcp__')) return { station: 'mcp', carry: 'MCP' };
-  // Heuristic fallback for non-Claude tool names (Antigravity sends run_command,
-  // ListDir, write_file, … — its hook names differ from Claude's exact tags).
+  // Heuristic fallback for non-Claude tool names (Codex/OpenCode send shell,
+  // write_file, … — their hook names differ from Claude's exact tags).
   // Match write/edit BEFORE read so "write_file" → desk, not shelf.
   const t = tool.toLowerCase();
   if (/command|bash|shell|exec|terminal|run_/.test(t)) return { station: 'terminal', carry: 'Bash' };
@@ -326,10 +275,6 @@ export function useHive(config: HarnessConfig | null): void {
   // must leave the agent alone — set while its boot sequence is typing so nothing
   // collides with /remote-control + the orientation prompt.
   const bootGraceUntil = useRef<Record<string, number>>({});
-  // Agents whose one-time TUI protocol seed (Crush, seedDelivery:'type-into-tui')
-  // has already been typed — guards effect #3b against re-seeding. (ondev-b)
-  const seeded = useRef<Set<string>>(new Set());
-  const seenTerminalHandoffs = useRef<Set<string>>(new Set());
   // Per-pty timestamp guarding auto-revive (effect #7) against a double-respawn
   // when power-resume + screen-unlock arrive back-to-back: an id revived (or
   // mid-revive) within REVIVE_DEBOUNCE_MS is skipped. Set BEFORE the async spawn
@@ -466,10 +411,6 @@ export function useHive(config: HarnessConfig | null): void {
             await submitToPty(GOD_PTY, remoteCommand, godProvider, REMOTE_CONTROL_SETTLE_MS);
           }
           if (!cancelled && !resumedGod) {
-            // A type-into-tui god (Crush) can't ride its hive protocol on argv, so the
-            // main process hands it back as seedPrompt — type it FIRST (identity), then
-            // the orientation kick. Serialized via writeChains so they can't jam. (ondev-b)
-            if (res.seedPrompt) await submitToPty(GOD_PTY, res.seedPrompt, godProvider);
             await submitToPty(GOD_PTY, initialGodPrompt(godName), godProvider);
           }
         } catch { /* PTY may have died during startup */ }
@@ -505,15 +446,6 @@ export function useHive(config: HarnessConfig | null): void {
         // A turn is in progress (prompt submitted / tool just finished) — keep
         // it working so it doesn't flicker idle between tool calls.
         if (!breakerArmed) updateAgent(e.agentId, { status: 'working' });
-      } else if (e.event === 'PreInvocation') {
-        // Antigravity (agy): the model is being called — it's thinking/working.
-        if (!breakerArmed) updateAgent(e.agentId, { status: 'working', action: 'thinking' });
-      } else if (e.event === 'PostInvocation') {
-        // agy's per-turn boundary. Unlike Claude, agy's Stop fires only on process
-        // EXIT, so without this an agy worker would never register as idle and the
-        // inbox-wake nudge (idle-only) could never reach it — its mail would sit
-        // undrained. Treat it as idle; a follow-up tool/turn re-sets working.
-        if (!breakerArmed) updateAgent(e.agentId, { status: 'idle', action: 'idle', carrying: undefined });
       } else if (e.event === 'Stop' || e.event === 'SubagentStop') {
         // A blocked Stop means the agent is being re-engaged to process its
         // inbox — it's NOT idle, so keep it working until it genuinely stops.
@@ -611,36 +543,8 @@ export function useHive(config: HarnessConfig | null): void {
     });
   }, []);
 
-  // 2e) Non-Claude providers cannot drain hive inbox. Direct hive mail to them
-  //     arrives here as a terminal work order and is queued through the same
-  //     idle-only PTY drain as human-composed messages.
-  useEffect(() => {
-    if (!config?.onboardingComplete) return;
-    return window.cth.onHiveTerminalHandoff((msg) => {
-      if (seenTerminalHandoffs.current.has(msg.id)) return;
-      const { agents, enqueueMessage, messageQueues } = useStore.getState();
-      const target = agents.find((a) => a.id === msg.to);
-      if (target?.ptyId) {
-        const marker = `Message: ${msg.id}`;
-        if ((messageQueues[target.id] ?? []).some((queued) => queued.text.includes(marker))) return;
-        seenTerminalHandoffs.current.add(msg.id);
-        enqueueMessage(target.id, terminalWorkOrderPrompt(msg));
-        return;
-      }
-      seenTerminalHandoffs.current.add(msg.id);
-      enqueueMessage(
-        GOD_ID,
-        [
-          `Terminal handoff failed for ${msg.to}: ${msg.subject}`,
-          '',
-          `Message ${msg.id} from ${msg.from} could not be queued because ${msg.to} has no live PTY. Route it manually or respawn the agent.`
-        ].join('\n')
-      );
-    });
-  }, [config?.onboardingComplete]);
-
   // 2e) PROVIDER-AGNOSTIC PTY-QUIESCENCE IDLE FALLBACK (the linchpin that makes
-  //     canReceiveInbox:true safe for the live-unverified OpenCode/Crush/pi bridges).
+  //     inbox delivery safe for the live-unverified OpenCode bridge).
   //     Hook events are the authoritative status source, but a bridge whose turn-end
   //     signal (Stop/session.idle/agent_end) doesn't fire leaves the agent pinned
   //     'working' — and BOTH delivery paths (#3 nudge, #4 queue-drain) are idle-gated,
@@ -734,52 +638,6 @@ export function useHive(config: HarnessConfig | null): void {
     return () => clearInterval(iv);
   }, [config?.onboardingComplete]);
 
-  // 3b) Seed a fresh "type-into-tui" worker (Crush) with the hive protocol. Its
-  //     bare TUI rejects a positional seed (Cobra reads it as a subcommand →
-  //     `Unknown command`), so the main process spawns it bare and hands the
-  //     protocol back as `seedPrompt`; we TYPE it as the worker's first turn after a
-  //     boot-grace (TUI finished painting), ONCE per agent. Routed through the SAME
-  //     per-pty submit chain + boot-grace as the inbox-wake nudge so the seed and a
-  //     nudge can never jam onto one line. (god-as-Crush is seeded in its own boot
-  //     sequence above; this covers workers.) (ondev-b)
-  useEffect(() => {
-    if (!config?.onboardingComplete) return;
-    const iv = setInterval(() => {
-      const { agents, updateAgent } = useStore.getState();
-      for (const a of agents) {
-        if (!a.ptyId || a.isGod || !a.seedPrompt || seeded.current.has(a.id)) continue;
-        seeded.current.add(a.id);
-        const ptyId = a.ptyId;
-        const seed = a.seedPrompt;
-        // Hold the nudge/quiesce typers off this agent until the seed lands + settles.
-        bootGraceUntil.current[a.id] = Date.now() + BOOT_GRACE_MS;
-        // Clear the record now so it isn't re-seen (the ref also guards) or persisted.
-        updateAgent(a.id, { seedPrompt: undefined });
-        setTimeout(() => {
-          // Permission-prompt safety (#5): if the worker surfaced an approval /
-          // needs-human prompt while its TUI booted ('waiting'/'blocked'), the
-          // seed's trailing Enter would confirm it. Put the seed back and let a
-          // later tick retry once the prompt clears; if the agent vanished
-          // (killed mid-boot), don't type into its orphaned pty at all.
-          const live = useStore.getState().agents.find((x) => x.id === a.id);
-          if (!live) return;
-          if (live.status === 'waiting' || live.status === 'blocked') {
-            seeded.current.delete(a.id);
-            useStore.getState().updateAgent(a.id, { seedPrompt: seed });
-            return;
-          }
-          submitToPty(
-            ptyId,
-            withStandingGoal(live, seed),
-            inferAgentProvider(live.command, live.provider)
-          )
-            .catch(() => { /* pty may have died */ });
-        }, SEED_BOOT_MS);
-      }
-    }, 1500);
-    return () => clearInterval(iv);
-  }, [config?.onboardingComplete]);
-
   // 4) Drain each agent's queued messages to its terminal, one at a time, the
   //    moment the agent goes idle. This is what lets the user keep sending
   //    messages while the agent's "cloud terminal" is mid-run: the messages
@@ -849,10 +707,7 @@ export function useHive(config: HarnessConfig | null): void {
           // the PTY; UI/card surfaces continue to show the readable `text`.
           () => submitToPty(
             target.ptyId!,
-            withStandingGoal(
-              target,
-              wrap ? wrap(next) : (next.instruction ?? next.text)
-            ),
+            wrap ? wrap(next) : (next.instruction ?? next.text),
             inferAgentProvider(target.command, target.provider)
           ),
           () => {
@@ -892,39 +747,6 @@ export function useHive(config: HarnessConfig | null): void {
       }
     };
 
-    // Promote a genuine Slack-origin work item to a stamped kanban card the first
-    // time it's dispatched to the office. The card carries slack:{channel,thread_ts}
-    // (origin thread) so the main-process done-observer can post its one summary
-    // reply in-thread once the card later reaches 'done'. ADDITIVE + idempotent +
-    // best-effort: a failure here never affects the dispatch that already happened,
-    // and only dispatched work items land here (slash commands/acks never do).
-    type SlackTaskCard = Parameters<typeof window.cth.hiveAddTask>[0];
-    const ensureSlackCard = async (m: QueuedMessage): Promise<void> => {
-      const slack = m.slack;
-      if (!slack) return;
-      try {
-        const raw = await window.cth.hiveTasks();
-        const existing: SlackTaskCard[] =
-          raw && typeof raw === 'object' && Array.isArray((raw as { tasks?: unknown }).tasks)
-            ? (raw as { tasks: SlackTaskCard[] }).tasks
-            : [];
-        const id = `slack-${slack.thread_ts}-${m.id}`;
-        if (existing.some((t) => t.id === id)) return; // already promoted — no dup
-        const title = m.text.length > 80 ? `${m.text.slice(0, 79)}…` : m.text;
-        const card: SlackTaskCard = {
-          id,
-          title,
-          description: m.text,
-          status: 'todo',
-          dependsOn: [],
-          priority: 1,
-          createdAt: new Date().toISOString(),
-          slack
-        };
-        await window.cth.hiveAddTask(card);
-      } catch { /* best-effort: card promotion must never sink dispatch */ }
-    };
-
     const flush = () => {
       const { agents, messageQueues } = useStore.getState();
       const byId = (id: string) => agents.find((a) => a.id === id);
@@ -936,7 +758,6 @@ export function useHive(config: HarnessConfig | null): void {
         if (!a.ptyId || !canDeliverToAgent(a.status, ptyQuietMs(a.ptyId, now), QUIESCE_IDLE_MS)) continue;
         if (!messageQueues[a.id]?.length) continue;
                 void dispatch(a.id, a).then(({ sent, message }) => {
-          if (sent && message?.slack) void ensureSlackCard(message);
           // Write the compact latch only once delivery genuinely happened — see
           // the comment in fire() above.
           if (sent && message?.compactUsed !== undefined) {
@@ -959,58 +780,11 @@ export function useHive(config: HarnessConfig | null): void {
     return () => { unsub(); if (debounce) clearTimeout(debounce); clearInterval(iv); };
   }, [config?.onboardingComplete]);
 
-  // 5) Pipe inbound Slack messages into Michael's queue. The main-process Slack
-  //    webhook server pushes each verified message here via IPC; enqueueing to
-  //    GOD_ID lands it in Michael's queue exactly as if the user had typed it
-  //    into the composer — effect #4 above then drains it to his PTY.
-  //    We immediately ack in the triggering thread and stash the thread coords
-  //    so the office can post its summary back later.
-  useEffect(() => {
-    if (!config?.onboardingComplete) return;
-    return window.cth.onSlackMessage((msg) => {
-      const hasFiles = Array.isArray(msg.files) && msg.files.length > 0;
-      if (!msg?.text?.trim() && !hasFiles) return;
-      let text = msg.text.trim();
-      // Append local file paths so the agent (Claude Code) can Read them directly.
-      if (hasFiles) {
-        const fileLines = msg.files!.map((f) => `- ${f.path} (${f.name})`).join('\n');
-        text = text ? `${text}\n\nAttached files:\n${fileLines}` : `Attached files:\n${fileLines}`;
-      }
-      const slack = { channel: msg.channel, thread_ts: msg.thread_ts };
-      // `text` (raw user request + any attachment lines) drives the human-facing
-      // kanban card title/description. The autonomy preamble — supplied verbatim
-      // by main, the authoritative source — is prepended ONLY to god's working
-      // instruction (what gets typed into his PTY), so the board stays readable
-      // while every Slack-origin god-session runs under the autonomy policy. When
-      // main sends no preamble (older build), god just gets the raw text.
-      const instruction = msg.autonomyPreamble ? `${msg.autonomyPreamble}${text}` : undefined;
-      useStore.getState().enqueueMessage(GOD_ID, text, { slack, instruction });
-      // Immediate "queued" acknowledgement in the originating Slack thread.
-      void window.cth.slackReply({
-        channel: msg.channel,
-        thread_ts: msg.thread_ts,
-        text: ':hourglass_flowing_sand: *Received.* Your request has been queued — the team is on it and will reply here when done.'
-      });
-    });
-  }, [config?.onboardingComplete]);
-
-  // 5b) Pipe hive tasks addressed to non-Claude agents (e.g. Codex) into their
-  //     terminal queues. When main routes a message to a non-claude provider it
-  //     emits 'hive:enqueueToAgent' instead of bouncing; we enqueue the raw
-  //     task text here so effect #4 types it into the REPL when the agent idles.
-  //     No inbox nudge, no /compact — just the verbatim subject+body text.
-  useEffect(() => {
-    if (!config?.onboardingComplete) return;
-    return window.cth.onHiveEnqueue?.((msg) => {
-      if (!msg?.targetId || !msg?.text?.trim()) return;
-      useStore.getState().enqueueMessage(msg.targetId, msg.text.trim());
-    });
-  }, [config?.onboardingComplete]);
-
-  // 5b) MAIN-initiated roster changes (rt-5 voice spawn/kill). The renderer store is
-  //     only mutated by renderer-initiated hires (AddAgentModal); a voice hire/kill
-  //     runs in MAIN (spawnAgentCore / teardownPty, owner=null) and would otherwise
-  //     be invisible on the floor. Main broadcasts; we build/archive the card here.
+  // 5b) MAIN-initiated roster changes (god-triggered workers). The renderer store
+  //     is only mutated by renderer-initiated spawns (AddAgentModal); a worker
+  //     spawn/kill runs in MAIN (spawnAgentCore / teardownPty, owner=null) and would
+  //     otherwise be invisible on the floor. Main broadcasts; we build/archive the
+  //     card here.
   useEffect(() => {
     if (!config?.onboardingComplete) return;
     const offSpawn = window.cth.onHiveAgentSpawned?.((rec) => {
@@ -1062,20 +836,6 @@ export function useHive(config: HarnessConfig | null): void {
     return () => { offSpawn?.(); offArchive?.(); };
   }, [config?.onboardingComplete]);
 
-  // 5c) v0.3.4 voice bridge: main stages queue insertions (clear_context) and
-  //     pushes them here, so delivery rides EVERY existing gate — idle-only,
-  //     boot grace, draft/picker safety, auto-delivery pause. Main owns the
-  //     confirm policy; this is just the enqueue.
-  useEffect(() => {
-    if (!config?.onboardingComplete) return;
-    return window.cth.onRealtimeEnqueue?.((evt) => {
-      if (!evt?.agentId || typeof evt.text !== 'string' || !evt.text.trim()) return;
-      const { agents, enqueueMessage } = useStore.getState();
-      if (!agents.some((a) => a.id === evt.agentId)) return;
-      enqueueMessage(evt.agentId, evt.text.trim());
-    });
-  }, [config?.onboardingComplete]);
-
   // 6) CONTEXT TRIGGERS (compact / clear). Main decides WHEN — cadence, and which
   //    half of the rule fired — and pushes `{action, rule}`; this decides WHO, then
   //    queues the provider's own command so the drain (#4) delivers it only at an
@@ -1112,8 +872,7 @@ export function useHive(config: HarnessConfig | null): void {
         const command = action === 'clear'
           ? clearCommandForProvider(provider, rule.message)
           : compactionCommandForProvider(provider, rule.message);
-        // No trustworthy command for this CLI (Crush's palette-only TUI, Copilot's
-        // print mode, an unknown custom binary) — leave its terminal alone.
+        // No trustworthy command for this CLI — leave its terminal alone.
         if (!command) continue;
         if (!passesContextPressure(a, rule)) continue;
         const verb = command.trimStart().split(/\s+/)[0];

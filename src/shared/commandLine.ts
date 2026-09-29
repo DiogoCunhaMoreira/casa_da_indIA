@@ -1,5 +1,5 @@
 /** Split a command string into argv, respecting double/single quotes so a model
- *  value with spaces (agy's `--model "Gemini 3.1 Pro (High)"`) stays one token.
+ *  value with spaces (`--model "My Model"`) stays one token.
  *  Quotes are stripped from the result.
  *
  *  Shared because BOTH sides split command lines: the renderer's spawn flows

@@ -30,9 +30,9 @@ test('a flag-carrying command line splits into executable + argv', () => {
 });
 
 test('a quoted model value with spaces stays one token', () => {
-  const l = launch({ requestCommand: 'agy --model "Gemini 3.1 Pro (High)"' });
-  assert.equal(l.bin, 'agy');
-  assert.deepEqual(l.args, ['--model', 'Gemini 3.1 Pro (High)']);
+  const l = launch({ requestCommand: 'opencode --model "My Local Model"' });
+  assert.equal(l.bin, 'opencode');
+  assert.deepEqual(l.args, ['--model', 'My Local Model']);
 });
 
 test('the separate model field applies only when the line did not pick a model', () => {
@@ -63,10 +63,6 @@ test("auto-mode appends the PROVIDER'S flag, not claude's", () => {
   // each provider's preset knows its own flag, same as the renderer's spawn path.
   const codex = launch({ requestCommand: 'codex', autoMode: true });
   assert.deepEqual(codex.args, ['-a', 'never', '-s', 'workspace-write']);
-  const agy = launch({ requestCommand: 'agy', autoMode: true });
-  assert.deepEqual(agy.args, ['--dangerously-skip-permissions']);
-  const kimi = launch({ requestCommand: 'kimi', autoMode: true });
-  assert.deepEqual(kimi.args, ['--auto']);
 });
 
 test('an explicit stance wins for non-claude providers too (no doubled flag)', () => {
@@ -79,14 +75,13 @@ test('an explicit stance wins for non-claude providers too (no doubled flag)', (
 
 test('a provider whose preset declares no auto flag gets nothing appended', () => {
   assert.deepEqual(launch({ requestCommand: 'opencode', autoMode: true }).args, []);
-  assert.deepEqual(launch({ requestCommand: 'my-own-tool', autoMode: true }).args, []);
 });
 
 test('a multi-token auto flag appends whole, and the stance check is by token', () => {
-  // copilot's flag starts with `-s`; a substring check would read the `-s` inside
-  // --summarize as an explicit stance and skip the append.
-  const l = launch({ requestCommand: 'copilot --summarize', autoMode: true });
-  assert.deepEqual(l.args, ['--summarize', '-s', '--allow-all-tools', '--no-ask-user']);
+  // codex's flag contains `-s`; a substring check would read the `-s` inside
+  // --search as an explicit stance and skip the append.
+  const l = launch({ requestCommand: 'codex --search', autoMode: true });
+  assert.deepEqual(l.args, ['--search', '-a', 'never', '-s', 'workspace-write']);
 });
 
 test("an explicit request provider picks that provider's flag for a custom binary", () => {

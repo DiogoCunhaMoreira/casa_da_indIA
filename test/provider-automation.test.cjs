@@ -17,7 +17,7 @@ const {
 // — the queue's one-pending-compact invariant depends entirely on this predicate —
 
 test('isCompactionCommand matches every provider that has a compact verb', () => {
-  for (const p of ['claude', 'codex', 'grok', 'kimi', 'qwen', 'opencode', 'pi', 'copilot', 'cursor']) {
+  for (const p of ['claude', 'codex', 'opencode']) {
     const cmd = compactionCommandForProvider(p, '');
     if (!cmd) continue; // provider has no typeable compaction — nothing to dedupe
     assert.equal(isCompactionCommand(cmd), true, `${p}: ${cmd}`);
@@ -48,28 +48,17 @@ const { DEFAULT_COMPACTION_FOCUS } = loadTs('src/shared/triggers.ts');
 const { AGENT_PROVIDER_PRESETS } = loadTs('src/shared/agentProvider.ts');
 
 test('each provider receives only its supported compaction syntax', () => {
-  // Verbs differ per CLI: qwen dropped gemini-cli's /compact alias for /compress.
   assert.equal(compactionCommandForProvider('claude', ''), '/compact');
   assert.equal(compactionCommandForProvider('codex', ''), '/compact');
-  assert.equal(compactionCommandForProvider('grok', ''), '/compact');
-  assert.equal(compactionCommandForProvider('kimi', ''), '/compact');
-  assert.equal(compactionCommandForProvider('qwen', ''), '/compress');
   assert.equal(compactionCommandForProvider('opencode', ''), '/compact');
-  assert.equal(compactionCommandForProvider('pi', ''), '/compact');
 
-  // No command we can trust → no keystrokes at all.
-  for (const p of ['antigravity', 'crush', 'copilot', 'cursor', 'custom']) {
-    assert.equal(compactionCommandForProvider(p), null, p);
-  }
+  // An unknown provider id → no keystrokes at all.
+  assert.equal(compactionCommandForProvider('not-a-provider'), null);
 });
 
 test('the focus rides along only where the TUI parses it', () => {
   const focus = 'keep the auth decisions';
   assert.equal(compactionCommandForProvider('claude', focus), `/compact ${focus}`);
-  assert.equal(compactionCommandForProvider('grok', focus), `/compact ${focus}`);
-  assert.equal(compactionCommandForProvider('kimi', focus), `/compact ${focus}`);
-  assert.equal(compactionCommandForProvider('pi', focus), `/compact ${focus}`);
-  assert.equal(compactionCommandForProvider('qwen', focus), `/compress ${focus}`);
 
   // codex/opencode ignore trailing text, so it must be dropped, not typed.
   assert.equal(compactionCommandForProvider('codex', focus), '/compact');
@@ -87,24 +76,15 @@ test('the focus rides along only where the TUI parses it', () => {
 test('clearing uses each CLI own verb, not a hardcoded /clear', () => {
   assert.equal(clearCommandForProvider('claude'), '/clear');
   assert.equal(clearCommandForProvider('codex'), '/clear');
-  assert.equal(clearCommandForProvider('kimi'), '/clear');
-  assert.equal(clearCommandForProvider('qwen'), '/clear');
-  // agy's /clear resets the conversation; Ctrl+L is the screen-only one.
-  assert.equal(clearCommandForProvider('antigravity'), '/clear');
-  // These three start a fresh session instead — '/clear' is not a command there.
-  assert.equal(clearCommandForProvider('grok'), '/new');
+  // OpenCode starts a fresh session instead — '/clear' is not a command there.
   assert.equal(clearCommandForProvider('opencode'), '/new');
-  assert.equal(clearCommandForProvider('pi'), '/new');
-  // Palette-only TUI, print-mode CLI, Cursor (unverified slash surface), unknown binary.
-  for (const p of ['crush', 'copilot', 'cursor', 'custom']) {
-    assert.equal(clearCommandForProvider(p), null, p);
-  }
+  assert.equal(clearCommandForProvider('not-a-provider'), null);
 });
 
 test('a non-empty clear message overrides the table verbatim', () => {
-  assert.equal(clearCommandForProvider('grok', '/clear'), '/clear');
+  assert.equal(clearCommandForProvider('opencode', '/clear'), '/clear');
   // The operator escape hatch for providers the table answers null for.
-  assert.equal(clearCommandForProvider('crush', '/reset'), '/reset');
+  assert.equal(clearCommandForProvider('not-a-provider', '/reset'), '/reset');
 });
 
 test('every provider preset has a considered context-command entry', () => {
@@ -122,15 +102,13 @@ test('every provider preset has a considered context-command entry', () => {
 test('Claude alone receives a remote-control slash command', () => {
   assert.equal(remoteControlCommandForProvider('claude', 'Michael'), '/remote-control Michael');
   assert.equal(remoteControlCommandForProvider('codex', 'Jim'), null);
-  assert.equal(remoteControlCommandForProvider('grok', 'Grok'), null);
-  assert.equal(remoteControlCommandForProvider('kimi', 'Pam'), null);
+  assert.equal(remoteControlCommandForProvider('opencode', 'Pam'), null);
 });
 
 test('provider readiness policies allow each TUI to settle', () => {
   assert.equal(terminalReadySettleMs('claude'), 400);
   assert.equal(terminalReadySettleMs('codex'), 500);
-  assert.equal(terminalReadySettleMs('grok'), 500);
-  assert.equal(terminalReadySettleMs('kimi'), 650);
+  assert.equal(terminalReadySettleMs('opencode'), 400);
 });
 
 test('continuous TUI repainting cannot block terminal readiness', () => {

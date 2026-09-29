@@ -14,9 +14,7 @@ import { CommandCenterPanel } from './CommandCenterPanel';
 import { EditAgentModal } from './EditAgentModal';
 import { Icon } from './Icon';
 import { SpritePortrait } from './SpritePortrait';
-import { PORTRAIT_W } from '@/scene/office/portraitArt';
-import { RealtimeMichaelToggle } from './RealtimeMichaelToggle';
-import { CostHud } from '@/realtime/CostHud';
+import { PORTRAIT_W } from './SpritePortrait';
 import { useStore, type Agent } from '@/store/store';
 import { usePtyParser } from '@/hooks/usePtyParser';
 import { useRestoreTeam } from '@/hooks/useRestoreTeam';
@@ -24,7 +22,6 @@ import { useTerminalFontSize } from './terminalFontSize';
 import { useHasTerminalDraft, disposeTerminal, reflowTerminal, notifyThemeChangeAll } from './terminalPool';
 import { useAppTheme, toggleAppTheme } from '@/design/theme';
 import type { HarnessConfig } from '@/store/config';
-import { useRtl } from '@/i18n/useDirection';
 
 /** Roster rail width. A fixed 232px is right on a 14" laptop but reads as a
  *  sliver on a 27" display, where names truncate for no reason — so it tracks
@@ -674,7 +671,6 @@ function SidebarRow({
   useUiLanguage();
   const displayName = useAgentNames();
   const { t } = useTranslation();
-  const rtl = useRtl();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const noteRef = useRef<HTMLDivElement>(null);
   const [notePosition, setNotePosition] = useState<{ left: number; top: number } | null>(null);
@@ -886,7 +882,6 @@ function SidebarRow({
               to make a new line rather than doing nothing. autoFocus is safe
               now that opening is an explicit click, not a pointer fly-by. */}
           <textarea
-            dir={rtl ? 'auto' : undefined}
             autoFocus
             value={agent.note ?? ''}
             onChange={(e) => onNoteChange(e.target.value)}
@@ -1014,12 +1009,6 @@ function Header({ agent, onEdit }: { agent: Agent; onEdit: () => void }) {
             <Icon name="code" /> {t('commandCenter.ide')}
           </span>
         </PixelButton>
-        {/* Voice toggle is ALWAYS reachable in fullscreen — it controls Michael (the
-            god orchestrator) globally, not the agent in view, so users can start a
-            voice session even while a worker's terminal fills the screen. The cost
-            HUD stays Michael-only (it belongs to his card). */}
-        <RealtimeMichaelToggle />
-        {agent.isGod && <CostHud compact />}
         <PixelButton variant="secondary" size="sm" onClick={openTerminal} disabled={openState === 'opening'}>
           <span
             className="cth-tip cth-tip-wrap"

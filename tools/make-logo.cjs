@@ -23,12 +23,12 @@ const { execFileSync } = require('node:child_process');
 // repo's sprite and written its assets.
 const ROOT = path.resolve(__dirname, '..');
 const loadTs = require(path.join(ROOT, 'test/load-ts.cjs'));
-const art = loadTs('src/renderer/src/scene/office/portraitArt.ts');
+const art = loadTs('tools/logo/portraitArt.ts');
 // The mark is the ORCHESTRATOR's sprite, and this theme's orchestrator is
 // registered by its own module — portraitArt.ts alone does not know 'lourenco',
 // and an unregistered name silently falls back to Jim, i.e. to the upstream's
 // cast. Register before composing.
-art.registerRecipes(loadTs('src/renderer/src/scene/office/casadaindia/retratos.ts').RECEITAS);
+art.registerRecipes(loadTs('tools/logo/retratos.ts').RECEITAS);
 
 const SW = art.SCENE_W;
 

@@ -39,7 +39,7 @@ function tasks(hive) {
   return hive.tasks().tasks;
 }
 
-test('patching a stale UI card preserves a concurrently appended webhook card', (t) => {
+test('patching a stale UI card preserves a card god appended meanwhile', (t) => {
   const hive = floor(t);
   const question = card('needs-human', {
     status: 'blocked',
@@ -47,28 +47,22 @@ test('patching a stale UI card preserves a concurrently appended webhook card', 
   });
   hive.writeTasks([question]);
 
-  // The renderer still holds this one-card snapshot when the webhook arrives.
+  // The renderer still holds this one-card snapshot when god adds work.
   const staleQuestion = structuredClone(tasks(hive)[0]);
-  const webhook = card('webhook-1', {
-    webhook: { tokenHash: 'a'.repeat(64) }
-  });
-  assert.equal(hive.addTask(webhook), true);
+  hive.writeTasks([...tasks(hive), card('god-1')]);
 
   staleQuestion.humanQA[0].a = 'Option B';
   staleQuestion.humanQA[0].answeredAt = '2026-08-15T08:00:01.000Z';
   assert.equal(hive.patchTask(staleQuestion.id, { humanQA: staleQuestion.humanQA }), true);
 
-  assert.deepEqual(tasks(hive).map((task) => task.id), ['needs-human', 'webhook-1']);
+  assert.deepEqual(tasks(hive).map((task) => task.id), ['needs-human', 'god-1']);
   assert.equal(tasks(hive)[0].humanQA[0].a, 'Option B');
-  assert.equal(tasks(hive)[1].webhook.tokenHash, 'a'.repeat(64));
 });
 
-test('atomic add is idempotent and delete removes only the named card', (t) => {
+test('delete removes only the named card', (t) => {
   const hive = floor(t);
-  hive.writeTasks([card('existing')]);
+  hive.writeTasks([card('existing'), card('new')]);
 
-  assert.equal(hive.addTask(card('new')), true);
-  assert.equal(hive.addTask(card('new', { title: 'duplicate' })), false);
   assert.equal(hive.deleteTask('existing'), true);
   assert.equal(hive.deleteTask('missing'), false);
 
@@ -106,20 +100,5 @@ test('renderer task actions never send a whole stale ledger back to main', () =>
   assert.match(sources[0], /hivePatchTask\s*\(/);
   assert.match(sources[1], /hivePatchTask\s*\(/);
   assert.match(sources[2], /hiveDeleteTask\s*\(/);
-  assert.match(sources[3], /hiveAddTask\s*\(/);
 });
 
-test('webhook dispatch appends via atomic addTask, not a stale whole-ledger rewrite', () => {
-  const root = path.resolve(__dirname, '..');
-  const main = fs.readFileSync(path.join(root, 'src/main/index.ts'), 'utf8');
-  const fn = main.slice(main.indexOf('function dispatchWebhookWork'),
-    main.indexOf('function handleWebhookMessage'));
-  // The card must be appended through hive.addTask(card) — which reads the LATEST
-  // on-disk ledger and is idempotent by task id — never through a re-read of a
-  // snapshot the caller happened to hold, which would overwrite a concurrently
-  // added card (the 2026-08-15 regression this suite guards).
-  assert.match(fn, /hive\.addTask\s*\(card\)/,
-    'dispatchWebhookWork must add the card via the atomic addTask');
-  assert.doesNotMatch(fn, /writeTasks\s*\(\[\s*\.\.\.existing/,
-    'dispatchWebhookWork must not rebuild a stale whole-ledger snapshot');
-});

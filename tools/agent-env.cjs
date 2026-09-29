@@ -77,7 +77,7 @@ function buildRecords(hiveRoot) {
     records.push({
       id,
       name: a.name ?? null,
-      provider: a.provider ?? null,        // terminal/CLI engine: claude / codex / crush / ...
+      provider: a.provider ?? null,        // terminal/CLI engine: claude / codex / opencode
       role: a.role ?? null,
       isGod: !!a.isGod,
       archived: !!a.archived,

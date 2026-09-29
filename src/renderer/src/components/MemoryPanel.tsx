@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { PixelPanel } from './PixelPanel';
 import { PixelButton } from './PixelButton';
 import { isComposingKey } from '@shared/imeGuard';
-import { useRtl } from '@/i18n/useDirection';
 
 interface MemoryStatus {
   available: boolean;
@@ -31,7 +30,6 @@ const MODELS: { id: ModelId; titleKey: string; detailKey: string }[] = [
  */
 export function MemoryPanel() {
   const { t } = useTranslation();
-  const rtl = useRtl();
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<MemoryStatus | null>(null);
   const [query, setQuery] = useState('');
@@ -224,7 +222,7 @@ export function MemoryPanel() {
                     boxShadow: 'inset 0 0 0 1px var(--cth-ink-100)',
                     padding: 8, fontFamily: 'var(--cth-font-mono)', fontSize: 12,
                     whiteSpace: 'pre-wrap', color: 'var(--cth-ink-900)'
-                  }} dir={rtl ? 'auto' : undefined}>{result}</pre>
+                  }}>{result}</pre>
                 )}
               </div>
             )}

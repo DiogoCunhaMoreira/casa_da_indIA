@@ -40,7 +40,7 @@ export async function switchAgentModel(
     update({ provider, model, command, ptyId: id, status: 'idle', action: '',
       contextTokens: 0, contextLimit: undefined, progress: 0,
       recentAssistantText: undefined, recentTextTs: undefined, lastPrompt: undefined,
-      blockReason: undefined, carrying: undefined, seedPrompt: result.seedPrompt });
+      blockReason: undefined, carrying: undefined });
   } catch (error) {
     // Keep the old recipe on failure; the editor stays open for correction/retry.
     update({ status: 'blocked', action: dependencies.failed });

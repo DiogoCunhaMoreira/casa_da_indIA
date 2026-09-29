@@ -70,10 +70,9 @@ export function AgentModelPicker({ config, provider, model, onChange }: {
         <label>{t('agentModelPicker.engine')}
           <select style={field} value={provider} onChange={e => {
             const id = e.target.value as AgentProvider;
-            onChange(id, isClaudeProvider(id) ? config.defaultModel : config.providerDefaultModels?.[id]);
+            onChange(id, isClaudeProvider(id) ? config.defaultModel : undefined);
           }}>
-            {AGENT_PROVIDER_PRESETS.filter(p => p.id !== 'custom' || provider === 'custom').map(p =>
-              <option key={p.id} value={p.id}>{p.id === 'custom' ? t('agentModelPicker.customCommand') : p.label}</option>)}
+            {AGENT_PROVIDER_PRESETS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
           </select>
         </label>
         {preset.supportsModel && <label>{t('localModels.model')}

@@ -246,7 +246,7 @@ function fallbackCheck(reason: string | undefined, force = false): void {
                 downloadUrl: pickDownloadAsset(rel.assets) ?? undefined,
                 // Already in the response we just parsed — carrying it costs
                 // nothing and lets the notify-only toast show "What's new" too.
-                // NOT a new request: see TELEMETRY.md, this app never adds one.
+                // NOT a new request.
                 notes: typeof rel.body === 'string' ? rel.body : undefined
               });
             }
@@ -345,7 +345,7 @@ async function runDownload(): Promise<{ ok: boolean; error?: string }> {
  *  v0.4.4-rc.1 body: this shape yields the same 3 bullets the real toast shows. */
 const SIMULATED_NOTES = `# casa_da_indIA v9.9.9
 
-**A local hive of Claude Code, Antigravity, Codex, Grok & Copilot agents that run themselves** —
+**A local hive of Claude Code, Codex & OpenCode agents that run themselves** —
 messaging, routing, and remembering, coordinated by your clone, Michael, who you talk to.
 
 ---
@@ -450,8 +450,7 @@ export function initAutoUpdater(getWebContents: () => WebContents | null): void 
     }
   }
   // First launch after the version moved: show THIS release's page. The stamp
-  // is the updater's own (analytics keeps a separate one that only exists when
-  // telemetry initialised). Skipped when a preview is being forced, and the
+  // is the updater's own. Skipped when a preview is being forced, and the
   // fetch failing just means no page, never a broken boot.
   if (!previewPath) {
     try {
@@ -492,14 +491,6 @@ export function initAutoUpdater(getWebContents: () => WebContents | null): void 
     const href = typeof url === 'string' ? url : `https://github.com/${REPO}/releases/latest`;
     // Only ever open the project's releases page — this is not a generic opener.
     if (!href.startsWith(`https://github.com/${REPO}/`)) return { ok: false };
-    // An asset URL means the badge's download click, not the notes link. It is
-    // the only positive trace the manual path leaves, and it has to be written
-    // by the build being REPLACED, so the version that reads it is the next one
-    // — analytics.ts (update_applied.via) picks it up from 0.4.6, and until then
-    // this line is here purely so there is something to pick up. Nothing else
-    // depends on it and openExternal has already been decided above.
-    const asset = /\/releases\/download\/v([0-9][^/]*)\//.exec(href);
-    if (asset) logLine(`manual download opened: ${asset[1]}`);
     void shell.openExternal(href);
     return { ok: true };
   });

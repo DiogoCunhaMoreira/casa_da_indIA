@@ -10,7 +10,7 @@
  * Ter a aplicação em português NÃO exige um modelo português. O que faz um
  * agente responder, escrever commits e relatar em PT-PT é a instrução, não o
  * modelo — e a instrução funciona em QUALQUER motor, incluindo os que não se
- * podem apontar ao LM Studio (Claude Code, Codex e Antigravity usam login
+ * podem apontar ao LM Studio (Claude Code e Codex usam login
  * próprio). É por isso que esta camada é a que entrega a maior parte do
  * objetivo, e a que é robusta.
  *

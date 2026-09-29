@@ -4,10 +4,8 @@ import { PixelPanel } from './PixelPanel';
 import { PixelBadge, StatusKind } from './PixelBadge';
 import { useHasTerminalDraft } from './terminalPool';
 import { SpritePortrait } from './SpritePortrait';
-import { RealtimeMichaelToggle } from './RealtimeMichaelToggle';
-import { CostHud } from '@/realtime/CostHud';
 import { AccentColorName } from '@/design/tokens';
-import { CharacterName } from '@/scene/office/cast';
+import type { CharacterName } from '@/elenco';
 import { AgentNameEditor } from './AgentNameEditor';
 
 export interface AgentCardProps {
@@ -241,25 +239,8 @@ export function AgentCard({
               }}
             >{infoLine}</div>
 
-            {/* God: voice on its own compact row. Workers: the private note row.
-                Both sit ABOVE the gauge, so it is never covered. */}
-            {isGod ? (
-              // Talk grows an info mark when the OpenAI key is missing, so this
-              // row can hold three things instead of two. `overflow: hidden` is
-              // the guard: the toggle's label shrinks first (it has minWidth:0),
-              // and if it still does not fit, the row clips INSIDE the card
-              // instead of spilling over its border.
-              <div
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  minWidth: 0, overflow: 'hidden'
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <RealtimeMichaelToggle />
-                <CostHud compact />
-              </div>
-            ) : (
+            {/* Workers: the private note row, ABOVE the gauge so it is never covered. */}
+            {!isGod && (
               <div
                 onClick={(e) => e.stopPropagation()}
                 style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, minHeight: 14 }}

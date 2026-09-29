@@ -8,7 +8,7 @@
 armadas: o Feitor despacha, as naus partem, e tudo se regista.*
 
 <p>
-  <em>Electron · React · TypeScript · Pixi.js · xterm.js · node-pty</em>
+  <em>Electron · React · TypeScript · Godot · xterm.js · node-pty</em>
 </p>
 
 </div>
@@ -19,9 +19,11 @@ armadas: o Feitor despacha, as naus partem, e tudo se regista.*
 
 Um *fork* português do [**Munder Difflin**](https://github.com/chaitanyagiri/munder-difflin),
 de Chaitanya Giri — um harness multi-agente que envolve as CLIs de código que já usas
-(Claude Code, Codex, OpenCode, Crush, Gemini, Qwen e outras) como avatares a trabalhar
-num piso partilhado, com um orquestrador a despachar trabalho e a escalar-te o que
-interessa.
+como avatares a trabalhar num piso partilhado, com um orquestrador a despachar trabalho
+e a escalar-te o que interessa.
+
+Este fork suporta três motores: **Claude Code**, **Codex** (ChatGPT) e **OpenCode** para
+modelos locais (LM Studio, Ollama, vLLM ou outro servidor compatível com OpenAI).
 
 O upstream é uma paródia do *The Office*. Este fork troca-a pela **Casa da Índia**, a
 instituição que em Lisboa geria o comércio ultramarino da Coroa — e que era, na prática,
@@ -77,8 +79,9 @@ no reinado de D. Manuel I.
 | **Rui Faleiro** | m. c.1523 | dados e cálculo |
 | **D. Leonor de Viseu** | 1458–1525 | políticas e aprovações |
 
-Os retratos são desenhados **proceduralmente**, em código, a 18×28 píxeis — não há PNG
-nenhum, e portanto não há arte licenciada. Ver `scene/office/casadaindia/`.
+As personagens são modelos procedurais do mundo em Godot (`godot/casa-da-india`), e os
+retratos são renderizados a partir deles — não há arte licenciada. O elenco vive em
+`src/renderer/src/elenco/`.
 
 ### O que este fork não faz
 
@@ -112,14 +115,14 @@ incluindo os que não se podem apontar a um servidor local. Controla-se por
 ### Amália
 
 O [Amália](https://ia.gov.pt) (9B, aberto, PT-PT) serve-se localmente por LM Studio, Ollama
-ou vLLM, e liga-se em **Definições → AI Engines** como *endpoint* local do OpenCode, do
-Crush ou do pi.dev. É configuração, não código.
+ou vLLM, e liga-se em **Definições → Agentes e modelos** como ligação local, que o OpenCode
+usa. É configuração, não código.
 
 **O aviso que interessa:** o Amália não foi treinado como agente de código. Esses motores
 correm ciclos de ferramentas de várias voltas (ler → editar → correr → observar), e um
 modelo de 9B tende a falhar esse ciclo de forma suja — chamadas mal formadas, ciclos, ou
-conteúdo de ficheiros inventado. A lista de modelos locais do próprio upstream
-(`shared/ossModels.ts`) começa nos **20B**.
+conteúdo de ficheiros inventado. A lista de modelos locais do próprio upstream começava
+nos **20B**.
 
 Dá-lhe antes o que ele faz bem, que é a língua: relatórios e PRs (o papel do Caminha),
 tradução, e condensação de memória. A tradução completa de `pt-PT.json` neste repositório
@@ -134,8 +137,6 @@ npm install          # o postinstall faz electron-rebuild — precisa das Xcode 
 npm run dev
 ```
 
-Depois, em **Definições → Office Theme**, escolhe **Casa da Índia**.
-
 ```bash
 npm run typecheck    # tsconfig.node + tsconfig.web
 npm run test:focused # node --test test/*.test.cjs
@@ -146,19 +147,15 @@ npm run build
 
 Este projeto é um fork de **[Munder Difflin](https://github.com/chaitanyagiri/munder-difflin)**,
 de **Chaitanya Giri**, sob licença MIT. O trabalho difícil — o harness, o protocolo do
-enxame, a cena Pixi, o sistema de temas, a camada i18n — é dele. Aqui mudou-se o tema, o
-elenco e a língua.
+enxame, a camada i18n — é dele. Aqui mudou-se o tema, o elenco, a língua e o mundo, que
+passou a ser em Godot.
 
 - **Código:** MIT. Ver [`LICENSE`](./LICENSE), que se mantém intacto, com o aviso de
   direitos de autor do autor original.
-- **Pixel art:** os tilesets e mapas em `src/renderer/src/assets/` são *Modern Interiors*
-  do **[LimeZu](https://limezu.itch.io/)**, com licença própria que **exige crédito**. Ver
-  [`ATTRIBUTION.md`](./src/renderer/src/assets/ATTRIBUTION.md), que também se mantém intacto.
-- **Retratos:** procedurais, código deste projeto, cobertos pela MIT.
+- **Arte:** o mundo e os retratos são procedurais, código deste projeto, cobertos pela MIT.
+  Versões anteriores usavam tilesets *Modern Interiors* do **[LimeZu](https://limezu.itch.io/)**;
+  já não são distribuídos. Ver [`ATTRIBUTION.md`](./src/renderer/src/assets/ATTRIBUTION.md).
 - **Figuras históricas:** domínio público.
-- O identificador de manifesto `munder-difflin/hire@1` **não foi renomeado**: é um formato
-  de interoperabilidade, e mudá-lo rejeitaria todos os manifestos partilhados por
-  utilizadores do upstream.
 
 ## Sobre o registo
 

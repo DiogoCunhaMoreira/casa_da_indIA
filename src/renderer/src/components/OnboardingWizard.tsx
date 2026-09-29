@@ -8,14 +8,14 @@ import { Icon, type IconName } from './Icon';
 import { SpritePortrait } from './SpritePortrait';
 import { ProviderLogo } from './ProviderLogo';
 import { AGENT_PROVIDER_PRESETS, modelsForProvider, type AgentProvider, type HarnessConfig } from '@/store/config';
-import { canReceiveInbox, providerPreset } from '@shared/agentProvider';
+import { providerPreset } from '@shared/agentProvider';
 import {
   classifyEngineAvailability, engineAvailabilityBadge, engineBlocksOnboarding
 } from '@shared/engineAvailability';
 import type { ToolStatus } from '@shared/toolCatalog';
 import { useResolvedGodName } from '@/hooks/useResolvedGodName';
 import { useStore } from '@/store/store';
-import { godCharacter } from '@/scene/office/themeRegistry';
+import { godCharacter } from '@/elenco';
 
 export interface OnboardingWizardProps {
   onComplete: (config: HarnessConfig) => void;
@@ -70,25 +70,15 @@ const FEATURES: Feature[] = [
     descKey: 'onboarding.welcome.features.guardrails.desc',
     descPlainKey: 'onboarding.welcome.features.guardrails.descPlain',
     tint: 'var(--cth-coral-light)', edge: 'var(--cth-coral)'
-  },
-  {
-    icon: 'sparkle',
-    labelKey: 'onboarding.welcome.features.hires.label',
-    descKey: 'onboarding.welcome.features.hires.desc',
-    descPlainKey: 'onboarding.welcome.features.hires.descPlain',
-    tint: 'var(--cth-peach-light)', edge: 'var(--cth-peach)'
   }
 ];
 
 // One-liner of what each engine is, shown under its row on the orchestrator step
 // so a non-technical user knows what they're picking (item 3).
-const PROVIDER_BLURB_KEYS: Partial<Record<AgentProvider, string>> = {
-  gemini: 'onboarding.providerBlurb.gemini',
+const PROVIDER_BLURB_KEYS: Record<AgentProvider, string> = {
   claude: 'onboarding.providerBlurb.claude',
   codex: 'onboarding.providerBlurb.codex',
-  antigravity: 'onboarding.providerBlurb.antigravity',
-  qwen: 'onboarding.providerBlurb.qwen',
-  cursor: 'onboarding.providerBlurb.cursor'
+  opencode: 'onboarding.providerBlurb.opencode'
 };
 
 export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
@@ -108,9 +98,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [home, setHome] = useState<string>('');
   const [repos, setRepos] = useState<string[]>([]);
   const [autoMode, setAutoMode] = useState<boolean>(true);
-  // Anonymous usage stats (TELEMETRY.md). Default ON (opt-out); persisted by
-  // finish() so unchecking before finishing means nothing is ever sent.
-  const [shareStats, setShareStats] = useState<boolean>(true);
   const [godProvider, setGodProvider] = useState<AgentProvider>('claude');
   const [godModel, setGodModel] = useState<string | undefined>(
     providerPreset('claude').recommendedOrchestratorModel
@@ -219,8 +206,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       registeredRepos: repos,
       autoMode,
       godProvider,
-      godModel,
-      telemetryEnabled: shareStats
+      godModel
     });
     setBusy(false);
     onComplete(next);
@@ -408,7 +394,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {AGENT_PROVIDER_PRESETS.filter((p) => canReceiveInbox(p.id)).map((p) => {
+                  {AGENT_PROVIDER_PRESETS.map((p) => {
                     const sel = godProvider === p.id;
                     return (
                       <label key={p.id} style={{
@@ -631,16 +617,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   tint="var(--cth-sky-light)"
                   edge="var(--cth-sky)"
                   onChange={toggleOpenAtLogin}
-                />
-
-                <ToggleRow
-                  icon="info"
-                  label={t('onboarding.permissions.shareStats')}
-                  desc={t('onboarding.permissions.shareStatsDesc')}
-                  on={shareStats}
-                  tint="var(--cth-lemon-light)"
-                  edge="var(--cth-lemon)"
-                  onChange={() => setShareStats(!shareStats)}
                 />
 
                 {/* LEVER 4 "— instruction-only: macOS won't let the app flip Energy, so we deep-link the pane. */}

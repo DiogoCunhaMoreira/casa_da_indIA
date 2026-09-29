@@ -2,7 +2,7 @@
  * Broadcast fan-out target selection.
  *
  * Kept as a pure function (and out of `hive.ts`) so the rule is testable on its
- * own, the way `queueDelivery` / `codexRemote` are.
+ * own, the way `queueDelivery` is.
  */
 
 /** The subset of a registry agent that fan-out actually looks at. */

@@ -37,7 +37,7 @@ export function buildWorkerLaunch(opts: {
   // would mean nothing to it (an earlier hardcoded-claude version left every
   // non-claude worker stalling; review caught it). An explicit stance in the
   // request still wins: the flag's leading token already present as a TOKEN
-  // (not substring — copilot's flag starts with `-s`) means the request chose.
+  // (not substring) means the request chose.
   const provider = inferAgentProvider(command, opts.requestProvider);
   const autoFlag = opts.autoMode ? autoModeFlagForProvider(provider) : '';
   if (autoFlag && !hasAutoModeStance(tokenizeCommand(command), provider)) {

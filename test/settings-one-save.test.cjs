@@ -37,7 +37,7 @@ test('the one writer is saveAll, and it sends a single merged patch', () => {
 test('toggles stage their change instead of writing it', () => {
   // The specific toggles that used to persist the instant you clicked them.
   for (const key of ['strongKeepalive', 'autoMode', 'orchestratorMaySpawn',
-                     'semanticMemory', 'autoUpdate', 'telemetryEnabled']) {
+                     'semanticMemory', 'autoUpdate']) {
     const re = new RegExp(`stage\\(\\{ ${key}:`);
     assert.match(MODAL, re, `${key} is not staged`);
   }
@@ -62,20 +62,6 @@ test('the footer offers Save, and it is the only Save left in the modal', () => 
 
 // --- the two deliberate exceptions ------------------------------------------
 
-test('API keys still save immediately: there is no staged value to hold', () => {
-  // The broker is write-only — nothing can read a key back to diff it — so a
-  // key cannot participate in a staged form.
-  const engines = read('src/renderer/src/components/AiEnginesSettings.tsx');
-  assert.match(engines, /saveKey\(/, 'the per-provider key save was removed');
-  assert.match(MODAL, /saveOpenAiVoiceKey/, 'the voice key save was folded into saveAll');
-});
-
-test('Free Flow still saves immediately: it arms a global hotkey', () => {
-  // Staging it would leave main's hotkey and the checkbox disagreeing until
-  // someone pressed Save.
-  assert.match(MODAL, /window\.cth\.freeflowSetConfig\(/, 'freeflow no longer persists on its own');
-});
-
 // --- A2: Connections tidying -------------------------------------------------
 
 test('the section heading is defined once, not written out seventeen times', () => {
@@ -84,16 +70,3 @@ test('the section heading is defined once, not written out seventeen times', () 
   assert.equal(inline.length, 1, `${inline.length} inline copies remain — only the const should define it`);
 });
 
-test('the divider between Connections sections is defined once too', () => {
-  assert.match(MODAL, /const sectionRule = \{/);
-  const inline = MODAL.match(/\{\{ height: 2, background: 'var\(--cth-ink-300\)' \}\}/g) ?? [];
-  assert.equal(inline.length, 0, 'an inline divider survived the extraction');
-});
-
-test('no integration was removed from Connections', () => {
-  // The founder was explicit: nothing is deleted from this tab.
-  for (const key of ['settings.connections.slack', 'settings.connections.webhooks']) {
-    assert.ok(MODAL.includes(key), `${key} vanished from the Connections tab`);
-  }
-  assert.match(MODAL, /slackStart|slackStop/, 'the Slack lifecycle controls are gone');
-});

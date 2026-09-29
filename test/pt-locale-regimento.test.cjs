@@ -82,7 +82,7 @@ test('pt-PT is registered in every place i18n needs it', () => {
   const src = read('src/renderer/src/i18n/index.ts');
   assert.match(src, /import ptPT from '\.\/locales\/pt-PT\.json'/, 'not imported');
   assert.match(src, /'pt-PT': \{ translation: ptPT \}/, 'not in resources');
-  assert.match(src, /supportedLngs: \[[^\]]*'pt-PT'/, 'not in supportedLngs');
+  assert.match(src, /supportedLngs: SUPPORTED/, 'supportedLngs is not derived from LANGUAGES');
   assert.match(src, /code: 'pt-PT'/, 'not in the LANGUAGES picker');
 });
 

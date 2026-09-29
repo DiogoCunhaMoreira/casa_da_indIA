@@ -10,18 +10,13 @@ test('one engine default and one option per identifier, even with duplicate cata
   ], undefined, 'Predefinição'), [{id:'',label:'Predefinição'}, {id:'qwen',label:'Qwen'}]);
 });
 
-test('keeps a saved local model selected without mixing in unconfigured local examples', () => {
+test('keeps a saved local model selected even when it is not in the catalog', () => {
   const slug = 'local-123/qwen/qwen3.5-9b';
-  const options = agentModelOptions([
-    {label:'default'}, {id:'local/llama3',label:'Example local'},
-    {id:'openai/local',label:'Example proxy'}, {id:'remote/model',label:'Remote'}
-  ], slug, 'Default');
+  const options = agentModelOptions([{label:'default'}, {id:'remote/model',label:'Remote'}], slug, 'Default');
   assert.deepEqual(options.map(o=>o.id), ['', 'remote/model', slug]);
 });
 
-test('preserves existing legacy and uncatalogued models rather than silently changing them', () => {
-  for (const current of ['local/llama3', 'openai/local', 'org/unlisted-model']) {
-    const options = agentModelOptions([{id:'local/llama3',label:'Legacy'}],current,'Default');
-    assert.equal(options.filter(option=>option.id===current).length,1);
-  }
+test('preserves uncatalogued models rather than silently changing them', () => {
+  const options = agentModelOptions([{id:'known',label:'Known'}],'org/unlisted-model','Default');
+  assert.equal(options.filter(option=>option.id==='org/unlisted-model').length,1);
 });

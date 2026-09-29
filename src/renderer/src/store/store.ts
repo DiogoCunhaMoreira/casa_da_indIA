@@ -1,17 +1,8 @@
 import { create } from 'zustand';
 import type { AccentColorName } from '@/design/tokens';
-import type { CharacterName } from '@/scene/office/cast';
+import type { CharacterName } from '@/elenco';
 import type { StatusKind } from '@/components/PixelBadge';
 import type { AgentProvider } from '@shared/agentProvider';
-import type { HireManifest } from '@shared/hire';
-import {
-  EMPTY_HIRE_QUEUE,
-  clearHireQueue,
-  enqueueHires,
-  finishCurrentHire,
-  type HireReviewQueue
-} from '@shared/hireQueue';
-import { DEFAULT_ORG_TRIGGER, type OrgTriggerConfig, type WebhookTrigger } from '@shared/triggers';
 import { isCompactionCommand } from '@shared/providerAutomation';
 import { preferredAgentRole } from '@shared/agentRole';
 import { isInboxNudge } from '@shared/hiveNudge';
@@ -69,7 +60,7 @@ export interface Agent {
   /** Incremented by Restart & Continue to remount this agent's xterm without
    * changing its durable PTY/session identity. */
   terminalGeneration?: number;
-  /** the command being run in the PTY (e.g. 'claude' or 'agy') */
+  /** the command being run in the PTY (e.g. 'claude' or 'codex') */
   command?: string;
   /** which agent CLI preset owns this PTY recipe; drives the model picker +
    *  spawn flags. Defaults to 'claude' when unset (legacy agents / inferred
@@ -102,11 +93,6 @@ export interface Agent {
    *  (in the store's `archivedAgents` list + the hive registry) but flagged and
    *  kept off the floor; only live-PTY agents are 'active'. */
   archived?: boolean;
-  /** Hive protocol to TYPE into this agent's TUI as its first turn, set at spawn
-   *  for `seedDelivery:'type-into-tui'` providers (Crush) whose bare TUI rejects a
-   *  positional seed. useHive types it once after boot-grace then clears it.
-   *  Ephemeral spawn state — not persisted. (ondev-b) */
-  seedPrompt?: string;
 }
 
 export interface FeedEntry {
@@ -123,12 +109,9 @@ export interface QueuedMessage {
   text: string;
   /** epoch ms the message was queued — drives ordering and the "queued 2m ago" hint */
   ts: number;
-  /** Slack-originated: thread coordinates so the office can reply in-thread. */
-  slack?: { channel: string; thread_ts: string };
   /** Optional override for the text actually typed into the agent's PTY. When set,
    *  the drain submits THIS instead of `text`, while UI/card surfaces keep using
-   *  `text`. Used by Slack-origin work to carry the autonomy preamble to god's
-   *  prompt without polluting the human-readable kanban card title (= raw `text`). */
+   *  `text`. */
   instruction?: string;
   /** User clicked "send now" while floor-wide auto-delivery was paused. Bypasses
    *  ONLY the pause gate in the drain loop — idle/draft/picker safety still hold,
@@ -259,43 +242,10 @@ interface State {
    *  composer) doesn't eat what the user was typing. */
   drafts: Record<string, string>;
   setDraft: (agentId: string, text: string) => void;
-  /** Mirror of config.freeflowEnabled so the composer can show/hide the Free Flow
-   *  mic button reactively (set by App on config load and by Settings on save). */
-  freeflowEnabled: boolean;
-  setFreeflowEnabled: (on: boolean) => void;
-  /** Mirror of `!!config.groqApiKey` — boolean presence ONLY; the key value never
-   *  enters the store. Lets the composer show the voice button disabled (with a
-   *  "add a Groq key" tooltip) instead of hiding it. Set by App on config load and
-   *  by Settings on save. */
-  hasGroqKey: boolean;
-  setHasGroqKey: (has: boolean) => void;
-  /** Mirror of BYOK OpenAI key presence (boolean only — the key lives in the main
-   *  secret broker, never the store). Gates the Realtime Michael voice toggle the
-   *  way hasGroqKey gates the Free Flow mic. Set by App on load via
-   *  window.cth.realtimeHasOpenAiKey(). */
-  hasOpenAiKey: boolean;
-  setHasOpenAiKey: (has: boolean) => void;
-  /** Mirror of config.webhookTriggers — the inbound HTTP endpoints. Webhooks are
-   *  editable from BOTH Settings → Connections and the Triggers tab, so neither
-   *  surface keeps its own copy: both render off this list and both call the
-   *  setter after persisting, and the other one repaints without a refetch.
-   *  Seeded by App from getConfig() (main deep-fills the field on every read).
-   *
-   *  Holds per-endpoint secrets, because a secret is what the UI has to show for
-   *  reveal/copy to mean anything. Renderer memory only — never persisted to
-   *  localStorage or the roster file, never logged, masked in every surface. */
-  webhookTriggers: WebhookTrigger[];
-  setWebhookTriggers: (list: WebhookTrigger[]) => void;
-  /** Mirror of config.orgTrigger (peer messaging between teammates' clone nodes).
-   *  Same two-way contract as `webhookTriggers`, and the same handling for
-   *  `apiKey` — in memory for the two surfaces that display it masked, nowhere
-   *  else. Configuration only for now: no transport reads the key yet. */
-  orgTrigger: OrgTriggerConfig;
-  setOrgTrigger: (cfg: OrgTriggerConfig) => void;
   /** Park a message for an agent. Returns nothing; the flush loop delivers it.
    *  `meta.instruction`, when set, is what gets typed into the PTY instead of
    *  `text` (UI/card surfaces still show `text`). */
-    enqueueMessage: (agentId: string, text: string, meta?: { slack?: { channel: string; thread_ts: string }; instruction?: string; precondition?: QueuedMessage['precondition']; compactUsed?: number }) => void;
+    enqueueMessage: (agentId: string, text: string, meta?: { instruction?: string; precondition?: QueuedMessage['precondition']; compactUsed?: number }) => void;
   /** Drop a single queued message (user removed it, or it was just delivered). */
   removeQueuedMessage: (agentId: string, messageId: string) => void;
   /** "Send now" while floor auto-delivery is paused: marks the message manual
@@ -304,11 +254,6 @@ interface State {
   /** Clear an agent's entire pending queue. */
   clearQueue: (agentId: string) => void;
   setAddAgentOpen: (open: boolean) => void;
-  /** Validated manifests waiting for one-at-a-time human review. */
-  hireQueue: HireReviewQueue;
-  enqueuePendingHires: (manifests: readonly HireManifest[]) => void;
-  finishPendingHire: () => void;
-  clearPendingHires: () => void;
   setFullscreen: (id: string | null) => void;
   /** Move focus mode WITHOUT touching the preference. For the paths that re-home
    *  a focused agent that went away: the app is following the user, not being
@@ -351,7 +296,7 @@ const LS_FOCUS_MODE = 'cth.prefersFocusMode';
 // Fields that are large or transient — not worth persisting across reloads.
 // contextTokens/contextLimit describe a LIVE session; persisting them showed a
 // dead session's context gauge after a restart until the poll caught up.
-type PersistedAgent = Omit<Agent, 'recentAssistantText' | 'recentTextTs' | 'blockReason' | 'contextTokens' | 'contextLimit' | 'seedPrompt'>;
+type PersistedAgent = Omit<Agent, 'recentAssistantText' | 'recentTextTs' | 'blockReason' | 'contextTokens' | 'contextLimit'>;
 
 // ─── The roster mirror ──────────────────────────────────────────────────────
 //
@@ -438,8 +383,8 @@ try {
 } catch { /* not a browser context (unit tests) */ }
 
 function slimAgents(agents: Agent[]): PersistedAgent[] {
-  return agents.map(({ recentAssistantText, recentTextTs, blockReason, contextTokens, contextLimit, seedPrompt, ...rest }) => {
-    void recentAssistantText; void recentTextTs; void blockReason; void contextTokens; void contextLimit; void seedPrompt;
+  return agents.map(({ recentAssistantText, recentTextTs, blockReason, contextTokens, contextLimit, ...rest }) => {
+    void recentAssistantText; void recentTextTs; void blockReason; void contextTokens; void contextLimit;
     return rest;
   });
 }
@@ -538,8 +483,8 @@ function persistRestorable(restorable: Agent[]): void {
   // Keeps contextTokens/contextLimit, unlike the other two: a restorable entry
   // is a spawn recipe for a session that has not been re-entered yet, so its
   // last known context size is still meaningful.
-  const slim: PersistedAgent[] = restorable.map(({ recentAssistantText, recentTextTs, blockReason, seedPrompt, ...rest }) => {
-    void recentAssistantText; void recentTextTs; void blockReason; void seedPrompt;
+  const slim: PersistedAgent[] = restorable.map(({ recentAssistantText, recentTextTs, blockReason, ...rest }) => {
+    void recentAssistantText; void recentTextTs; void blockReason;
     return rest;
   });
   try {
@@ -869,19 +814,6 @@ export const useStore = create<State>((set, get) => ({
   drafts: {},
   setDraft: (agentId, text) =>
     set((s) => ({ drafts: { ...s.drafts, [agentId]: text } })),
-  freeflowEnabled: false,
-  setFreeflowEnabled: (on) => set({ freeflowEnabled: on }),
-  hasGroqKey: false,
-  setHasGroqKey: (has) => set({ hasGroqKey: has }),
-  hasOpenAiKey: false,
-  setHasOpenAiKey: (has) => set({ hasOpenAiKey: has }),
-  webhookTriggers: [],
-  setWebhookTriggers: (list) => set({ webhookTriggers: list }),
-  // A copy, not the shared DEFAULT_ORG_TRIGGER instance — main takes the same
-  // care (withTriggerDefaults), and handing the module-level default out is how
-  // one careless mutation rewrites the default for everyone.
-  orgTrigger: { ...DEFAULT_ORG_TRIGGER },
-  setOrgTrigger: (cfg) => set({ orgTrigger: cfg }),
   enqueueMessage: (agentId, text, meta) =>
     set((s) => {
       const trimmed = text.trim();
@@ -915,7 +847,6 @@ export const useStore = create<State>((set, get) => ({
       }
             const msg: QueuedMessage = {
         id: newQueuedId(), text: trimmed, ts: Date.now(),
-        ...(meta?.slack ? { slack: meta.slack } : {}),
         ...(meta?.instruction ? { instruction: meta.instruction } : {}),
         ...(meta?.precondition ? { precondition: meta.precondition } : {}),
         ...(meta?.compactUsed !== undefined ? { compactUsed: meta.compactUsed } : {})
@@ -980,16 +911,6 @@ export const useStore = create<State>((set, get) => ({
       return { agents, feeds, selectedId, restorableAgents, fullscreenAgentId };
     }),
   setAddAgentOpen: (open) => set({ addAgentOpen: open }),
-  hireQueue: EMPTY_HIRE_QUEUE,
-  enqueuePendingHires: (manifests) => set((s) => ({
-    hireQueue: enqueueHires(s.hireQueue, manifests)
-  })),
-  finishPendingHire: () => set((s) => ({
-    hireQueue: finishCurrentHire(s.hireQueue)
-  })),
-  clearPendingHires: () => set((s) => ({
-    hireQueue: clearHireQueue(s.hireQueue)
-  })),
   setFullscreen: (id) => {
     // Entering focus mode makes it the default view; leaving it clears that.
     // Only an explicit toggle writes the preference, so an agent closing under
@@ -1030,12 +951,4 @@ export const useStore = create<State>((set, get) => ({
 
 export function selectedAgent(s: State): Agent | undefined {
   return s.agents.find(a => a.id === s.selectedId);
-}
-
-/** Whether the Command Center's Trigger History tab has anything to be about
- *  yet: an organisation key is set, or at least one webhook exists. Derived from
- *  the two mirrors rather than stored beside them, so it cannot fall out of step
- *  with the thing it describes. Use as `useStore(triggerHistoryVisible)`. */
-export function triggerHistoryVisible(s: State): boolean {
-  return s.webhookTriggers.length > 0 || s.orgTrigger.apiKey.trim() !== '';
 }

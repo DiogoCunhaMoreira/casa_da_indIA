@@ -1,6 +1,10 @@
 import { useWorldScenario, visualCharacter, visualPerson } from '@/scene/godot/scenarios';
 import { useStore } from '@/store/store';
 
+/** Native portrait size in px (width × height = 18 × 28), before scaling. */
+export const PORTRAIT_W = 18;
+export const PORTRAIT_H = 28;
+
 export interface SpritePortraitProps {
   character: string;
   agentId?: string;
@@ -20,8 +24,8 @@ export function SpritePortrait({ character, agentId, scale = 2, background = 'tr
   return <img
     src={new URL(`portraits/${person.id}.png`, document.baseURI).href}
     alt={person.nome}
-    width={Math.round(18 * scale)} height={Math.round(28 * scale)}
+    width={Math.round(PORTRAIT_W * scale)} height={Math.round(PORTRAIT_H * scale)}
     draggable={false}
-    style={{ width: Math.round(18 * scale), height: Math.round(28 * scale), objectFit: 'contain', background, flexShrink: 0 }}
+    style={{ width: Math.round(PORTRAIT_W * scale), height: Math.round(PORTRAIT_H * scale), objectFit: 'contain', background, flexShrink: 0 }}
   />;
 }
