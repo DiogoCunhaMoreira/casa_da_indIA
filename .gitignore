@@ -37,6 +37,6 @@ tools/mapgen/__pycache__/
 # import_pecas.py volta a buscá-los. É cache, não é fonte.
 tools/mapgen/art/.cache/
 
-# Reproducible Godot Web export and official templates
+# Templates oficiais do Godot. A exportação (src/renderer/public/godot) vai no
+# repositório, para quem clona não precisar do Godot.
 .cache/godot/
-src/renderer/public/godot/

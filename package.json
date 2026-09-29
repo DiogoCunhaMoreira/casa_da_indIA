@@ -4,6 +4,9 @@
   "private": true,
   "description": "casa_da_indIA — um enxame local de agentes de IA, à maneira da Casa da Índia: o Feitor despacha, as naus partem, e tudo se regista. Fork português de Munder Difflin.",
   "main": "out/main/index.js",
+  "engines": {
+    "node": ">=22"
+  },
   "author": "Diogo Cunha Moreira",
   "homepage": "https://github.com/DiogoCunhaMoreira/casa_da_indIA",
   "repository": {
@@ -15,7 +18,7 @@
     "build": "npm run godot:export && electron-vite build && npm run copy:main-assets",
     "copy:main-assets": "node tools/copy-main-assets.cjs",
     "preview": "electron-vite preview",
-    "postinstall": "electron-rebuild -f && node tools/ensure-pty-perms.cjs && node tools/patch-node-pty-conpty.cjs",
+    "postinstall": "electron-rebuild -f --only better-sqlite3 && node tools/ensure-pty-perms.cjs && node tools/patch-node-pty-conpty.cjs",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
@@ -38,7 +41,7 @@
     "@xterm/addon-unicode11": "^0.9.0",
     "@xterm/addon-webgl": "^0.19.0",
     "@xterm/xterm": "^5.5.0",
-    "better-sqlite3": "^11.10.0",
+    "better-sqlite3": "^12.11.1",
     "commit-graph": "^2.4.0",
     "electron-updater": "^6.8.9",
     "i18next": "^26.3.6",

@@ -309,29 +309,8 @@ tradução, e condensação de memória. A tradução da interface foi feita por
 
 ## Começar
 
-### 1. O que precisas de ter instalado
-
-- **Node 20** e **git**.
-- **Ferramentas de compilação**, porque há dependências nativas: no macOS, as Xcode
-  Command Line Tools (`xcode-select --install`); no Linux, `build-essential` e `python3`;
-  no Windows, as Visual Studio Build Tools com C++.
-- **Godot 4.6.2** — tem de ser esta versão. No macOS é encontrado sozinho em
-  `/Applications` ou em `Transferências`; noutro sítio, indica-o com `GODOT_BIN`.
-- Pelo menos um motor: **Claude Code**, **Codex** ou **OpenCode**. Se não tiveres nenhum,
-  a aplicação oferece-se para o instalar.
-
-### 2. Os modelos de exportação do Godot
-
-O mundo 3D corre dentro da aplicação, por isso o Godot precisa dos modelos de exportação
-para a Web (só uma vez):
-
-1. Descarrega `Godot_v4.6.2-stable_export_templates.tpz` das
-   [versões oficiais do Godot](https://github.com/godotengine/godot-builds/releases/tag/4.6.2-stable).
-2. É um zip com outra extensão. Tira de lá `templates/web_nothreads_release.zip` e
-   `templates/web_nothreads_debug.zip` e põe os dois em `.cache/godot/`, na raiz do
-   repositório (sem a pasta `templates`).
-
-### 3. Correr
+Só precisas do **[Node 22](https://nodejs.org) ou mais recente** e do **git**, no Mac, no
+Windows ou no Linux:
 
 ```bash
 git clone https://github.com/DiogoCunhaMoreira/casa_da_indIA.git
@@ -340,17 +319,24 @@ npm install
 npm run dev
 ```
 
-Se o Godot não estiver num dos sítios habituais:
-
-```bash
-GODOT_BIN=/caminho/para/o/Godot npm run dev
-```
-
 Na primeira vez abre a configuração inicial: escolhes a pasta onde a Casa guarda os
-dados, o motor do Feitor e os teus projetos.
+dados, o motor do Feitor e os teus projetos. Se ainda não tiveres nenhum motor
+(**Claude Code**, **Codex** ou **OpenCode**), a aplicação oferece-se para o instalar.
 
-> **Sem Godot?** `npx electron-vite dev` abre a aplicação sem exportar o mundo. Os agentes,
-> os terminais e o resto funcionam; só o cenário 3D fica com um aviso de que não carregou.
+### Para mexer no mundo 3D
+
+O mundo já vem exportado no repositório, por isso o Godot só é preciso a quem o altera.
+Nesse caso:
+
+1. Instala o **Godot 4.6.2** — tem de ser esta versão. No macOS é encontrado sozinho em
+   `/Applications` ou em `Transferências`; noutro sítio, indica-o com `GODOT_BIN`.
+2. Descarrega `Godot_v4.6.2-stable_export_templates.tpz` das
+   [versões oficiais do Godot](https://github.com/godotengine/godot-builds/releases/tag/4.6.2-stable).
+   É um zip com outra extensão: tira de lá `web_nothreads_release.zip` e
+   `web_nothreads_debug.zip` e põe os dois em `.cache/godot/`.
+
+A partir daí, o `npm run dev` volta a exportar o mundo sempre que arranca. Faz commit da
+pasta `src/renderer/public/godot` junto com as alterações ao mundo.
 
 ### Gerar a aplicação instalável
 
