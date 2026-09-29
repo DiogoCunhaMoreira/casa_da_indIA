@@ -11,26 +11,193 @@ armadas: o Feitor despacha, as naus partem, e tudo se regista.*
   <em>Electron · React · TypeScript · Godot · xterm.js · node-pty</em>
 </p>
 
+<p>
+  <a href="#o-que-é">O que é</a> ·
+  <a href="#como-funciona">Como funciona</a> ·
+  <a href="#funcionalidades">Funcionalidades</a> ·
+  <a href="#o-elenco">O elenco</a> ·
+  <a href="#português">Português</a> ·
+  <a href="#começar">Começar</a>
+</p>
+
 </div>
 
 ---
 
 ## O que é
 
-Um *fork* português do [**Munder Difflin**](https://github.com/chaitanyagiri/munder-difflin),
-de Chaitanya Giri — um harness multi-agente que envolve as CLIs de código que já usas
-como avatares a trabalhar num piso partilhado, com um orquestrador a despachar trabalho
-e a escalar-te o que interessa.
+Uma aplicação de secretária que transforma as CLIs de código que já usas — **Claude Code**,
+**Codex** e **OpenCode** — numa equipa. Cada agente é um processo real num terminal real,
+com a sua pasta, o seu modelo e a sua memória. Por cima deles, um orquestrador — o
+**Feitor** — reparte o trabalho, responde ao que é rotina e só te chama a ti para o que
+interessa.
 
-Este fork suporta três motores: **Claude Code**, **Codex** (ChatGPT) e **OpenCode** para
-modelos locais (LM Studio, Ollama, vLLM ou outro servidor compatível com OpenAI).
+Tu vês tudo: os terminais, o quadro de tarefas, as mensagens que os agentes trocam entre
+si, o que custam, e um mundo 3D em Godot onde cada oficial da Casa anda pelas salas
+conforme o que o seu agente está a fazer.
 
-O upstream é uma paródia do *The Office*. Este fork troca-a pela **Casa da Índia**, a
-instituição que em Lisboa geria o comércio ultramarino da Coroa — e que era, na prática,
-um escritório: alfândega, armazém, contabilidade e arquivo. O orquestrador é o **Feitor**,
-que despachava armadas sem nunca embarcar em nenhuma.
+Corre tudo localmente. Não há servidor nosso, nem conta para criar.
+
+É um *fork* português do [**Munder Difflin**](https://github.com/chaitanyagiri/munder-difflin),
+de Chaitanya Giri. O upstream é uma paródia do *The Office*; este troca-a pela **Casa da
+Índia**, a instituição que em Lisboa geria o comércio ultramarino da Coroa — e que era, na
+prática, um escritório: alfândega, armazém, contabilidade e arquivo.
 
 E o nome é o que é: **Casa da Ind**·**IA**.
+
+## Como funciona
+
+```
+                         ┌──────────────┐
+                         │      Tu      │  Vedor da Fazenda
+                         └──────▲───────┘
+                                │  só o que é crítico
+                         ┌──────┴───────┐
+                         │    Feitor    │  orquestrador
+                         └──────┬───────┘
+                 despacha       │       responde ao rotineiro
+          ┌─────────────┬───────┴─────┬─────────────┐
+          ▼             ▼             ▼             ▼
+      ┌───────┐     ┌───────┐     ┌───────┐     ┌───────┐
+      │  nau  │     │  nau  │     │  nau  │     │  nau  │   agentes (Claude Code,
+      └───┬───┘     └───┬───┘     └───┬───┘     └───┬───┘   Codex, OpenCode)
+          └─────────────┴──────┬──────┴─────────────┘
+                               ▼
+               ┌───────────────────────────────┐
+               │   a colmeia — um repo git     │  inbox/ · outbox/ · memory.md
+               │   local, um único escrivão    │  tarefas · quadro partilhado
+               └───────────────────────────────┘
+```
+
+- **Cada agente escreve só na sua pasta.** As mensagens saem pelo `outbox/` de um e o
+  processo principal entrega-as no `inbox/` de outro. Nenhum ficheiro tem dois escritores.
+- **Só a aplicação faz commits.** Tudo o que a equipa sabe fica num repositório git local,
+  com histórico — o arquivo da Casa. Nenhum agente toca no `.git`.
+- **O ciclo é autónomo.** Quando um agente acaba, um *hook* faz-lhe esvaziar a caixa de
+  entrada antes de parar. Se ficar parado com correio por ler, um vigia acorda-o.
+- **O controlo vai pelos hooks, não pelo teclado.** Bloquear ferramentas, parar ou orientar
+  um agente viaja pelo protocolo de hooks da própria CLI — nada é escrito no terminal dele.
+
+O desenho completo está em [`HIVE.md`](./HIVE.md) e [`SPEC.md`](./SPEC.md).
+
+## Funcionalidades
+
+### ⚓ A armada — os agentes
+
+- **Três motores:** Claude Code, Codex (ChatGPT) e OpenCode — este último para modelos
+  locais em LM Studio, Ollama, vLLM ou qualquer servidor compatível com OpenAI.
+- **Adicionar agente em quatro partes:** identidade (nome, personagem, cor), espaço de
+  trabalho (pasta, isolamento, retomar sessão), motor (fornecedor, modelo, comando) e
+  instruções (descrição e objetivo).
+- **Worktrees isoladas:** um agente pode trabalhar na sua própria *git worktree*, sem pisar
+  os ficheiros dos outros — com as dependências do projeto disponíveis lá dentro.
+- **Mudar de modelo sem perder a conversa:** dentro do mesmo fornecedor, a sessão é
+  retomada.
+- **Restaurar a equipa:** depois de fechares e voltares a abrir, **Reiniciar e continuar**
+  levanta todos os agentes em paralelo onde tinham ficado.
+- **Nomes editáveis** e uma nota privada por agente, só para ti.
+
+### 🧭 O Feitor — o orquestrador
+
+- Recebe o trabalho, reparte-o pelos agentes que já existem e resolve sozinho o que é
+  rotina: esclarecimentos, pedidos de dados, ajustes ao plano.
+- **Contrata trabalhadores efémeros** para uma única tarefa: arrancam, fazem, reportam e
+  encerram. Estão todos à vista no separador **Trabalhadores**.
+- **Escala-te o que é crítico** — operações destrutivas, gastos, mudanças de âmbito,
+  conflitos sem solução — no separador **Perguntas**, com markdown, respostas encadeadas e
+  aviso de quando uma pergunta está a bloquear outras tarefas.
+- **Pausa 1:1:** diz ao Feitor que deixe um agente em paz enquanto falas com ele.
+- O motor do Feitor é escolhido por ti, como o de qualquer outro agente.
+
+### 📜 Coordenação — a colmeia
+
+- **Quadro de tarefas** em quatro colunas — *Por fazer*, *Em curso*, *Bloqueadas*,
+  *Concluídas* — com o id de cada cartão (`bmt-12`) e a vista de detalhe com o histórico de
+  perguntas e respostas.
+- **Mensagens entre agentes**, agrupadas em conversas, para leres e responderes.
+- **Equipa:** o estado de cada agente num relance — *a pensar*, *a trabalhar*, *à espera*,
+  *precisa de ti*, *a compactar*, *em ciclo* — com a ocupação do contexto.
+- **Fila de mensagens:** escreve enquanto o agente está ocupado e a mensagem sai quando ele
+  puder recebê-la. Aceita anexos (ficheiros e imagens), e mostra porque está retida.
+
+### 🛡️ Controlo e segurança
+
+- **Bloquear ferramentas:** o agente continua a pensar e a falar contigo, mas não lê,
+  escreve nem executa nada. Imediato e reversível.
+- **Parar após este passo:** deixa acabar o que está a fazer e para, com a sessão intacta.
+- **Orientar:** envia uma nota que lhe chega como contexto na vez seguinte, sem o
+  interromper.
+- **Pausar a entrega** de mensagens a toda a equipa com um clique.
+- **Disjuntor:** deteta agentes em ciclo ou a gastar de mais e sobe uma escada —
+  corrigir → restringir → parar. Configurável por inteiro em **Autonomia e limites**.
+- **Limites de tokens por agente**, medidos em trabalho feito e não em contexto em cache.
+- **Servidores MCP por níveis:** os de só leitura vêm ligados; os que escrevem ou pedem
+  credenciais ficam desligados até os ativares tu.
+- **Cofre de segredos local:** os trabalhadores usam integrações REST através de um
+  *proxy* em `127.0.0.1`, sem nunca verem a credencial.
+- **Fecho de expediente:** ao sair, cada agente arruma o trabalho, grava a memória e
+  confirma antes de a porta fechar. Nada fica a meio.
+
+### 🧠 Memória e conhecimento
+
+- **Memória por agente** (`memory.md`), que cada um lê ao arrancar e atualiza ao
+  trabalhar.
+- **Condensação automática:** quando a memória cresce de mais, é reescrita num formato
+  limitado — factos fixos, um resumo recursivo e as secções mais recentes na íntegra.
+- **Memória semântica partilhada:** pesquisa por significado, não só por palavras exatas.
+- **Grafo de memória:** vê que tópicos cada agente conhece e como as mensagens os ligam.
+- **Grafo de conhecimento:** alimenta a equipa com documentos do teu contexto, que os
+  agentes consultam por pesquisa.
+
+### ⏰ Automações
+
+- **Agendamentos:** envia instruções a um agente ou à equipa inteira a cada *N* minutos,
+  ou a uma hora certa em dias da semana escolhidos (seguro com a mudança de hora).
+- **Regras de contexto:** compacta ou limpa o contexto dos agentes quando passa um
+  intervalo e a ocupação atinge um limiar.
+- **Recupera o que perdeu:** se o computador adormeceu, os agendamentos em falta correm ao
+  acordar e os terminais encravados são revividos.
+
+### 🛠️ As ferramentas de trabalho
+
+- **Terminais a sério** (xterm.js + WebGL): seguem o tema claro/escuro, fazem zoom ao
+  painel inteiro, e todos os caminhos impressos são clicáveis — markdown abre na
+  pré-visualização, código no editor, o resto no Finder.
+- **Modo de foco:** um agente em ecrã completo, com a lista da equipa ao lado.
+- **Arrasta um ficheiro** para um terminal e o caminho entra no prompt.
+- **Editor integrado** (Monaco) por agente, com árvore de ficheiros e pré-visualização de
+  markdown e imagens.
+- **Git:** estado, ramos e histórico de cada projeto, e uma **máquina do tempo** para
+  saltar para um commit anterior e comparar.
+- **Atividade:** uma cascata de chamadas a ferramentas por agente, com tokens frescos,
+  em cache e totais.
+- **Custos** acumulados ao longo da vida da aplicação, com o valor da sessão ao lado.
+- **Competências:** instala e pesquisa *skills* a partir de um catálogo, e vem com as
+  suas — incluindo intervalos de datas (`hoje`, `últimos 7 dias`, `este trimestre`…).
+
+### 🏛️ O mundo
+
+- **A Casa em 3D, feita em Godot:** Gabinete do Feitor, Escrivães, Conselho, Cartografia,
+  Tesouraria, Refeitório e a Planta geral. Tudo procedural — modelos, materiais e
+  personagens gerados em GDScript, sem arte de terceiros.
+- **As personagens vivem o estado dos agentes:** andam pelas salas, sentam-se a trabalhar e
+  mostram balões com o que estão a pensar.
+- **Um segundo cenário, a Tasca:** balcão, sala de mesas, sala reservada, cozinha,
+  despensa e garrafeira, e pátio — com azulejos e inox a condizer.
+- Câmara livre: aproximar, afastar, arrastar, e clicar num oficial para ver quem é e o que
+  está a fazer.
+
+### ✨ Conforto
+
+- **Configuração inicial em quatro passos:** espaço de trabalho, motor do Feitor, os teus
+  repositórios, e permissões (quanto podem os agentes fazer sozinhos, e manter o
+  computador acordado).
+- **Pré-requisitos verificados por ti:** a aplicação vê o que falta e instala o Node e as
+  CLIs dos motores quando não os encontra.
+- **Atualizações automáticas**, do aviso à instalação, com a página de novidades na
+  primeira abertura depois de atualizar.
+- **Notificações** no ambiente de trabalho quando alguém precisa de ti.
+- **Português e inglês**, à escolha em Definições → Geral.
 
 ## Duas coisas que este fork faz de diferente
 
@@ -132,16 +299,31 @@ foi feita por ele.
 
 ## Começar
 
+Precisas de Node, de pelo menos uma das CLIs (`claude`, `codex` ou `opencode`) e, no
+macOS, das Xcode Command Line Tools. O Godot só é preciso para exportar o mundo.
+
 ```bash
 npm install          # o postinstall faz electron-rebuild — precisa das Xcode CLT no macOS
-npm run dev
+npm run dev          # exporta o mundo Godot e abre a aplicação
 ```
 
 ```bash
 npm run typecheck    # tsconfig.node + tsconfig.web
 npm run test:focused # node --test test/*.test.cjs
-npm run build
+npm run build        # exportação Godot + electron-vite
+npm run dist:mac     # empacota (também dist:win e dist:linux)
 ```
+
+### Onde está o quê
+
+| Pasta | O que tem |
+|---|---|
+| `src/main/` | processo principal: PTYs, colmeia, hooks, disjuntor, memória, agendamentos |
+| `src/renderer/` | a interface em React: painéis, terminais, editor, elenco, i18n |
+| `src/shared/` | tipos e regras partilhados, incluindo o regimento |
+| `godot/casa-da-india/` | o mundo 3D — salas, personagens, navegação |
+| `resources/skills/` | as competências que vêm com a aplicação |
+| `test/` | a bateria de testes (`node --test`) |
 
 ## Créditos e licenças
 
