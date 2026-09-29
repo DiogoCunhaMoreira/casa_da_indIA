@@ -2,13 +2,10 @@
 
 # casa_da_indIA
 
-### A Casa da Índia, com naus de código
-
-*Um enxame local de agentes de IA à maneira da casa que, em Lisboa, armava as
-armadas: o Feitor despacha, as naus partem, e tudo se regista.*
+### Harness à portuguesa
 
 <p>
-  <em>Electron · React · TypeScript · Godot · xterm.js · node-pty</em>
+  <em>Claude Code · Codex · OpenCode · Godot</em>
 </p>
 
 <p>
@@ -65,21 +62,14 @@ E o nome é o que é: **Casa da Ind**·**IA**.
           └─────────────┴──────┬──────┴─────────────┘
                                ▼
                ┌───────────────────────────────┐
-               │   a colmeia — um repo git     │  inbox/ · outbox/ · memory.md
-               │   local, um único escrivão    │  tarefas · quadro partilhado
+               │  a colmeia — tarefas, correio │
+               │  e memória, tudo registado    │
                └───────────────────────────────┘
 ```
 
-- **Cada agente escreve só na sua pasta.** As mensagens saem pelo `outbox/` de um e o
-  processo principal entrega-as no `inbox/` de outro. Nenhum ficheiro tem dois escritores.
-- **Só a aplicação faz commits.** Tudo o que a equipa sabe fica num repositório git local,
-  com histórico — o arquivo da Casa. Nenhum agente toca no `.git`.
-- **O ciclo é autónomo.** Quando um agente acaba, um *hook* faz-lhe esvaziar a caixa de
-  entrada antes de parar. Se ficar parado com correio por ler, um vigia acorda-o.
-- **O controlo vai pelos hooks, não pelo teclado.** Bloquear ferramentas, parar ou orientar
-  um agente viaja pelo protocolo de hooks da própria CLI — nada é escrito no terminal dele.
-
-O desenho completo está em [`HIVE.md`](./HIVE.md) e [`SPEC.md`](./SPEC.md).
+Os agentes trabalham sozinhos: quando acabam uma tarefa, vão ver se têm correio antes de
+parar, e se ficarem parados com trabalho por fazer, alguém os acorda. Tudo o que a equipa
+faz fica registado, com histórico.
 
 ## Funcionalidades
 
@@ -91,7 +81,7 @@ O desenho completo está em [`HIVE.md`](./HIVE.md) e [`SPEC.md`](./SPEC.md).
   trabalho (pasta, isolamento, retomar sessão), motor (fornecedor, modelo, comando) e
   instruções (descrição e objetivo).
 - **Worktrees isoladas:** um agente pode trabalhar na sua própria *git worktree*, sem pisar
-  os ficheiros dos outros — com as dependências do projeto disponíveis lá dentro.
+  os ficheiros dos outros.
 - **Mudar de modelo sem perder a conversa:** dentro do mesmo fornecedor, a sessão é
   retomada.
 - **Restaurar a equipa:** depois de fechares e voltares a abrir, **Reiniciar e continuar**
@@ -113,7 +103,7 @@ O desenho completo está em [`HIVE.md`](./HIVE.md) e [`SPEC.md`](./SPEC.md).
 ### 📜 Coordenação — a colmeia
 
 - **Quadro de tarefas** em quatro colunas — *Por fazer*, *Em curso*, *Bloqueadas*,
-  *Concluídas* — com o id de cada cartão (`bmt-12`) e a vista de detalhe com o histórico de
+  *Concluídas* — e a vista de detalhe de cada tarefa, com o histórico de
   perguntas e respostas.
 - **Mensagens entre agentes**, agrupadas em conversas, para leres e responderes.
 - **Equipa:** o estado de cada agente num relance — *a pensar*, *a trabalhar*, *à espera*,
@@ -131,20 +121,20 @@ O desenho completo está em [`HIVE.md`](./HIVE.md) e [`SPEC.md`](./SPEC.md).
 - **Suspender a entrega** de mensagens a toda a equipa com um clique.
 - **Disjuntor:** deteta agentes em ciclo ou a gastar de mais e vai subindo o tom —
   corrigir → restringir → parar. Tudo se ajusta em **Autonomia e limites**.
-- **Limites de tokens por agente**, medidos em trabalho feito e não em contexto em cache.
+- **Limites de tokens por agente.**
 - **Servidores MCP por níveis:** os de só leitura vêm ligados; os que escrevem ou pedem
   credenciais ficam desligados até os ativares tu.
-- **Cofre de segredos local:** os trabalhadores usam integrações REST através de um
-  *proxy* em `127.0.0.1`, sem nunca verem a credencial.
+- **Cofre de segredos:** os agentes usam os serviços que ligaste sem nunca verem as
+  credenciais.
 - **Fecho de expediente:** ao sair, cada agente arruma o trabalho, grava a memória e
   confirma antes de a porta fechar. Nada fica a meio.
 
 ### 🧠 Memória e conhecimento
 
-- **Memória por agente** (`memory.md`), que cada um lê ao arrancar e atualiza ao
+- **Memória por agente**, que cada um lê ao arrancar e atualiza ao
   trabalhar.
-- **Condensação automática:** quando a memória cresce de mais, é reescrita num formato
-  limitado — factos fixos, um resumo recursivo e as secções mais recentes na íntegra.
+- **Condensação automática:** quando a memória cresce de mais, é resumida, sem
+  perder o que importa.
 - **Memória semântica partilhada:** pesquisa por significado, não só por palavras exatas.
 - **Grafo de memória:** vê que tópicos cada agente conhece e como as mensagens os ligam.
 - **Grafo de conhecimento:** alimenta a equipa com documentos do teu contexto, que os
@@ -153,8 +143,7 @@ O desenho completo está em [`HIVE.md`](./HIVE.md) e [`SPEC.md`](./SPEC.md).
 ### ⏰ Automações
 
 - **Agendamentos:** envia instruções a um agente ou à equipa inteira de *N* em *N*
-  minutos,
-  ou a uma hora certa nos dias da semana que escolheres (sem se baralhar com a mudança
+  minutos, ou a uma hora certa nos dias da semana que escolheres (sem se baralhar com a mudança
   da hora).
 - **Regras de contexto:** compacta ou limpa o contexto dos agentes quando passa um
   intervalo e a ocupação atinge um limiar.
@@ -163,26 +152,24 @@ O desenho completo está em [`HIVE.md`](./HIVE.md) e [`SPEC.md`](./SPEC.md).
 
 ### 🛠️ As ferramentas de trabalho
 
-- **Terminais a sério** (xterm.js + WebGL): seguem o tema claro/escuro, ampliam o
+- **Terminais a sério:** seguem o tema claro/escuro, ampliam o
   painel inteiro, e todos os caminhos impressos são clicáveis — markdown abre na
   pré-visualização, código no editor, o resto no Finder.
 - **Modo de foco:** um agente em ecrã completo, com a lista da equipa ao lado.
 - **Arrasta um ficheiro** para um terminal e o caminho entra no prompt.
-- **Editor integrado** (Monaco) por agente, com árvore de ficheiros e pré-visualização de
+- **Editor integrado** por agente, com árvore de ficheiros e pré-visualização de
   markdown e imagens.
 - **Git:** estado, ramos e histórico de cada projeto, e uma **máquina do tempo** para
   saltar para um commit anterior e comparar.
-- **Atividade:** uma cascata de chamadas a ferramentas por agente, com tokens frescos,
-  em cache e totais.
+- **Atividade:** o que cada agente fez, ferramenta a ferramenta, e quanto gastou.
 - **Custos** acumulados ao longo da vida da aplicação, com o valor da sessão ao lado.
 - **Competências:** instala e pesquisa *skills* a partir de um catálogo, e vem com as
-  suas — incluindo intervalos de datas (`hoje`, `últimos 7 dias`, `este trimestre`…).
+  suas — incluindo intervalos de datas (*hoje*, *últimos 7 dias*, *este trimestre*…).
 
 ### 🏛️ O mundo
 
 - **A Casa em 3D, feita em Godot:** Gabinete do Feitor, Escrivães, Conselho, Cartografia,
-  Tesouraria, Refeitório e a Planta geral. Tudo procedural — modelos, materiais e
-  personagens gerados em GDScript, sem arte de terceiros.
+  Tesouraria, Refeitório e a Planta geral.
 - **As personagens acompanham o estado dos agentes:** andam pelas salas, vão para o seu
   posto quando esperam ou precisam de ti, e mostram balões com o que estão a pensar.
 - **Um segundo cenário, a Tasca Portuguesa** — ver [mais abaixo](#a-tasca-portuguesa).
@@ -248,27 +235,6 @@ no reinado de D. Manuel I.
 | **Rui Faleiro** | m. c.1523 | dados e cálculo |
 | **D. Leonor de Viseu** | 1458–1525 | políticas e aprovações |
 
-As personagens são modelos procedurais do mundo em Godot (`godot/casa-da-india`), e os
-retratos são renderizados a partir deles — não há arte licenciada. O elenco vive em
-`src/renderer/src/elenco/`.
-
-### O que este fork não faz
-
-Os documentos que deram origem a este projeto propunham o **Infante D. Henrique** como
-orquestrador da Casa da Índia. Isso não pode ser: o Infante morreu em **1460** e a Casa da
-Índia foi fundada por volta de **1500–1503**. Nunca se cruzaram. Verificado o resto do
-elenco proposto, abrangia três séculos.
-
-Por isso não há aqui nem Infante, nem Gil Eanes, nem Zarco (cedo demais), nem Diogo Cão
-(morreu antes de a Casa existir), nem Zacuto (deixou Portugal em 1497), nem Camões
-(n. 1524) nem Fernão Mendes Pinto (embarcou em 1537) — tarde demais.
-
-Duas ressalvas assumidas, ditas em vez de escondidas:
-
-1. **D. Leonor de Viseu** era patrona régia, não oficial da Casa.
-2. **Gama, Albuquerque, Almeida, Pires e Barbosa** estavam no Índico e não em Lisboa — que
-   é precisamente o que os torna bons agentes destacados.
-
 ## A Tasca Portuguesa
 
 Nem só de armadas vive a Casa. Em **Mudar de cenário**, o mundo troca o século XVI por uma
@@ -317,19 +283,18 @@ Manuel.
 
 Há duas camadas, e só uma delas é frágil.
 
-**A interface** está em PT-PT (`i18n/locales/pt-PT.json`). Escolhe *Português* em
+**A interface** está em PT-PT. Escolhe *Português* em
 Definições → Geral.
 
-**A saída dos agentes** vem do **regimento** (`src/shared/regimento.ts`), acrescentado ao
-prompt de cada nau. É instrução, não modelo — e por isso funciona em qualquer motor,
-incluindo os que não se podem apontar a um servidor local. Controla-se por
-`agentLanguage` na configuração.
+**Os agentes** recebem no **regimento** a instrução de escrever em português europeu. É
+instrução, não modelo — e por isso funciona em qualquer motor, incluindo os que não se
+podem apontar a um servidor local.
 
 ### Amália
 
 O [Amália](https://ia.gov.pt) (9B, aberto, PT-PT) serve-se localmente por LM Studio, Ollama
 ou vLLM, e liga-se em **Definições → Agentes e modelos** como ligação local, que o OpenCode
-usa. É configuração, não código.
+usa.
 
 **O aviso que interessa:** o Amália não foi treinado como agente de código. Esses motores
 correm ciclos de ferramentas de várias voltas (ler → editar → correr → observar), e um
@@ -338,8 +303,7 @@ conteúdo de ficheiros inventado. A lista de modelos locais do próprio upstream
 nos **20B**.
 
 Dá-lhe antes o que ele faz bem, que é a língua: relatórios e PRs (o papel do Caminha),
-tradução, e condensação de memória. A tradução completa de `pt-PT.json` neste repositório
-foi feita por ele.
+tradução, e condensação de memória. A tradução da interface foi feita por ele.
 
 > **Arquitetura honesta:** o código conduzido por uma CLI de código, a língua pelo Amália.
 
@@ -349,40 +313,23 @@ Precisas do Node, de pelo menos uma das CLIs (`claude`, `codex` ou `opencode`), 
 (para exportar o mundo) e, no macOS, das Xcode Command Line Tools.
 
 ```bash
-npm install          # o postinstall faz electron-rebuild — precisa das Xcode CLT no macOS
-npm run dev          # exporta o mundo Godot e abre a aplicação
+npm install          # instala as dependências
+npm run dev          # abre a aplicação
+npm run dist:mac     # gera a aplicação instalável (também dist:win e dist:linux)
 ```
-
-```bash
-npm run typecheck    # tsconfig.node + tsconfig.web
-npm run test:focused # node --test test/*.test.cjs
-npm run build        # exportação Godot + electron-vite
-npm run dist:mac     # empacota (também dist:win e dist:linux)
-```
-
-### Onde está o quê
-
-| Pasta | O que tem |
-|---|---|
-| `src/main/` | processo principal: PTYs, colmeia, hooks, disjuntor, memória, agendamentos |
-| `src/renderer/` | a interface em React: painéis, terminais, editor, elenco, i18n |
-| `src/shared/` | tipos e regras partilhados, incluindo o regimento |
-| `godot/casa-da-india/` | o mundo 3D — salas, personagens, navegação |
-| `resources/skills/` | as competências que vêm com a aplicação |
-| `test/` | a bateria de testes (`node --test`) |
 
 ## Créditos e licenças
 
 Este projeto é um fork de **[Munder Difflin](https://github.com/chaitanyagiri/munder-difflin)**,
-de **Chaitanya Giri**, sob licença MIT. O trabalho difícil — o harness, o protocolo do
-enxame, a camada i18n — é dele. Aqui mudou-se o tema, o elenco, a língua e o mundo, que
+de **Chaitanya Giri**, sob licença MIT. O trabalho difícil — o harness e a coordenação dos
+agentes — é dele. Aqui mudou-se o tema, o elenco, a língua e o mundo, que
 passou a ser em Godot.
 
 - **Código:** MIT. Ver [`LICENSE`](./LICENSE), que se mantém intacto, com o aviso de
   direitos de autor do autor original.
-- **Arte:** o mundo e os retratos são procedurais, código deste projeto, cobertos pela MIT.
-  Versões anteriores usavam tilesets *Modern Interiors* do **[LimeZu](https://limezu.itch.io/)**;
-  já não são distribuídos. Ver [`ATTRIBUTION.md`](./src/renderer/src/assets/ATTRIBUTION.md).
+- **Arte:** o mundo e as personagens são deste projeto, sem arte de terceiros, cobertos
+  pela MIT. Versões anteriores usavam tilesets *Modern Interiors* do
+  **[LimeZu](https://limezu.itch.io/)**; já não são distribuídos.
 - **Figuras históricas:** domínio público.
 
 ## Sobre o registo
